@@ -1,0 +1,159 @@
+{
+  "api": {
+    "errors": {
+      "general": "Bir hata oluştu",
+      "network": "Bağlantı hatası",
+      "notFound": "Bulunamadı",
+      "unauthorized": "Yetkisiz erişim",
+      "serverError": "Sunucu hatası",
+      "timeout": "İstek zaman aşımına uğradı"
+    },
+    "success": {
+      "general": "İşlem başarılı",
+      "waiterCalled": "Garson çağrıldı",
+      "orderCreated": "Sipariş oluşturuldu",
+      "scoreSubmitted": "Skor kaydedildi"
+    },
+    "loading": {
+      "customer": "Müşteri bilgileri yükleniyor...",
+      "menu": "Menü yükleniyor...",
+      "categories": "Kategoriler yükleniyor...",
+      "tables": "Masalar yükleniyor...",
+      "advertisements": "Reklamlar yükleniyor...",
+      "leaderboard": "Sıralama yükleniyor...",
+      "playerStats": "Oyuncu istatistikleri yükleniyor...",
+      "tokenSettings": "Token ayarları yükleniyor..."
+    },
+    "endpoints": {
+      "customer": {
+        "getInfo": "Müşteri bilgilerini getir"
+      },
+      "menu": {
+        "get": "Menüyü getir",
+        "getCategories": "Kategorileri getir",
+        "getTables": "Masaları getir"
+      },
+      "advertisements": {
+        "getActiveTabs": "Aktif reklamları getir"
+      },
+      "waiter": {
+        "call": "Garson çağır"
+      },
+      "order": {
+        "create": "Sipariş oluştur"
+      },
+      "game": {
+        "submitScore": "Skor gönder",
+        "getLeaderboard": "Sıralamayı getir",
+        "getPlayerStats": "Oyuncu istatistiklerini getir"
+      },
+      "token": {
+        "getSettings": "Token ayarlarını getir",
+        "getBalance": "Token bakiyesini getir"
+      }
+    }
+  },
+  "game": {
+    "errors": {
+      "scoreNotSubmitted": "Skor kaydedilemedi",
+      "leaderboardNotLoaded": "Leaderboard getirilemedi",
+      "playerStatsNotLoaded": "Oyuncu istatistikleri getirilemedi"
+    },
+    "messages": {
+      "connectionError": "Bağlantı hatası",
+      "tryAgain": "Tekrar deneyin"
+    }
+  },
+  "common": {
+    "ok": "Tamam",
+    "cancel": "İptal",
+    "close": "Kapat",
+    "save": "Kaydet",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "add": "Ekle",
+    "search": "Ara",
+    "filter": "Filtrele",
+    "reset": "Sıfırla",
+    "submit": "Gönder",
+    "back": "Geri",
+    "next": "İleri",
+    "confirm": "Onayla",
+    "loading": "Yükleniyor...",
+    "noData": "Veri bulunamadı"
+  },
+  "menu": {
+    "title": "Menü",
+    "categories": "Kategoriler",
+    "allCategories": "Tüm Kategoriler",
+    "products": "Ürünler",
+    "cart": "Sepet",
+    "addToCart": "Sepete Ekle",
+    "removeFromCart": "Sepetten Çıkar",
+    "viewCart": "Sepeti Görüntüle",
+    "checkout": "Sipariş Ver",
+    "totalPrice": "Toplam Fiyat",
+    "quantity": "Adet",
+    "price": "Fiyat",
+    "currency": "₺",
+    "portion": "Porsiyon",
+    "portions": "Porsiyonlar",
+    "properties": "Özellikler",
+    "allergens": "Alerjenler",
+    "description": "Açıklama",
+    "details": "Detaylar",
+    "notes": "Notlar",
+    "addNote": "Not Ekle",
+    "specialRequest": "Özel İstek",
+    "selectPortion": "Porsiyon Seçin",
+    "selectProperties": "Özellik Seçin",
+    "noProductsInCategory": "Bu kategoride ürün bulunmuyor",
+    "searchPlaceholder": "Ürün ara...",
+    "searchResults": "Arama Sonuçları",
+    "noSearchResults": "Arama sonucu bulunamadı"
+  },
+  "order": {
+    "title": "Sipariş",
+    "yourOrder": "Siparişiniz",
+    "orderSummary": "Sipariş Özeti",
+    "orderConfirmation": "Sipariş Onayı",
+    "confirmOrder": "Siparişi Onayla",
+    "orderSuccess": "Siparişiniz başarıyla alındı",
+    "orderError": "Sipariş oluşturulamadı",
+    "emptyCart": "Sepetiniz boş",
+    "continueShopping": "Alışverişe Devam Et",
+    "tableNumber": "Masa Numarası",
+    "selectTable": "Masa Seçin",
+    "items": "Ürünler",
+    "item": "Ürün",
+    "subtotal": "Ara Toplam",
+    "total": "Toplam",
+    "proceedToCheckout": "Siparişi Tamamla"
+  },
+  "waiter": {
+    "callWaiter": "Garson Çağır",
+    "waiterCalled": "Garson çağrıldı",
+    "callWaiterMessage": "Garson masanıza gelecektir",
+    "requestMessage": "İstek Mesajı",
+    "sendRequest": "İstek Gönder",
+    "defaultMessage": "Lütfen masama gelin"
+  },
+  "token": {
+    "balance": "Token Bakiyesi",
+    "earn": "Kazan",
+    "redeem": "Kullan",
+    "earnTokens": "Token Kazan",
+    "redeemTokens": "Token Kullan",
+    "tokenSettings": "Token Ayarları",
+    "currentBalance": "Mevcut Bakiye",
+    "earnedTokens": "Kazanılan Tokenler",
+    "redeemedTokens": "Kullanılan Tokenler"
+  },
+  "table": {
+    "title": "Masa",
+    "number": "Masa Numarası",
+    "qrCode": "QR Kod",
+    "scan": "QR Kodu Tara",
+    "welcome": "Hoş Geldiniz"
+  }
+}

@@ -1,0 +1,3 @@
+{
+  "/api/self-service/validate-session/route": "app/api/self-service/validate-session/route.js"
+}

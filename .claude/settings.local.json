@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/c/Users/Onue/Desktop/canli menu/samba/samba/UI/**)",
+      "Bash(npm run dev:*)",
+      "Read(//mnt/c/Users/Onue/Desktop/**)",
+      "Bash(find:*)",
+      "Bash(pkill:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build)",
+      "Bash(dotnet run)",
+      "Bash(dotnet build:*)",
+      "WebFetch(domain:siparis.bukabile.com)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "Bash(fuser:*)",
+      "Bash(while read file)",
+      "Bash(do sed -i 's/api\\.canlimenu\\.com/canlimenu.online/g' \"$file\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(while IFS= read -r file)",
+      "Bash(xargs:*)",
+      "Bash(nc:*)",
+      "Bash(timeout 5 bash -c 'echo > /dev/tcp/mssql02.trwww.com/1433')",
+      "Bash(ping:*)",
+      "Bash(/opt/mssql-tools/bin/sqlcmd -S 94.73.151.69,1433 -U u2480364_userDAF -P 'pt:U6uQ-t8U8A6=-' -d u2480364_dbDAF -Q \"SELECT 1 AS test\")",
+      "Bash(/opt/mssql-tools/bin/sqlcmd -S 94.73.151.69,1433 -U u2480364_userDAF -P 'pt:U6uQ-t8U8A6=-' -d u2480364_dbDAF -i /tmp/canligarson_clean.sql -b)",
+      "Bash(/opt/mssql-tools/bin/sqlcmd:*)",
+      "WebFetch(domain:canlimenu.online)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

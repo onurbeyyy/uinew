@@ -1,0 +1,159 @@
+{
+  "api": {
+    "errors": {
+      "general": "An error occurred",
+      "network": "Connection error",
+      "notFound": "Not found",
+      "unauthorized": "Unauthorized access",
+      "serverError": "Server error",
+      "timeout": "Request timed out"
+    },
+    "success": {
+      "general": "Operation successful",
+      "waiterCalled": "Waiter called",
+      "orderCreated": "Order created",
+      "scoreSubmitted": "Score submitted"
+    },
+    "loading": {
+      "customer": "Loading customer information...",
+      "menu": "Loading menu...",
+      "categories": "Loading categories...",
+      "tables": "Loading tables...",
+      "advertisements": "Loading advertisements...",
+      "leaderboard": "Loading leaderboard...",
+      "playerStats": "Loading player stats...",
+      "tokenSettings": "Loading token settings..."
+    },
+    "endpoints": {
+      "customer": {
+        "getInfo": "Get customer information"
+      },
+      "menu": {
+        "get": "Get menu",
+        "getCategories": "Get categories",
+        "getTables": "Get tables"
+      },
+      "advertisements": {
+        "getActiveTabs": "Get active advertisements"
+      },
+      "waiter": {
+        "call": "Call waiter"
+      },
+      "order": {
+        "create": "Create order"
+      },
+      "game": {
+        "submitScore": "Submit score",
+        "getLeaderboard": "Get leaderboard",
+        "getPlayerStats": "Get player stats"
+      },
+      "token": {
+        "getSettings": "Get token settings",
+        "getBalance": "Get token balance"
+      }
+    }
+  },
+  "game": {
+    "errors": {
+      "scoreNotSubmitted": "Score could not be saved",
+      "leaderboardNotLoaded": "Leaderboard could not be loaded",
+      "playerStatsNotLoaded": "Player stats could not be loaded"
+    },
+    "messages": {
+      "connectionError": "Connection error",
+      "tryAgain": "Try again"
+    }
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "noData": "No data found"
+  },
+  "menu": {
+    "title": "Menu",
+    "categories": "Categories",
+    "allCategories": "All Categories",
+    "products": "Products",
+    "cart": "Cart",
+    "addToCart": "Add to Cart",
+    "removeFromCart": "Remove from Cart",
+    "viewCart": "View Cart",
+    "checkout": "Checkout",
+    "totalPrice": "Total Price",
+    "quantity": "Quantity",
+    "price": "Price",
+    "currency": "$",
+    "portion": "Portion",
+    "portions": "Portions",
+    "properties": "Properties",
+    "allergens": "Allergens",
+    "description": "Description",
+    "details": "Details",
+    "notes": "Notes",
+    "addNote": "Add Note",
+    "specialRequest": "Special Request",
+    "selectPortion": "Select Portion",
+    "selectProperties": "Select Properties",
+    "noProductsInCategory": "No products in this category",
+    "searchPlaceholder": "Search products...",
+    "searchResults": "Search Results",
+    "noSearchResults": "No search results found"
+  },
+  "order": {
+    "title": "Order",
+    "yourOrder": "Your Order",
+    "orderSummary": "Order Summary",
+    "orderConfirmation": "Order Confirmation",
+    "confirmOrder": "Confirm Order",
+    "orderSuccess": "Your order has been placed successfully",
+    "orderError": "Failed to create order",
+    "emptyCart": "Your cart is empty",
+    "continueShopping": "Continue Shopping",
+    "tableNumber": "Table Number",
+    "selectTable": "Select Table",
+    "items": "Items",
+    "item": "Item",
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "proceedToCheckout": "Proceed to Checkout"
+  },
+  "waiter": {
+    "callWaiter": "Call Waiter",
+    "waiterCalled": "Waiter called",
+    "callWaiterMessage": "Waiter will come to your table",
+    "requestMessage": "Request Message",
+    "sendRequest": "Send Request",
+    "defaultMessage": "Please come to my table"
+  },
+  "token": {
+    "balance": "Token Balance",
+    "earn": "Earn",
+    "redeem": "Redeem",
+    "earnTokens": "Earn Tokens",
+    "redeemTokens": "Redeem Tokens",
+    "tokenSettings": "Token Settings",
+    "currentBalance": "Current Balance",
+    "earnedTokens": "Earned Tokens",
+    "redeemedTokens": "Redeemed Tokens"
+  },
+  "table": {
+    "title": "Table",
+    "number": "Table Number",
+    "qrCode": "QR Code",
+    "scan": "Scan QR Code",
+    "welcome": "Welcome"
+  }
+}
