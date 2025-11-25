@@ -195,3 +195,4 @@ npm start       # Production server
 - [React 19 Blog](https://react.dev/blog/2024/12/05/react-19)
 - [Tailwind CSS](https://tailwindcss.com/docs)
 - [SignalR JS](https://docs.microsoft.com/en-us/aspnet/core/signalr/javascript-client)
+ 
