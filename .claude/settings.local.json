@@ -28,7 +28,10 @@
       "Bash(/opt/mssql-tools/bin/sqlcmd:*)",
       "WebFetch(domain:canlimenu.online)",
       "Bash(cat:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(dig:*)",
+      "Bash(nslookup:*)",
+      "Bash(git config:*)"
     ],
     "deny": [],
     "ask": []

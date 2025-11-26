@@ -35,7 +35,7 @@ const nextConfig: NextConfig = {
     ],
     formats: ['image/avif', 'image/webp'],
   },
-  // Turbopack config (Next.js 16 default)
+  // Turbopack config (webpack used for Safari compatibility)
   turbopack: {},
   // Webpack config (production obfuscation için)
   webpack: (config, { isServer, dev }) => {

@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint"
   },
@@ -12,6 +12,13 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "browserslist": [
+    ">0.3%",
+    "not dead",
+    "not op_mini all",
+    "safari >= 12",
+    "ios_saf >= 12"
+  ],
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
     "@microsoft/signalr": "^10.0.0",
