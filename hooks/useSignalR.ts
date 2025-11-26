@@ -63,12 +63,12 @@ export function useSignalR({ customerId, customerCode, onTokenBalanceUpdated, on
       console.log('✅ SignalR: Reconnected', connectionId);
 
       // Customer grubuna yeniden katıl (customerCode veya customerId ile)
-      if (customerCode) {
-        connection.invoke('JoinCustomerGroup', customerCode)
-          .catch(err => console.error('❌ SignalR: JoinCustomerGroup failed on reconnect', err));
-      } else if (customerId && customerId > 0) {
+      if (customerId && customerId > 0) {
         connection.invoke('JoinCustomerGroup', customerId)
           .catch(err => console.error('❌ SignalR: JoinCustomerGroup failed on reconnect', err));
+      } else if (customerCode) {
+        connection.invoke('JoinCustomerGroupByCode', customerCode)
+          .catch(err => console.error('❌ SignalR: JoinCustomerGroupByCode failed on reconnect', err));
       }
     });
 
@@ -114,18 +114,18 @@ export function useSignalR({ customerId, customerCode, onTokenBalanceUpdated, on
       .then(() => {
         console.log('✅ SignalR: Connected successfully');
 
-        // Customer grubuna katıl (customerCode veya customerId ile)
-        if (customerCode) {
-          return connection.invoke('JoinCustomerGroup', customerCode);
-        } else if (customerId && customerId > 0) {
+        // Customer grubuna katıl - ÖNCELİK customerId'ye (int)
+        if (customerId && customerId > 0) {
           return connection.invoke('JoinCustomerGroup', customerId);
+        } else if (customerCode) {
+          return connection.invoke('JoinCustomerGroupByCode', customerCode);
         }
       })
       .then(() => {
-        if (customerCode) {
-          console.log(`✅ SignalR: Joined customer group ${customerCode}`);
-        } else if (customerId && customerId > 0) {
+        if (customerId && customerId > 0) {
           console.log(`✅ SignalR: Joined customer group ${customerId}`);
+        } else if (customerCode) {
+          console.log(`✅ SignalR: Joined customer group by code ${customerCode}`);
         }
       })
       .catch(err => {
