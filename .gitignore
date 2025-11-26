@@ -9,6 +9,8 @@
 # Next.js
 /.next/
 /out/
+/deploy/.next/
+deploy/.next/
 
 # Production
 /build
@@ -24,6 +26,9 @@ yarn-error.log*
 
 # Local env files
 .env*.local
+.env
+.env.production
+.env.development
 
 # Vercel
 .vercel

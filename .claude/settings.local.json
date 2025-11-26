@@ -27,7 +27,8 @@
       "Bash(/opt/mssql-tools/bin/sqlcmd -S 94.73.151.69,1433 -U u2480364_userDAF -P 'pt:U6uQ-t8U8A6=-' -d u2480364_dbDAF -i /tmp/canligarson_clean.sql -b)",
       "Bash(/opt/mssql-tools/bin/sqlcmd:*)",
       "WebFetch(domain:canlimenu.online)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
