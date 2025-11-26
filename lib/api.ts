@@ -29,8 +29,6 @@ class ApiClient {
     const url = `${this.baseUrl}${endpoint}`;
     const locale = loadLocale();
 
-    console.log('🔗 API Request:', { url, baseUrl: this.baseUrl, endpoint });
-
     try {
       const response = await fetch(url, {
         ...options,

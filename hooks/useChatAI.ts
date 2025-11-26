@@ -53,13 +53,9 @@ export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatA
   // Load external menu data directly (no API calls in hook)
   useEffect(() => {
     if (externalMenuData && externalMenuData.categories) {
-      console.log('✅ Using external menu data from page:', {
-        categoriesCount: externalMenuData.categories.length
-      });
       setMenuData(externalMenuData);
       setIsLoadingMenu(false);
     } else {
-      console.log('⚠️ No external menu data yet');
       setIsLoadingMenu(true);
     }
   }, [externalMenuData]);
@@ -132,15 +128,7 @@ export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatA
         // Send menuData as JSON string (like old code)
         const menuDataStr = menuData ? JSON.stringify(menuData) : '';
 
-        console.log('📤 Sending message to AI:', {
-          message: message.substring(0, 50),
-          customerCode,
-          hasMenuData: !!menuData,
-          menuDataLength: menuDataStr.length,
-          categoriesCount: menuData?.categories?.length || 0
-        });
-
-        // Send directly to backend - NO WAITING!
+        // Send directly to backend
         const response = await fetch('/api/ai/chat', {
           method: 'POST',
           headers: {
@@ -156,11 +144,6 @@ export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatA
         });
 
         const data = await response.json();
-        console.log('📥 Received AI response:', {
-          success: data.success,
-          hasResponse: !!data.response,
-          source: data.source
-        });
 
         if (data.success) {
           // Update remaining messages

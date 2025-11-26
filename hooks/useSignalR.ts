@@ -45,30 +45,25 @@ export function useSignalR({ customerId, customerCode, onTokenBalanceUpdated, on
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
       })
       .withAutomaticReconnect([0, 2000, 10000, 30000])
-      .configureLogging(signalR.LogLevel.Error) // Sadece error'ları göster
+      .configureLogging(signalR.LogLevel.None) // Production'da log kapalı
       .build();
 
     connectionRef.current = connection;
 
     // Event handlers
     connection.onclose(() => {
-      console.log('🔌 SignalR: Connection closed');
+      // Silent close
     });
 
-    connection.onreconnecting((error) => {
-      console.log('🔄 SignalR: Reconnecting...', error);
+    connection.onreconnecting(() => {
+      // Silent reconnecting
     });
 
-    connection.onreconnected((connectionId) => {
-      console.log('✅ SignalR: Reconnected', connectionId);
+    connection.onreconnected(() => {
 
-      // Customer grubuna yeniden katıl (customerCode veya customerId ile)
+      // Customer grubuna yeniden katıl - sadece customerId ile
       if (customerId && customerId > 0) {
-        connection.invoke('JoinCustomerGroup', customerId)
-          .catch(err => console.error('❌ SignalR: JoinCustomerGroup failed on reconnect', err));
-      } else if (customerCode) {
-        connection.invoke('JoinCustomerGroupByCode', customerCode)
-          .catch(err => console.error('❌ SignalR: JoinCustomerGroupByCode failed on reconnect', err));
+        connection.invoke('JoinCustomerGroup', customerId).catch(() => {});
       }
     });
 
@@ -112,24 +107,13 @@ export function useSignalR({ customerId, customerCode, onTokenBalanceUpdated, on
     // Bağlantıyı başlat
     connection.start()
       .then(() => {
-        console.log('✅ SignalR: Connected successfully');
-
-        // Customer grubuna katıl - ÖNCELİK customerId'ye (int)
+        // Customer grubuna katıl - sadece customerId ile
         if (customerId && customerId > 0) {
           return connection.invoke('JoinCustomerGroup', customerId);
-        } else if (customerCode) {
-          return connection.invoke('JoinCustomerGroupByCode', customerCode);
         }
       })
-      .then(() => {
-        if (customerId && customerId > 0) {
-          console.log(`✅ SignalR: Joined customer group ${customerId}`);
-        } else if (customerCode) {
-          console.log(`✅ SignalR: Joined customer group by code ${customerCode}`);
-        }
-      })
-      .catch(err => {
-        console.error('❌ SignalR: Connection failed', err);
+      .catch(() => {
+        // Silent error
       });
 
     // Cleanup
@@ -139,9 +123,7 @@ export function useSignalR({ customerId, customerCode, onTokenBalanceUpdated, on
       }
 
       if (connectionRef.current) {
-        connectionRef.current.stop()
-          .then(() => console.log('🔌 SignalR: Disconnected'))
-          .catch(err => console.error('❌ SignalR: Disconnect error', err));
+        connectionRef.current.stop().catch(() => {});
       }
     };
   }, [customerId, customerCode, enabled, onTokenBalanceUpdated, onOrderCreated]);
