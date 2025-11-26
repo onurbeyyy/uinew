@@ -32,8 +32,6 @@ interface ProductData {
   detail?: string;
 }
 
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online';
-
 export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatAIOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);

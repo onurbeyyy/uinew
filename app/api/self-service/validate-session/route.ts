@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online';
+    const apiUrl = process.env.API_URL || 'https://canlimenu.online';
     const response = await fetch(`${apiUrl}/api/SelfService/ValidateSession?sessionId=${sessionId}`, {
       method: 'GET',
       headers: {

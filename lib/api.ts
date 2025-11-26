@@ -1,7 +1,10 @@
 import type { MenuDto, CustomerInfoResponse, Advertisement, WaiterCallRequest, OrderRequest, CategoryDto, TableEntity, ProductTokenSettingsResponse, UserTokenBalance } from '@/types/api';
 import { t, loadLocale } from './i18n';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online';
+// Server-side: direkt backend URL, Client-side: /backend-api proxy
+const API_BASE_URL = typeof window === 'undefined'
+  ? (process.env.API_URL || 'https://canlimenu.online')
+  : '/backend-api';
 
 export class ApiError extends Error {
   constructor(

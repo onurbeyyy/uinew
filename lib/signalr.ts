@@ -1,7 +1,7 @@
 import * as signalR from '@microsoft/signalr';
 
-const HUB_URL = process.env.NEXT_PUBLIC_API_URL
-  ? `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_SIGNALR_HUB}`
+const HUB_URL = process.env.NEXT_PUBLIC_SIGNALR_URL
+  ? `${process.env.NEXT_PUBLIC_SIGNALR_URL}/apimenuhub`
   : 'https://canlimenu.online/apimenuhub';
 
 class SignalRService {

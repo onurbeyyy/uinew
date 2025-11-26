@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online';
+    const apiUrl = process.env.API_URL || 'https://canlimenu.online';
     const response = await fetch(`${apiUrl}/api/SelfService/CleanupExpiredSessions`, {
       method: 'POST',
       headers: {

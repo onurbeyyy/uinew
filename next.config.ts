@@ -3,6 +3,19 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // output: 'export', // Vercel kullanılacaksa bu satır kapalı kalmalı
   reactStrictMode: false, // Sürükle-bırak kütüphanesi için kapatıldı
+
+  // API Proxy - Backend URL'ini gizler
+  async rewrites() {
+    const backendUrl = process.env.API_URL || 'https://canlimenu.online';
+    return [
+      {
+        // /backend-api/api/Customer/... → backend/api/Customer/...
+        source: '/backend-api/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+    ];
+  },
+
   images: {
     // unoptimized: true, // Vercel'de Image Optimization çalışır
     remotePatterns: [

@@ -30,8 +30,7 @@ export default function SelfServicePage() {
   const checkCountRef = useRef<number>(0);
 
   const CONFIG = {
-    apiBaseUrl: process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online',
-    signalRBaseUrl: process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online',
+    signalRBaseUrl: process.env.NEXT_PUBLIC_SIGNALR_URL || 'https://canlimenu.online',
     uiBaseUrl: process.env.NEXT_PUBLIC_UI_URL || 'http://localhost:3000',
     expirySeconds: 90,
     qrSize: 240,

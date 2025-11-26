@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyA_nBX7jeA7Ri77Z8Yh0JUQtvq4vtBfYZI';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online';
+const BACKEND_API_URL = process.env.API_URL || 'https://canlimenu.online';
 
 export async function POST(request: NextRequest) {
   try {
