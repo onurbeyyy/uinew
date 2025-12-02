@@ -59,13 +59,19 @@ export default function CustomerMenu() {
     setPendingJoinRoomId,
     isProfileOpen,
     openProfile,
-    closeProfile
+    closeProfile,
+    canUseBasket,
+    basketDisabledMessage
   } = useMenu();
 
-  // Table context state tracking
+  // Table context -> Menu context senkronizasyonu
   useEffect(() => {
-    // Context state is ready
-  }, [isTableMode, isSelfService, canCallWaiter, tableContextId, tableParam, sessionParam]);
+    // TableContext'ten gelen tableId'yi MenuContext'e aktar
+    if (tableContextId && tableContextId !== tableId) {
+      setTableId(tableContextId);
+      console.log('✅ TableContext -> MenuContext tableId senkronize edildi:', tableContextId);
+    }
+  }, [tableContextId, tableId, setTableId]);
 
   const [showSplash, setShowSplash] = useState(true);
   const [showBanner, setShowBanner] = useState(false);
@@ -89,6 +95,13 @@ export default function CustomerMenu() {
     remainingSeconds: 0,
     isRegistered: false,
   });
+
+  // Dinamik sayfa başlığı - Restoran adına göre
+  useEffect(() => {
+    if (customerData?.customer?.name) {
+      document.title = `${customerData.customer.name} | Dijital Menü`;
+    }
+  }, [customerData?.customer?.name]);
 
   // 🔗 SignalR: Token balance güncelleme callback'i
   const handleTokenBalanceUpdated = useCallback((data: { userId: number; currentTokens: number; message: string }) => {
@@ -136,8 +149,30 @@ export default function CustomerMenu() {
     // URL'den table parametresini context'e set et
     if (tableParam) {
       setTableId(tableParam);
+
+      // ✅ Table parametresini URL'den gizle (güvenlik için)
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('table')) {
+          url.searchParams.delete('table');
+          window.history.replaceState({}, '', url.toString());
+          console.log('🔒 Table ID URL\'den gizlendi');
+        }
+      }, 100);
     }
-  }, [tableParam, setTableId]);
+
+    // Session parametresini de gizle
+    if (sessionParam) {
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('session')) {
+          url.searchParams.delete('session');
+          window.history.replaceState({}, '', url.toString());
+          console.log('🔒 Session ID URL\'den gizlendi');
+        }
+      }, 100);
+    }
+  }, [tableParam, sessionParam, setTableId]);
 
   // Toast'tan sepete git tıklandığında sidebar'ı aç
   useEffect(() => {
@@ -347,7 +382,10 @@ export default function CustomerMenu() {
   };
 
   const handleWaiterCall = async () => {
-    if (!tableId) {
+    // TableContext veya MenuContext'ten tableId al
+    const currentTableId = tableContextId || tableId;
+
+    if (!currentTableId) {
       alert('Masa bilgisi bulunamadı. Lütfen QR kodu tekrar okutun.');
       return;
     }
@@ -364,7 +402,7 @@ export default function CustomerMenu() {
         },
         body: JSON.stringify({
           CustomerCode: code,
-          TableName: tableId,
+          TableName: currentTableId,
           Message: 'Garson çağrısı',
           CallType: 'General',
           EndUserId: endUserId,
@@ -575,8 +613,8 @@ export default function CustomerMenu() {
         <CategoryGrid categories={categoryList} />
       </div>
 
-      {/* Bottom Navigation Bar - Fixed Bottom (Sadece Okey oyunu açıkken gizle) */}
-      {activeGame !== 'okey' && (
+      {/* Bottom Navigation Bar - Fixed Bottom (Oyun açıkken gizle) */}
+      {activeGame !== 'okey' && activeGame !== 'alienattack' && activeGame !== 'backgammon' && activeGame !== 'ludo' && (
         <BottomNavBar
         onProfileClick={() => {
           // Diğer sidebar'ları kapat
@@ -623,11 +661,12 @@ export default function CustomerMenu() {
         }}
         onSuggestionClick={() => setIsSuggestionModalOpen(true)}
         showAIChat={customerData?.customer.showAIChat ?? true}
-        showCart={isTableMode}
+        showCart={isTableMode && (canUseBasket || !!basketDisabledMessage)}
         showWaiterCall={canCallWaiter}
         tableId={tableId || undefined}
         phone={customerData?.customer.phone}
         cartItemCount={0}
+        basketDisabledMessage={basketDisabledMessage}
       />
       )}
 
@@ -639,7 +678,7 @@ export default function CustomerMenu() {
       <GameModal />
 
       {/* Cart Sidebar */}
-      {isTableMode && (
+      {isTableMode && canUseBasket && (
         <CartSidebar
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}

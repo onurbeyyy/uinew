@@ -11,12 +11,16 @@ interface BottomNavBarProps {
   onGameClick?: () => void;
   onContactClick?: () => void;
   onSuggestionClick?: () => void;
+  onAddressClick?: () => void;
   showAIChat?: boolean;
   showCart?: boolean;
   showWaiterCall?: boolean;
+  showGame?: boolean;
+  showAddresses?: boolean;
   cartItemCount?: number;
   tableId?: string;
   phone?: string;
+  basketDisabledMessage?: string | null; // Sepet neden devre dışı?
 }
 
 export default function BottomNavBar({
@@ -27,14 +31,19 @@ export default function BottomNavBar({
   onGameClick,
   onContactClick,
   onSuggestionClick,
+  onAddressClick,
   showAIChat = true,
   showCart = true,
   showWaiterCall = false,
+  showGame = true,
+  showAddresses = false,
   cartItemCount = 0,
   tableId,
   phone,
+  basketDisabledMessage,
 }: BottomNavBarProps) {
   const [showWaiterModal, setShowWaiterModal] = useState(false);
+  const [showBasketDisabledModal, setShowBasketDisabledModal] = useState(false);
   const { t } = useLanguage();
 
   const handleWaiterClick = () => {
@@ -45,6 +54,14 @@ export default function BottomNavBar({
     setShowWaiterModal(false);
     if (onWaiterCall) {
       onWaiterCall();
+    }
+  };
+
+  const handleCartClick = () => {
+    if (basketDisabledMessage) {
+      setShowBasketDisabledModal(true);
+    } else if (onCartClick) {
+      onCartClick();
     }
   };
 
@@ -190,28 +207,44 @@ export default function BottomNavBar({
         )}
 
         {/* Oyun Butonu */}
-        <NavButton
-          icon={
-            <svg style={{ width: '18px', height: '18px', fill: 'white' }} viewBox="0 0 24 24">
-              <path d="M7.97,16L5,19C4.67,19.3 4.23,19.5 3.75,19.5A1.75,1.75 0 0,1 2,17.75V17.5L3,10.12C3.21,7.81 5.14,6 7.5,6H16.5C18.86,6 20.79,7.81 21,10.12L22,17.5V17.75A1.75,1.75 0 0,1 20.25,19.5C19.77,19.5 19.33,19.3 19,19L16.03,16H7.97M7.5,8A0.5,0.5 0 0,0 7,8.5A0.5,0.5 0 0,0 7.5,9A0.5,0.5 0 0,0 8,8.5A0.5,0.5 0 0,0 7.5,8M16.5,8A0.5,0.5 0 0,0 16,8.5A0.5,0.5 0 0,0 16.5,9A0.5,0.5 0 0,0 17,8.5A0.5,0.5 0 0,0 16.5,8M8.5,11A1.5,1.5 0 0,0 7,12.5A1.5,1.5 0 0,0 8.5,14A1.5,1.5 0 0,0 10,12.5A1.5,1.5 0 0,0 8.5,11M15.5,11A1.5,1.5 0 0,0 14,12.5A1.5,1.5 0 0,0 15.5,14A1.5,1.5 0 0,0 17,12.5A1.5,1.5 0 0,0 15.5,11M12,13C12.27,13 12.5,13.14 12.65,13.35L15,16H9L11.35,13.35C11.5,13.14 11.73,13 12,13Z" />
-            </svg>
-          }
-          label={t('games')}
-          onClick={onGameClick}
-          gradient="linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)"
-        />
+        {showGame && (
+          <NavButton
+            icon={
+              <svg style={{ width: '18px', height: '18px', fill: 'white' }} viewBox="0 0 24 24">
+                <path d="M7.97,16L5,19C4.67,19.3 4.23,19.5 3.75,19.5A1.75,1.75 0 0,1 2,17.75V17.5L3,10.12C3.21,7.81 5.14,6 7.5,6H16.5C18.86,6 20.79,7.81 21,10.12L22,17.5V17.75A1.75,1.75 0 0,1 20.25,19.5C19.77,19.5 19.33,19.3 19,19L16.03,16H7.97M7.5,8A0.5,0.5 0 0,0 7,8.5A0.5,0.5 0 0,0 7.5,9A0.5,0.5 0 0,0 8,8.5A0.5,0.5 0 0,0 7.5,8M16.5,8A0.5,0.5 0 0,0 16,8.5A0.5,0.5 0 0,0 16.5,9A0.5,0.5 0 0,0 17,8.5A0.5,0.5 0 0,0 16.5,8M8.5,11A1.5,1.5 0 0,0 7,12.5A1.5,1.5 0 0,0 8.5,14A1.5,1.5 0 0,0 10,12.5A1.5,1.5 0 0,0 8.5,11M15.5,11A1.5,1.5 0 0,0 14,12.5A1.5,1.5 0 0,0 15.5,14A1.5,1.5 0 0,0 17,12.5A1.5,1.5 0 0,0 15.5,11M12,13C12.27,13 12.5,13.14 12.65,13.35L15,16H9L11.35,13.35C11.5,13.14 11.73,13 12,13Z" />
+              </svg>
+            }
+            label={t('games')}
+            onClick={onGameClick}
+            gradient="linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)"
+          />
+        )}
+
+        {/* Adresler Butonu - Sadece Delivery'de */}
+        {showAddresses && (
+          <NavButton
+            icon={
+              <svg style={{ width: '18px', height: '18px', fill: 'white' }} viewBox="0 0 24 24">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+              </svg>
+            }
+            label="Adresler"
+            onClick={onAddressClick}
+            gradient="linear-gradient(135deg, #ff6b00 0%, #ff9500 100%)"
+          />
+        )}
 
         {/* İletişim / Sepet / Öneri */}
         {showCart ? (
           <NavButton
             icon={
-              <svg style={{ width: '18px', height: '18px', fill: 'white' }} viewBox="0 0 24 24">
+              <svg style={{ width: '18px', height: '18px', fill: basketDisabledMessage ? '#999' : 'white' }} viewBox="0 0 24 24">
                 <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z" />
               </svg>
             }
             label={t('cart')}
-            onClick={onCartClick}
-            gradient="linear-gradient(135deg, #28a745 0%, #20c997 100%)"
+            onClick={handleCartClick}
+            gradient={basketDisabledMessage ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'}
             badge={cartItemCount}
           />
         ) : phone ? (
@@ -238,6 +271,80 @@ export default function BottomNavBar({
           />
         )}
       </div>
+
+      {/* Sepet Devre Dışı Modal */}
+      {showBasketDisabledModal && basketDisabledMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999,
+            animation: 'fadeIn 0.2s ease',
+          }}
+          onClick={() => setShowBasketDisabledModal(false)}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '20px',
+              padding: '30px',
+              maxWidth: '400px',
+              width: '90%',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+              animation: 'slideUp 0.3s ease',
+              textAlign: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '60px', marginBottom: '20px' }}>⚠️</div>
+            <h3
+              style={{
+                fontSize: '20px',
+                color: '#dc3545',
+                marginBottom: '15px',
+                fontWeight: 600,
+              }}
+            >
+              {basketDisabledMessage}
+            </h3>
+            <p
+              style={{
+                color: '#718096',
+                fontSize: '14px',
+                marginBottom: '25px',
+                lineHeight: 1.5,
+              }}
+            >
+              {basketDisabledMessage === 'Abonelik süresi dolmuş'
+                ? 'Bu restoranın aboneliği sona ermiştir. Sipariş sistemi geçici olarak kullanılamıyor.'
+                : 'Sipariş sistemi şu an aktif değil. Lütfen daha sonra tekrar deneyin.'}
+            </p>
+            <button
+              onClick={() => setShowBasketDisabledModal(false)}
+              style={{
+                padding: '14px 40px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Tamam
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Garson Çağırma Onay Modal */}
       {showWaiterModal && (

@@ -31,7 +31,13 @@
       "Bash(git add:*)",
       "Bash(dig:*)",
       "Bash(nslookup:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(whois:*)",
+      "WebFetch(domain:www.kvkk.gov.tr)",
+      "WebFetch(domain:www.calinokcuhukuk.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(python3:*)",
+      "Bash(npx js-beautify:*)"
     ],
     "deny": [],
     "ask": []

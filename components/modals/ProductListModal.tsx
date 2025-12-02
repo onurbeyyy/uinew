@@ -19,6 +19,7 @@ export default function ProductListModal() {
     closeProductListModal,
     openProductDetailModal,
     isTableMode,
+    canUseBasket,
     cartKey,
     productTokenSettings,
     popularProductIds,
@@ -368,7 +369,7 @@ export default function ProductListModal() {
                         data-samba-product-id={product.sambaId}
                         onClick={() => openProductDetailModal(product)}
                       >
-                        {isTableMode && getCartQuantity(product.id) > 0 && (
+                        {isTableMode && canUseBasket && getCartQuantity(product.id) > 0 && (
                           <span className="cart-badge" style={{
                             position: 'absolute',
                             top: '8px',
@@ -416,7 +417,7 @@ export default function ProductListModal() {
                           </div>
                         )}
                         {/* Token Earn Badge - Sol üstte (Popüler yoksa) veya altında */}
-                        {isTableMode && (() => {
+                        {isTableMode && canUseBasket && (() => {
                           const tokenSetting = productTokenSettings[product.id] || productTokenSettings[product.sambaId];
                           if (!tokenSetting || !tokenSetting.earnTokens || tokenSetting.earnTokens <= 0) return null;
                           const hasPopularBadge = popularProductIds.has(product.id);
@@ -434,15 +435,15 @@ export default function ProductListModal() {
                                 alignItems: 'center',
                                 gap: '6px',
                                 padding: '6px 12px',
-                                background: 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)',
+                                background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
                                 color: 'white',
                                 borderRadius: '20px',
                                 fontSize: '12px',
                                 fontWeight: 700,
-                                boxShadow: '0 4px 12px rgba(255, 193, 7, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2)',
+                                boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2)',
                                 border: '2px solid rgba(255, 255, 255, 0.3)',
                               }}>
-                                +{tokenSetting.earnTokens} jeton
+                                +{tokenSetting.earnTokens} jeton kazan
                               </span>
                             </div>
                           );
@@ -474,7 +475,7 @@ export default function ProductListModal() {
                                   <span className="price-value" style={{fontFamily: productFont}}>
                                     {product.price.toFixed(2)} ₺
                                     {/* Token Redeem Badge - Fiyatın yanında */}
-                                    {isTableMode && (() => {
+                                    {isTableMode && canUseBasket && (() => {
                                       const tokenSetting = productTokenSettings[product.id] || productTokenSettings[product.sambaId];
                                       if (!tokenSetting || !tokenSetting.redeemTokens || tokenSetting.redeemTokens <= 0) return null;
 
@@ -485,15 +486,15 @@ export default function ProductListModal() {
                                           gap: '4px',
                                           marginLeft: '8px',
                                           padding: '4px 10px',
-                                          background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                                          background: 'linear-gradient(135deg, #ff9800, #ff6d00)',
                                           color: 'white',
                                           borderRadius: '12px',
                                           fontSize: '11px',
-                                          fontWeight: 600,
-                                          boxShadow: '0 2px 6px rgba(40, 167, 69, 0.3)',
-                                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                                          fontWeight: 700,
+                                          boxShadow: '0 2px 6px rgba(255, 152, 0, 0.4)',
+                                          border: '1px solid rgba(255, 255, 255, 0.3)',
                                         }}>
-                                          {tokenSetting.redeemTokens} jeton ile
+                                          🪙 {tokenSetting.redeemTokens} jetona al
                                         </span>
                                       );
                                     })()}
@@ -506,7 +507,7 @@ export default function ProductListModal() {
                                 {productDetail}
                               </p>
                             )}
-                            {isTableMode && (
+                            {isTableMode && canUseBasket && (
                               <button
                                 type="button"
                                 className="add-to-cart-btn"

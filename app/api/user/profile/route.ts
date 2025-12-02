@@ -13,7 +13,23 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, phoneNumber, birthDate, gender } = body;
+    const { firstName, lastName, nickName, email, phoneNumber, birthDate, gender } = body;
+
+    // Validate firstName if provided
+    if (firstName && firstName.trim().length < 2) {
+      return NextResponse.json(
+        { success: false, error: 'İsim en az 2 karakter olmalıdır' },
+        { status: 400 }
+      );
+    }
+
+    // Validate lastName if provided
+    if (lastName && lastName.trim().length < 2) {
+      return NextResponse.json(
+        { success: false, error: 'Soyisim en az 2 karakter olmalıdır' },
+        { status: 400 }
+      );
+    }
 
     // Validate phone number if provided
     if (phoneNumber) {
@@ -40,13 +56,16 @@ export async function PUT(request: NextRequest) {
     }
 
     // Call backend API
-    const response = await fetch(`${API_BASE_URL}/api/EndUser/UpdateProfile`, {
+    const response = await fetch(`${API_BASE_URL}/api/EndUser/profile`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': authHeader,
       },
       body: JSON.stringify({
+        FirstName: firstName || null,
+        LastName: lastName || null,
+        NickName: nickName || null,
         Email: email || null,
         PhoneNumber: phoneNumber || null,
         BirthDate: birthDate || null,

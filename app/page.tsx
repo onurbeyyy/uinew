@@ -79,6 +79,106 @@ export default function WelcomePage() {
 
       <Script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" />
 
+      {/* Schema.org Structured Data - SoftwareApplication */}
+      <Script id="schema-software" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "@id": "https://canlimenu.com/#qr-menu-software",
+          "name": "Canlı Menü - QR Menü Sistemi",
+          "alternateName": ["QR Menü", "Dijital Menü", "Akıllı Menü Sistemi", "Restaurant QR Menu"],
+          "description": "Türkiye'nin 1 numaralı QR menü sistemi. 500+ restoran kullanıyor. AI asistan, müşteri sadakat programı, oyunlar, sipariş yönetimi, POS entegrasyonu.",
+          "url": "https://canlimenu.com",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web, iOS, Android",
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "bestRating": "5",
+            "worstRating": "1",
+            "ratingCount": "523"
+          },
+          "featureList": "QR Menü, AI Asistan, Müşteri Sadakat Programı, Oyunlar, Sipariş Yönetimi, POS Entegrasyonu, Çoklu Dil Desteği, Alerjen Takibi",
+          "author": {
+            "@type": "Organization",
+            "name": "Canlı Menü",
+            "url": "https://canlimenu.com"
+          }
+        })}
+      </Script>
+
+      {/* Schema.org - Organization */}
+      <Script id="schema-organization" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Canlı Menü",
+          "url": "https://canlimenu.com",
+          "logo": "https://canlimenu.com/images/logo.png",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+90-542-674-32-69",
+            "contactType": "Sales",
+            "areaServed": "TR",
+            "availableLanguage": ["Turkish", "English"]
+          },
+          "sameAs": [
+            "https://www.instagram.com/canlimenu",
+            "https://www.facebook.com/canlimenu"
+          ]
+        })}
+      </Script>
+
+      {/* Schema.org - FAQPage */}
+      <Script id="schema-faq" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "QR menü sistemi nedir?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "QR menü sistemi, restoranların dijital menülerini QR kod aracılığıyla müşterilerine sunmasını sağlayan modern bir çözümdür. Müşteriler QR kodu telefonlarıyla taratarak menüye anında erişebilir."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "En iyi QR menü sistemi hangisidir?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Canlı Menü, Türkiye'de 500+ restoranın kullandığı, AI asistan, müşteri sadakat programı ve oyunlar gibi özellikleriyle en kapsamlı QR menü sistemidir."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "QR menü nasıl yapılır?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Canlı Menü ile QR menü oluşturmak çok kolay: 1) Kayıt olun, 2) Menünüzü yükleyin, 3) QR kodunuzu alın, 4) Masalarınıza yerleştirin. Kurulum desteği ücretsizdir."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "QR menü sistemi hangi özellikleri içerir?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Canlı Menü: AI menü asistanı, müşteri sadakat programı, oyunlar, sipariş yönetimi, POS entegrasyonu, çoklu dil desteği, alerjen takibi, doğum günü kampanyaları ve daha fazlasını içerir."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "QR menü SambaPOS ile entegre çalışır mı?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Evet, Canlı Menü SambaPOS ile tam entegre çalışır. Siparişler otomatik olarak POS sisteminize aktarılır."
+              }
+            }
+          ]
+        })}
+      </Script>
+
       <div className="welcome-page">
         {/* Hero Section */}
         <section className="hero-section">
@@ -127,49 +227,6 @@ export default function WelcomePage() {
                 Özellikleri İncele
               </a>
             </div>
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section className="pricing-section">
-          <div className="pricing-hero animate-on-scroll">
-            <div className="trial-badge-welcome">
-              🎁 15 GÜN ÜCRETSİZ DENEYİN
-            </div>
-            <h2 className="pricing-slogan">TEK PAKET, TEK FİYAT!</h2>
-            <p className="pricing-subtitle">Tüm özellikler dahil, ek ücret yok. Basit ve şeffaf fiyatlandırma.</p>
-          </div>
-
-          <div className="pricing-card animate-on-scroll">
-            <div className="price-amount">
-              9.999<span className="price-currency">₺</span>
-            </div>
-            <div className="price-period">Yıllık <span style={{color: '#fbbf24', fontWeight: 700}}>⚡ Özel Fırsat</span></div>
-
-            <div className="features-list-welcome">
-              <h4>🎯 Paketinizde Neler Var?</h4>
-              {[
-                'Sınırsız QR Kod Menü',
-                '7/24 Yapay Zeka Asistan',
-                'Müşteri Sadakat Uygulaması',
-                'Garson Çağırma Sistemi',
-                'Garsonlar için Telsiz Sistemi',
-                'Masadan Sipariş Alma',
-                'Telefondan Hızlı Sipariş',
-                'Müşteri Sadakat Kartı',
-                'Alerjen Bilgileri',
-                'Eğlenceli Oyunlar'
-              ].map((feature, idx) => (
-                <div key={idx} className="feature-item-welcome">
-                  <i className="fas fa-check"></i>
-                  <span>{feature}</span>
-                </div>
-              ))}
-            </div>
-
-            <Link href="/register" className="pricing-cta">
-              <i className="fas fa-rocket"></i> Hemen Başlayın - 15 Gün Ücretsiz!
-            </Link>
           </div>
         </section>
 
@@ -436,120 +493,6 @@ export default function WelcomePage() {
           66% { transform: translateY(10px) rotate(-3deg); }
         }
 
-        /* Pricing Section */
-        .pricing-section {
-          background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-          padding: 80px 20px;
-          color: white;
-          text-align: center;
-        }
-
-        .pricing-hero {
-          max-width: 800px;
-          margin: 0 auto 50px;
-        }
-
-        .trial-badge-welcome {
-          display: inline-block;
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-          color: white;
-          padding: 10px 24px;
-          border-radius: 50px;
-          font-size: 0.9rem;
-          font-weight: 800;
-          margin-bottom: 25px;
-          box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-          animation: pulse 2s ease-in-out infinite;
-        }
-
-        .pricing-slogan {
-          font-size: 1.8rem;
-          font-weight: 700;
-          margin-bottom: 20px;
-        }
-
-        .pricing-subtitle {
-          font-size: 1rem;
-          opacity: 0.9;
-          margin-bottom: 30px;
-        }
-
-        .pricing-card {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 30px;
-          padding: 50px;
-          backdrop-filter: blur(20px);
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          max-width: 700px;
-          margin: 0 auto;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-
-        .price-amount {
-          font-size: 2.8rem;
-          font-weight: 800;
-          color: #4ade80;
-          margin-bottom: 10px;
-        }
-
-        .price-currency {
-          font-size: 1.6rem;
-          color: #4ade80;
-        }
-
-        .price-period {
-          font-size: 0.95rem;
-          opacity: 0.8;
-          margin-bottom: 30px;
-        }
-
-        .features-list-welcome {
-          text-align: left;
-          margin-bottom: 30px;
-        }
-
-        .features-list-welcome h4 {
-          font-size: 1.1rem;
-          margin-bottom: 20px;
-          text-align: center;
-          color: #4ade80;
-        }
-
-        .feature-item-welcome {
-          display: flex;
-          align-items: center;
-          margin-bottom: 15px;
-          font-size: 0.9rem;
-        }
-
-        .feature-item-welcome i {
-          color: #4ade80;
-          margin-right: 15px;
-          width: 20px;
-        }
-
-        .pricing-cta {
-          background: linear-gradient(45deg, #4ade80, #22c55e);
-          color: white;
-          padding: 14px 35px;
-          border: none;
-          border-radius: 50px;
-          font-size: 1rem;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.4s;
-          text-decoration: none;
-          display: inline-block;
-          box-shadow: 0 8px 25px rgba(74, 222, 128, 0.4);
-        }
-
-        .pricing-cta:hover {
-          transform: translateY(-5px) scale(1.05);
-          box-shadow: 0 15px 40px rgba(74, 222, 128, 0.5);
-          color: white;
-          text-decoration: none;
-        }
-
         /* Features Section */
         .features-section-welcome {
           padding: 60px 20px;
@@ -733,9 +676,6 @@ export default function WelcomePage() {
           .hero-title { font-size: 1.5rem !important; }
           .hero-subtitle { font-size: 0.85rem !important; }
           .hero-features { flex-direction: column; }
-          .pricing-slogan { font-size: 1.5rem !important; }
-          .pricing-card { padding: 30px !important; }
-          .price-amount { font-size: 2.2rem !important; }
           .section-title-welcome { font-size: 1.3rem !important; }
           .features-grid-welcome { grid-template-columns: repeat(2, 1fr) !important; }
           .references-grid-welcome { grid-template-columns: repeat(2, 1fr) !important; }

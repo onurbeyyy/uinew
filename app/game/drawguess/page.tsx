@@ -1,0 +1,142 @@
+'use client';
+
+import { Suspense, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/contexts/UserContext';
+import DrawGuess from '@/components/games/DrawGuess';
+
+function DrawGuessContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { isAuthenticated, isLoading } = useAuth();
+  const customerCode = searchParams.get('code') || 'global';
+  const roomId = searchParams.get('room') || undefined;
+
+  // Menüye geri dön
+  const goBackToMenu = useCallback(() => {
+    if (customerCode && customerCode !== 'global') {
+      router.push(`/${customerCode}`);
+    } else {
+      router.back();
+    }
+  }, [customerCode, router]);
+
+  // Sayfa yüklendiğinde scroll'u engelle
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  // Loading durumunda bekle
+  if (isLoading) {
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: '#1a1a2e',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+        fontSize: '24px',
+        zIndex: 9999
+      }}>
+        Yükleniyor...
+      </div>
+    );
+  }
+
+  // Giriş yapmamış kullanıcılar için
+  if (!isAuthenticated) {
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: '#1a1a2e',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        textAlign: 'center',
+        zIndex: 9999
+      }}>
+        <div style={{ fontSize: '80px', marginBottom: '20px' }}>🎨</div>
+        <h2 style={{ color: '#fff', fontSize: '24px', marginBottom: '12px', fontWeight: 600 }}>
+          Çiz ve Tahmin Et
+        </h2>
+        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '16px', marginBottom: '30px', maxWidth: '300px', lineHeight: 1.5 }}>
+          Bu oyunu oynamak için giriş yapmanız gerekmektedir.
+        </p>
+        <button
+          onClick={goBackToMenu}
+          style={{
+            padding: '15px 40px',
+            fontSize: '18px',
+            fontWeight: 600,
+            color: '#fff',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            border: 'none',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+          }}
+        >
+          Menüye Dön ve Giriş Yap
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: '#1a1a2e',
+      zIndex: 9999
+    }}>
+      <DrawGuess
+        customerCode={customerCode}
+        joinRoomId={roomId}
+        onClose={goBackToMenu}
+      />
+    </div>
+  );
+}
+
+export default function DrawGuessPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: '#1a1a2e',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+        fontSize: '24px',
+        zIndex: 9999
+      }}>
+        Yükleniyor...
+      </div>
+    }>
+      <DrawGuessContent />
+    </Suspense>
+  );
+}

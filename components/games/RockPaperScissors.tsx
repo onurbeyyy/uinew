@@ -1,14 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
+import { QRCodeSVG } from 'qrcode.react';
+import { useAuth } from '@/contexts/UserContext';
 
-interface RockPaperScissorsProps {
-  onClose?: () => void;
-  playerNickname?: string;
-  customerCode?: string;
-}
-
+// Types
 interface Player {
   id: string;
   name: string;
@@ -16,586 +13,1153 @@ interface Player {
   choice?: 'rock' | 'paper' | 'scissors';
 }
 
-interface GameSettings {
-  maxRounds: number;
-  maxPlayers: number;
-  isTournament?: boolean;
+type GamePhase = 'connecting' | 'waiting' | 'playing' | 'result' | 'finished';
+type Choice = 'rock' | 'paper' | 'scissors';
+
+interface RockPaperScissorsProps {
+  onBack?: () => void;
+  joinRoomId?: string;
+  customerCode: string;
 }
 
-type GameMode = 'normal' | 'tournament';
-type GameState = 'setup' | 'waiting' | 'playing' | 'result' | 'finished';
+// Constants
+const MAX_ROUNDS = 5;
+const CHOICE_ICONS: Record<Choice, string> = {
+  rock: '✊',
+  paper: '✋',
+  scissors: '✌️'
+};
+const CHOICE_NAMES: Record<Choice, string> = {
+  rock: 'Taş',
+  paper: 'Kağıt',
+  scissors: 'Makas'
+};
 
-export default function RockPaperScissors({ onClose, playerNickname, customerCode }: RockPaperScissorsProps) {
-  // Connection state
+// Helper functions
+const generatePlayerId = () => 'rps_' + Math.random().toString(36).substr(2, 9);
+const generateRoomId = () => Math.floor(1000 + Math.random() * 9000).toString();
+const generateRandomNickname = () => `Oyuncu#${Math.floor(1000 + Math.random() * 9000)}`;
+
+export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: RockPaperScissorsProps) {
+  const { currentUser } = useAuth();
+
+  // Nickname from user session or random
+  const initialNickname = currentUser?.nickName || currentUser?.nickname || '';
+
+  // Connection
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  // Game setup state
-  const [gameState, setGameState] = useState<GameState>('setup');
-  const [nickname, setNickname] = useState(playerNickname || '');
-  const [gameMode, setGameMode] = useState<GameMode>('normal');
-  const [maxRounds, setMaxRounds] = useState(5);
+  // Game setup
+  const [gamePhase, setGamePhase] = useState<GamePhase>('connecting');
+  const [autoRoomCreated, setAutoRoomCreated] = useState(false);
+  const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
   const [showInLobby, setShowInLobby] = useState(true);
 
   // Game state
-  const [roomId, setRoomId] = useState<string>('');
-  const [playerId, setPlayerId] = useState<string>('');
+  const [roomId, setRoomId] = useState(joinRoomId || '');
+  const [playerId, setPlayerId] = useState('');
+  const [nickname, setNickname] = useState(initialNickname);
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentRound, setCurrentRound] = useState(1);
-  const [myChoice, setMyChoice] = useState<'rock' | 'paper' | 'scissors' | null>(null);
+  const [myChoice, setMyChoice] = useState<Choice | null>(null);
+  const [opponentChose, setOpponentChose] = useState(false);
   const [isHost, setIsHost] = useState(false);
-  const [waitingText, setWaitingText] = useState('Bekliyor...');
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [kickTargetPlayer, setKickTargetPlayer] = useState<{id: string, name: string} | null>(null);
 
-  // Result state
-  const [showResult, setShowResult] = useState(false);
-  const [resultText, setResultText] = useState('');
-  const [resultClass, setResultClass] = useState('');
-  const [playerChoices, setPlayerChoices] = useState<{[key: string]: 'rock' | 'paper' | 'scissors'}>({});
+  // Result
+  const [roundResult, setRoundResult] = useState<'win' | 'lose' | 'draw' | null>(null);
+  const [playerChoices, setPlayerChoices] = useState<Record<string, Choice>>({});
 
-  // Game over state
-  const [showGameOver, setShowGameOver] = useState(false);
+  // Game over
+  const [winner, setWinner] = useState<Player | null>(null);
   const [gameOverMessage, setGameOverMessage] = useState('');
-  const [finalScores, setFinalScores] = useState<Player[]>([]);
 
+  // Refs for cleanup
   const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const playerIdRef = useRef('');
+  const roomIdRef = useRef(joinRoomId || '');
+  const nicknameRef = useRef(initialNickname);
+  const nextRoundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const onBackRef = useRef(onBack);
 
-  // SignalR Connection Setup
-  useEffect(() => {
-    const setupConnection = async () => {
-      const hubUrl = 'https://game.canlimenu.com/gamehub';
+  // Get my player and opponent
+  const me = players.find(p => p.id === playerId);
+  const opponent = players.find(p => p.id !== playerId);
 
-      const newConnection = new signalR.HubConnectionBuilder()
-        .withUrl(hubUrl, {
-          transport: signalR.HttpTransportType.WebSockets,
-          skipNegotiation: true
-        })
-        .withAutomaticReconnect({
-          nextRetryDelayInMilliseconds: () => {
-            return Math.random() * 10000;
-          }
-        })
-        .configureLogging(signalR.LogLevel.Error)
-        .build();
+  // Handle back - leave room and go back
+  const handleBack = useCallback(async () => {
+    const currentPlayerId = playerIdRef.current;
+    const currentRoomId = roomIdRef.current;
+    const conn = connectionRef.current;
 
-      // Event handlers
-      newConnection.on('RoomCreated', handleRoomCreated);
-      newConnection.on('GameJoined', handleGameJoined);
-      newConnection.on('JoinedRoom', handleJoinedRoom);
-      newConnection.on('PlayerJoined', handlePlayerJoined);
-      newConnection.on('PlayerLeft', handlePlayerLeft);
-      newConnection.on('GameStarted', handleGameStarted);
-      newConnection.on('RoundStarted', handleRoundStarted);
-      newConnection.on('PlayerMadeChoice', handlePlayerMadeChoice);
-      newConnection.on('RoundResult', handleRoundResult);
-      newConnection.on('GameFinished', handleGameFinished);
-      newConnection.on('Error', handleError);
-
+    if (conn && currentRoomId && currentPlayerId) {
       try {
-        await newConnection.start();
-        console.log('SignalR Connected');
-        setIsConnected(true);
-        setConnection(newConnection);
-        connectionRef.current = newConnection;
-
-        // Generate player ID
-        const newPlayerId = generatePlayerId();
-        setPlayerId(newPlayerId);
-
+        await conn.invoke('LeaveRoom', currentPlayerId);
+        console.log('[RPS] Left room:', currentRoomId);
       } catch (err) {
-        console.error('SignalR Connection Error:', err);
+        console.error('[RPS] Error leaving room:', err);
       }
-    };
-
-    setupConnection();
-
-    return () => {
-      if (connectionRef.current) {
-        connectionRef.current.stop();
-      }
-    };
-  }, []);
-
-  // Helper Functions
-  const generatePlayerId = () => {
-    return 'player_' + Math.random().toString(36).substr(2, 9);
-  };
-
-  const generateRoomId = () => {
-    return Math.floor(1000 + Math.random() * 9000).toString();
-  };
-
-  const getChoiceIcon = (choice: 'rock' | 'paper' | 'scissors') => {
-    switch (choice) {
-      case 'rock': return '✊';
-      case 'paper': return '✋';
-      case 'scissors': return '✌️';
-    }
-  };
-
-  const getChoiceText = (choice: 'rock' | 'paper' | 'scissors') => {
-    switch (choice) {
-      case 'rock': return 'Taş';
-      case 'paper': return 'Kağıt';
-      case 'scissors': return 'Makas';
-    }
-  };
-
-  // Event Handlers
-  const handleRoomCreated = (data: any) => {
-    console.log('Room created:', data);
-    if (data.success) {
-      setRoomId(data.roomId);
-      setGameState('waiting');
-      setIsHost(true);
-      setWaitingText('Diğer oyuncuların katılması bekleniyor...');
-    } else {
-      alert(data.message || 'Oyun oluşturulamadı');
-    }
-  };
-
-  const handleGameJoined = (data: any) => {
-    console.log('Game joined:', data);
-    if (data.success) {
-      setRoomId(data.roomId);
-      setGameState('waiting');
-      setIsHost(false);
-    }
-  };
-
-  const handleJoinedRoom = (data: any) => {
-    console.log('Joined room:', data);
-    if (data.players) {
-      setPlayers(data.players);
-    }
-  };
-
-  const handlePlayerJoined = (data: any) => {
-    console.log('Player joined:', data);
-    if (data.players) {
-      setPlayers(data.players);
-    }
-  };
-
-  const handlePlayerLeft = (data: any) => {
-    console.log('Player left:', data);
-    if (data.players) {
-      setPlayers(data.players);
-    }
-  };
-
-  const handleGameStarted = (data: any) => {
-    console.log('Game started:', data);
-    setGameState('playing');
-    setCurrentRound(1);
-  };
-
-  const handleRoundStarted = (data: any) => {
-    console.log('Round started:', data);
-    setGameState('playing');
-    setMyChoice(null);
-    setShowResult(false);
-    setPlayerChoices({});
-  };
-
-  const handlePlayerMadeChoice = (data: any) => {
-    console.log('Player made choice:', data);
-    // Don't show opponent's choice yet
-  };
-
-  const handleRoundResult = (data: any) => {
-    console.log('Round result:', data);
-    const { result, players: playerData } = data;
-
-    setShowResult(true);
-
-    let resultClass = 'draw';
-    let resultText = result.resultText;
-
-    if (!result.isDraw) {
-      if (result.winnerId === playerId) {
-        resultClass = 'win';
-        resultText = '🎉 Kazandınız!';
-      } else {
-        resultClass = 'lose';
-        resultText = '😢 Kaybettiniz!';
-      }
-    } else {
-      resultText = '🤝 Berabere!';
     }
 
-    setResultText(resultText);
-    setResultClass(resultClass);
+    if (onBack) {
+      onBack();
+    }
+  }, [onBack]);
 
-    // Update player choices
-    if (result.choices) {
-      setPlayerChoices(result.choices);
+  // Handle game finished
+  const handleGameFinished = useCallback((data: any) => {
+    console.log('[RPS] GameFinished:', data);
+
+    // Önce bekleyen timeout'u temizle (RoundResult'tan gelen)
+    if (nextRoundTimeoutRef.current) {
+      clearTimeout(nextRoundTimeoutRef.current);
+      nextRoundTimeoutRef.current = null;
     }
 
-    // Update scores
-    if (playerData) {
-      setPlayers(playerData);
+    const winnerData = data.winner || data.result?.winner;
+    const finalScores = data.players || data.finalScores;
+
+    if (finalScores) {
+      setPlayers(finalScores);
     }
 
-    setGameState('result');
-  };
-
-  const handleGameFinished = (data: any) => {
-    console.log('Game finished:', data);
-    const { winner, finalScores: scores } = data;
-
-    setGameState('finished');
-    setFinalScores(scores || players);
-
-    if (winner) {
-      if (winner.id === playerId) {
+    if (winnerData) {
+      setWinner(winnerData);
+      if (winnerData.id === playerIdRef.current) {
         setGameOverMessage('🎊 Tebrikler! Oyunu Kazandınız! 🎊');
       } else {
-        setGameOverMessage(`🏆 ${winner.name} Oyunu Kazandı!`);
+        setGameOverMessage(`🏆 ${winnerData.name} Oyunu Kazandı!`);
       }
     } else {
       setGameOverMessage('🤝 Oyun Berabere Bitti!');
     }
 
-    setShowGameOver(true);
-  };
+    setGamePhase('finished');
+  }, []);
 
-  const handleError = (data: any) => {
-    console.error('Game error:', data);
-    alert(data.message || 'Bir hata oluştu');
-  };
+  // Keep onBackRef updated
+  useEffect(() => {
+    onBackRef.current = onBack;
+  }, [onBack]);
 
-  // Action Handlers
-  const handleCreateGame = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // SignalR Connection
+  useEffect(() => {
+    const setupConnection = async () => {
+      const isLocalhost = typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      const hubUrl = isLocalhost
+        ? 'http://localhost:5071/gamehub'
+        : 'https://game.canlimenu.com/gamehub';
 
-    if (!nickname.trim()) {
-      alert('Lütfen bir takma ad girin');
-      return;
-    }
+      const newConnection = new signalR.HubConnectionBuilder()
+        .withUrl(hubUrl, {
+          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
+        })
+        .withAutomaticReconnect()
+        .configureLogging(signalR.LogLevel.Error)
+        .build();
 
-    if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
-      alert('Bağlantı kurulamadı. Lütfen sayfayı yenileyin.');
-      return;
-    }
+      // Event Handlers
+      newConnection.on('RoomCreated', (data: any) => {
+        console.log('[RPS] RoomCreated:', data);
+        if (data.success) {
+          const newRoomId = data.room?.id || data.roomId;
+          setRoomId(newRoomId);
+          roomIdRef.current = newRoomId;
+          setGamePhase('waiting');
+          setIsHost(true);
+          if (data.room?.players) {
+            setPlayers(data.room.players);
+          }
+        } else {
+          alert(data.message || 'Oda oluşturulamadı');
+        }
+      });
 
-    const newRoomId = generateRoomId();
-    const venueCode = customerCode || 'demo';
+      newConnection.on('GameJoined', (data: any) => {
+        console.log('[RPS] GameJoined:', data);
+        if (data.success) {
+          const newRoomId = data.room?.id || data.roomId;
+          setRoomId(newRoomId);
+          roomIdRef.current = newRoomId;
+          setGamePhase('waiting');
+          setIsHost(false);
+        }
+      });
 
-    const settings: GameSettings = {
-      maxRounds: maxRounds,
-      maxPlayers: gameMode === 'tournament' ? 4 : 2,
-      isTournament: gameMode === 'tournament'
+      newConnection.on('JoinedRoom', (data: any) => {
+        console.log('[RPS] JoinedRoom:', data);
+        if (data.players) {
+          setPlayers(data.players);
+        }
+      });
+
+      newConnection.on('PlayerJoined', (data: any) => {
+        console.log('[RPS] PlayerJoined:', data);
+        const playerList = data.players || data.room?.players;
+        if (playerList) {
+          setPlayers(playerList);
+        }
+      });
+
+      newConnection.on('PlayerLeft', (data: any) => {
+        console.log('[RPS] PlayerLeft:', data);
+        const playerList = data.players || data.room?.players;
+        if (playerList) {
+          setPlayers(playerList);
+          // Rakip ayrıldıysa mesaj göster ve 3 saniye sonra çık
+          if (playerList.length < 2) {
+            setGameOverMessage('😢 Rakibiniz oyundan ayrıldı! Lobby\'ye dönülüyor...');
+            setGamePhase('finished');
+
+            // 3 saniye sonra otomatik çıkış
+            setTimeout(() => {
+              if (onBackRef.current) {
+                onBackRef.current();
+              }
+            }, 3000);
+          }
+        }
+      });
+
+      // Oyuncu kovuldu
+      newConnection.on('RPSPlayerKicked', (data: any) => {
+        console.log('[RPS] PlayerKicked:', data);
+        // Ben kovuldum mu?
+        if (data.kickedPlayerId === playerIdRef.current) {
+          alert('Oda sahibi sizi odadan çıkardı.');
+          if (onBackRef.current) {
+            onBackRef.current();
+          }
+        } else {
+          // Başka biri kovuldu, oyuncu listesini güncelle
+          const playerList = data.room?.players || [];
+          setPlayers(playerList);
+        }
+      });
+
+      newConnection.on('GameStarted', (data: any) => {
+        console.log('[RPS] GameStarted:', data);
+        setGamePhase('playing');
+        setCurrentRound(data.room?.currentRound || 1);
+        setMyChoice(null);
+        setOpponentChose(false);
+        setPlayerChoices({});
+        setRoundResult(null);
+        setWinner(null);
+        setGameOverMessage('');
+        // Backend'den gelen güncel player listesi (skorlar sıfırlanmış)
+        if (data.room?.players) {
+          setPlayers(data.room.players.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            score: p.score || 0,
+            choice: undefined
+          })));
+        } else {
+          setPlayers(prev => prev.map(p => ({ ...p, score: 0, choice: undefined })));
+        }
+      });
+
+      newConnection.on('RoundStarted', () => {
+        console.log('[RPS] RoundStarted');
+        setGamePhase('playing');
+        setMyChoice(null);
+        setOpponentChose(false);
+        setPlayerChoices({});
+        setRoundResult(null);
+      });
+
+      newConnection.on('PlayerMadeChoice', (data: any) => {
+        console.log('[RPS] PlayerMadeChoice:', data);
+        if (data.playerId && data.playerId !== playerIdRef.current) {
+          setOpponentChose(true);
+        }
+      });
+
+      newConnection.on('RoundResult', (data: any) => {
+        console.log('[RPS] RoundResult:', data);
+        const result = data.result || data;
+        const playerData = data.players;
+
+        // Show choices
+        if (result?.choices) {
+          setPlayerChoices(result.choices);
+        } else if (playerData) {
+          const choices: Record<string, Choice> = {};
+          playerData.forEach((p: any) => {
+            if (p.choice) choices[p.id] = p.choice;
+          });
+          setPlayerChoices(choices);
+        }
+
+        // Determine result for me
+        const currentPlayerId = playerIdRef.current;
+        const winnerId = result?.winnerId || result?.winner?.id || result?.winnerPlayerId;
+
+        if (result?.isDraw) {
+          setRoundResult('draw');
+        } else if (winnerId === currentPlayerId) {
+          setRoundResult('win');
+        } else {
+          setRoundResult('lose');
+        }
+
+        // Update scores
+        if (playerData) {
+          setPlayers(playerData);
+        }
+
+        // Update round
+        setCurrentRound(prev => prev + 1);
+        setGamePhase('result');
+
+        // Önceki timeout'u temizle
+        if (nextRoundTimeoutRef.current) {
+          clearTimeout(nextRoundTimeoutRef.current);
+          nextRoundTimeoutRef.current = null;
+        }
+
+        // 5 el sabit - son el mi kontrol et
+        const isLastRound = data.roundNumber >= 5 || data.isGameOver || data.gameFinished || result?.isGameOver;
+
+        if (isLastRound) {
+          // Son el - GameFinished event'i gelecek, setTimeout kullanma
+          // Backend GameFinished gönderecek
+        } else {
+          // Sonraki el için timeout
+          nextRoundTimeoutRef.current = setTimeout(() => {
+            setGamePhase('playing');
+            setMyChoice(null);
+            setOpponentChose(false);
+            setPlayerChoices({});
+            setRoundResult(null);
+          }, 2500);
+        }
+      });
+
+      newConnection.on('GameFinished', handleGameFinished);
+      newConnection.on('GameOver', handleGameFinished);
+      newConnection.on('GameEnded', handleGameFinished);
+
+      newConnection.on('GameRestarted', () => {
+        console.log('[RPS] GameRestarted');
+        setGamePhase('waiting');
+        setCurrentRound(1);
+        setMyChoice(null);
+        setOpponentChose(false);
+        setPlayerChoices({});
+        setRoundResult(null);
+        setWinner(null);
+        setGameOverMessage('');
+        setPlayers(prev => prev.map(p => ({ ...p, score: 0, choice: undefined })));
+      });
+
+      newConnection.on('Error', (data: any) => {
+        console.error('[RPS] Error:', data);
+        alert(data.message || 'Bir hata oluştu');
+      });
+
+      // Connect
+      try {
+        await newConnection.start();
+        console.log('[RPS] SignalR connected');
+        setIsConnected(true);
+        setConnectionError(null);
+        setConnection(newConnection);
+        connectionRef.current = newConnection;
+
+        const newPlayerId = generatePlayerId();
+        setPlayerId(newPlayerId);
+        playerIdRef.current = newPlayerId;
+      } catch (err) {
+        console.error('[RPS] Connection error:', err);
+        setConnectionError('Oyun sunucusuna bağlanılamadı.');
+      }
     };
 
-    try {
-      if (gameMode === 'tournament') {
-        await connection.invoke('CreateTournament', newRoomId, venueCode, playerId, nickname, 4, showInLobby);
-      } else {
-        await connection.invoke('CreateRoom', newRoomId, venueCode, playerId, nickname, settings, showInLobby);
+    setupConnection();
+
+    // Cleanup
+    return () => {
+      const currentPlayerId = playerIdRef.current;
+      const currentRoomId = roomIdRef.current;
+      const conn = connectionRef.current;
+
+      if (conn && currentRoomId && currentPlayerId) {
+        console.log('[RPS] Component unmounting, leaving room:', currentRoomId);
+        conn.invoke('LeaveRoom', currentPlayerId).catch(err => {
+          console.error('[RPS] Error leaving room on unmount:', err);
+        });
       }
-    } catch (error) {
-      console.error('Create game error:', error);
-      alert('Oyun oluşturulamadı');
+
+      conn?.stop();
+    };
+  }, [handleGameFinished]);
+
+  // Auto-create room (like Ludo) - if not joining
+  useEffect(() => {
+    if (!joinRoomId && isConnected && connection && !autoRoomCreated && playerId) {
+      setAutoRoomCreated(true);
+      const createNickname = nickname || generateRandomNickname();
+      const newRoomId = generateRoomId();
+
+      setNickname(createNickname);
+      nicknameRef.current = createNickname;
+      roomIdRef.current = newRoomId;
+      setIsHost(true);
+
+      const settings = { maxRounds: MAX_ROUNDS, maxPlayers: 2, gameType: 'RockPaperScissors' };
+      console.log('[RPS] Auto-creating room:', newRoomId, 'with nickname:', createNickname);
+
+      connection.invoke('CreateRoom', newRoomId, 'global', playerId, createNickname, settings, true).catch(err => {
+        console.error('[RPS] Create room error:', err);
+      });
     }
-  };
+  }, [joinRoomId, isConnected, connection, autoRoomCreated, playerId, nickname]);
 
-  const handleStartGame = async () => {
-    if (!connection || !isHost) return;
-
-    try {
-      await connection.invoke('StartGame', roomId);
-    } catch (error) {
-      console.error('Start game error:', error);
+  // Auto-join from lobby
+  useEffect(() => {
+    if (joinRoomId && isConnected && connection && !autoJoinAttempted && playerId) {
+      setAutoJoinAttempted(true);
+      const joinNickname = nickname || generateRandomNickname();
+      setRoomId(joinRoomId);
+      roomIdRef.current = joinRoomId;
+      setNickname(joinNickname);
+      nicknameRef.current = joinNickname;
+      setIsHost(false);
+      console.log('[RPS] Auto-joining room:', joinRoomId, 'with nickname:', joinNickname);
+      connection.invoke('JoinRoom', joinRoomId, playerId, joinNickname).catch(console.error);
     }
-  };
+  }, [joinRoomId, isConnected, connection, autoJoinAttempted, playerId, nickname]);
 
-  const handleMakeChoice = async (choice: 'rock' | 'paper' | 'scissors') => {
-    if (myChoice || !connection) return;
+  // Make choice
+  const handleMakeChoice = async (choice: Choice) => {
+    if (myChoice || !connection || !roomId || !playerId) return;
 
     setMyChoice(choice);
-
     try {
       await connection.invoke('MakeChoice', roomId, playerId, choice);
-    } catch (error) {
-      console.error('Make choice error:', error);
+    } catch (err) {
+      console.error('[RPS] Make choice error:', err);
     }
   };
 
-  const handleLeaveGame = async () => {
-    if (!connection) return;
+  // Play again
+  const handlePlayAgain = async () => {
+    if (!connection || !roomId) return;
 
     try {
-      await connection.invoke('LeaveRoom', roomId, playerId);
-      setGameState('setup');
-      setRoomId('');
-      setPlayers([]);
-    } catch (error) {
-      console.error('Leave game error:', error);
+      await connection.invoke('RestartGame', roomId);
+    } catch (err) {
+      console.error('[RPS] Restart error:', err);
     }
   };
 
-  const handlePlayAgain = () => {
-    setShowGameOver(false);
-    setGameState('setup');
-    setRoomId('');
-    setPlayers([]);
-    setMyChoice(null);
-    setShowResult(false);
-    setCurrentRound(1);
+  // Copy room link
+  const copyRoomLink = async () => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const link = `${baseUrl}/game/rps?roomId=${roomId}${customerCode && customerCode !== 'global' ? `&code=${customerCode}` : ''}`;
+    await navigator.clipboard.writeText(link);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  // Get current player and opponent
-  const me = players.find(p => p.id === playerId);
-  const opponent = players.find(p => p.id !== playerId);
+  // Toggle lobby visibility
+  const toggleLobbyVisibility = async (visible: boolean) => {
+    setShowInLobby(visible);
+    if (connection && roomId) {
+      try {
+        await connection.invoke('SetRoomVisibility', roomId, visible);
+        console.log('[RPS] Room visibility updated:', visible);
+      } catch (err) {
+        console.error('[RPS] SetRoomVisibility error:', err);
+      }
+    }
+  };
 
-  // Render Setup Modal
-  if (gameState === 'setup') {
+  // Oyuncu kovma onayı göster
+  const showKickConfirm = (targetId: string, targetName: string) => {
+    setKickTargetPlayer({ id: targetId, name: targetName });
+  };
+
+  // Kovmayı onayla
+  const confirmKickPlayer = async () => {
+    if (!connection || !roomId || !playerId || !isHost || !kickTargetPlayer) return;
+    try {
+      await connection.invoke('RPSKickPlayer', roomId, playerId, kickTargetPlayer.id);
+      setKickTargetPlayer(null);
+    } catch (err) {
+      console.error('[RPS] Kick player error:', err);
+    }
+  };
+
+  // Kovmayı iptal et
+  const cancelKickPlayer = () => {
+    setKickTargetPlayer(null);
+  };
+
+  // ==================== RENDER ====================
+
+  // Connecting
+  if (gamePhase === 'connecting' || !isConnected) {
     return (
-      <div className="rps-setup-modal">
-        <h2>Taş Kağıt Makas</h2>
-        <form onSubmit={handleCreateGame}>
-          <div className="rps-form-group">
-            <label htmlFor="nickname">Takma Ad</label>
-            <input
-              type="text"
-              id="nickname"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="Takma adınızı girin"
-              maxLength={20}
-              required
-            />
-          </div>
-
-          {/* Lobby Visibility Switch */}
-          <div className="rps-lobby-switch-container">
-            <div className="rps-lobby-switch-label">
-              <div className="rps-lobby-switch-title">🏛️ Lobby'de Göster</div>
-              <div className="rps-lobby-switch-desc">
-                Diğer oyuncular oyununuza katılabilir
-              </div>
-            </div>
-            <label className="rps-toggle-switch">
-              <input
-                type="checkbox"
-                checked={showInLobby}
-                onChange={(e) => setShowInLobby(e.target.checked)}
-              />
-              <span className="rps-toggle-slider"></span>
-            </label>
-          </div>
-
-          {/* Game Mode */}
-          <div className="rps-mode-container">
-            <div className="rps-mode-title">Oyun Modu</div>
-            <div className="rps-mode-buttons">
-              <button
-                type="button"
-                className={`rps-mode-btn ${gameMode === 'normal' ? 'active' : ''}`}
-                onClick={() => setGameMode('normal')}
-              >
-                Normal Oyun (2 Kişi)
-              </button>
-              <button
-                type="button"
-                className={`rps-mode-btn ${gameMode === 'tournament' ? 'active' : ''}`}
-                onClick={() => setGameMode('tournament')}
-              >
-                Turnuva (4 Kişi)
-              </button>
-            </div>
-          </div>
-
-          {/* Rounds Selection (only for normal mode) */}
-          {gameMode === 'normal' && (
-            <div className="rps-rounds-container">
-              <div className="rps-rounds-title">Kaç El Oynanacak?</div>
-              <div className="rps-round-buttons">
-                {[3, 5, 7, 10].map(rounds => (
-                  <button
-                    key={rounds}
-                    type="button"
-                    className={`rps-round-btn ${maxRounds === rounds ? 'active' : ''}`}
-                    onClick={() => setMaxRounds(rounds)}
-                  >
-                    {rounds} El
-                  </button>
-                ))}
-              </div>
-            </div>
+      <div style={styles.container}>
+        <button onClick={handleBack} style={styles.topBackButton}>← Geri</button>
+        <div style={styles.centerContent}>
+          <div style={styles.gameIcon}>✊✋✌️</div>
+          <h1 style={styles.title}>Taş Kağıt Makas</h1>
+          {connectionError ? (
+            <>
+              <p style={styles.errorText}>{connectionError}</p>
+              <button onClick={handleBack} style={styles.primaryButton}>← Geri Dön</button>
+            </>
+          ) : (
+            <>
+              <div style={styles.spinner} />
+              <p style={styles.loadingText}>Bağlanıyor...</p>
+            </>
           )}
-
-          {/* Tournament Info */}
-          {gameMode === 'tournament' && (
-            <div className="rps-mode-container">
-              <div className="rps-mode-title">Turnuva (4 Kişi)</div>
-              <div style={{
-                background: 'rgba(52, 152, 219, 0.1)',
-                padding: '15px',
-                borderRadius: '8px',
-                borderLeft: '4px solid #3498db'
-              }}>
-                <p style={{ margin: '5px 0', fontSize: '14px', color: '#bdc3c7' }}>
-                  • Her maç 5 el (best of 5)
-                </p>
-                <p style={{ margin: '5px 0', fontSize: '14px', color: '#bdc3c7' }}>
-                  • Eşleşmeler sırayla oynanır
-                </p>
-                <p style={{ margin: '5px 0', fontSize: '14px', color: '#bdc3c7' }}>
-                  • Diğer oyuncular izleyebilir
-                </p>
-                <p style={{ margin: '5px 0', fontSize: '14px', color: '#bdc3c7' }}>
-                  • Final sıralaması gösterilir
-                </p>
-              </div>
-            </div>
-          )}
-
-          <button type="submit" className="rps-create-game-btn" disabled={!isConnected}>
-            {isConnected ? 'Oyun Oluştur' : 'Bağlanıyor...'}
-          </button>
-        </form>
+        </div>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
 
-  // Render Game Board
-  return (
-    <div className="rps-game-container">
-      {/* Room Info */}
-      {roomId && (
-        <div className="rps-room-info">
-          <div className="rps-room-code">{roomId}</div>
-          <div>Oyun Kodu ile arkadaşlarınızı davet edin!</div>
-        </div>
-      )}
+  // Waiting for opponent
+  if (gamePhase === 'waiting') {
+    return (
+      <div style={styles.container}>
+        <button onClick={handleBack} style={styles.topBackButton}>← Geri</button>
 
-      {/* Players Section */}
-      <div className="rps-players-section">
-        <div className={`rps-player-card ${gameState === 'playing' && me ? 'active' : ''}`}>
-          <div className="rps-player-name">{me?.name || 'Bekliyor...'}</div>
-          <div className="rps-player-score">{me?.score || 0}</div>
-        </div>
+        <div style={styles.centerContent}>
+          <div style={styles.gameIcon}>✊✋✌️</div>
+          <h1 style={styles.title}>Taş Kağıt Makas</h1>
 
-        <div className="rps-vs-text">VS</div>
+          <div style={styles.waitingBox}>
+            <div style={styles.spinner} />
+            <p style={styles.waitingText}>Rakip bekleniyor...</p>
 
-        <div className={`rps-player-card ${gameState === 'playing' && opponent ? 'active' : ''}`}>
-          <div className="rps-player-name">{opponent?.name || 'Bekliyor...'}</div>
-          <div className="rps-player-score">{opponent?.score || 0}</div>
-        </div>
-      </div>
-
-      {/* Waiting Section */}
-      {gameState === 'waiting' && (
-        <div className="rps-waiting-section" style={{ display: 'block' }}>
-          <div className="rps-waiting-text">{waitingText}</div>
-          <div className="rps-spinner"></div>
-        </div>
-      )}
-
-      {/* Choice Section */}
-      {gameState === 'playing' && !showResult && (
-        <div className="rps-choice-section">
-          <div className="rps-round-info">Raund {currentRound} / {maxRounds}</div>
-          <div className="rps-choices-container">
-            <button
-              className={`rps-choice-btn ${myChoice === 'rock' ? 'selected' : ''} ${myChoice ? 'disabled' : ''}`}
-              onClick={() => handleMakeChoice('rock')}
-              disabled={!!myChoice}
-            >
-              <div className="rps-choice-icon">✊</div>
-              <div className="rps-choice-text">Taş</div>
-            </button>
-            <button
-              className={`rps-choice-btn ${myChoice === 'paper' ? 'selected' : ''} ${myChoice ? 'disabled' : ''}`}
-              onClick={() => handleMakeChoice('paper')}
-              disabled={!!myChoice}
-            >
-              <div className="rps-choice-icon">✋</div>
-              <div className="rps-choice-text">Kağıt</div>
-            </button>
-            <button
-              className={`rps-choice-btn ${myChoice === 'scissors' ? 'selected' : ''} ${myChoice ? 'disabled' : ''}`}
-              onClick={() => handleMakeChoice('scissors')}
-              disabled={!!myChoice}
-            >
-              <div className="rps-choice-icon">✌️</div>
-              <div className="rps-choice-text">Makas</div>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Result Section */}
-      {showResult && (
-        <div className="rps-result-section" style={{ display: 'block' }}>
-          <div className={`rps-result-text ${resultClass}`}>{resultText}</div>
-          <div className="rps-player-choices">
-            {players.map(player => (
-              <div key={player.id} className="rps-player-choice">
-                <div className="rps-player-choice-name">{player.name}</div>
-                <div className="rps-player-choice-icon">
-                  {playerChoices[player.id] ? getChoiceIcon(playerChoices[player.id]) : '?'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Game Controls */}
-      <div className="rps-game-controls">
-        {gameState === 'waiting' && isHost && players.length >= 2 && (
-          <button className="rps-control-btn start" onClick={handleStartGame}>
-            Oyunu Başlat
-          </button>
-        )}
-        <button className="rps-control-btn leave" onClick={handleLeaveGame}>
-          Odadan Ayrıl
-        </button>
-        {onClose && (
-          <button className="rps-control-btn back" onClick={onClose}>
-            Geri
-          </button>
-        )}
-      </div>
-
-      {/* Game Over Modal */}
-      {showGameOver && (
-        <div className="rps-game-over-modal">
-          <div className="rps-game-over-content">
-            <div className="rps-game-over-title">🎮 Oyun Bitti!</div>
-            <div className="rps-game-over-message">{gameOverMessage}</div>
-            <div className="rps-game-over-scores">
-              <h3 style={{ marginBottom: '15px', color: '#776e65' }}>Final Skorları:</h3>
-              {finalScores.map((player, index) => (
-                <div key={player.id} style={{
-                  padding: '10px',
-                  margin: '5px 0',
-                  background: player.id === playerId ? 'rgba(52, 152, 219, 0.2)' : 'transparent',
-                  borderRadius: '5px'
-                }}>
-                  {index + 1}. {player.name}: {player.score} puan
+            {/* Players */}
+            <div style={styles.playersList}>
+              {players.map((p, i) => (
+                <div key={p.id} style={{...styles.playerChip, display: 'flex', alignItems: 'center', gap: 8}}>
+                  <span style={{flex: 1}}>{p.name} {p.id === playerId && '(Sen)'}</span>
+                  {i === 0 && <span>👑</span>}
+                  {/* Host için kick butonu (kendisi ve host hariç) */}
+                  {isHost && i !== 0 && p.id !== playerId && (
+                    <button
+                      onClick={() => showKickConfirm(p.id, p.name)}
+                      style={{
+                        background: '#e74c3c',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: 22,
+                        height: 22,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      title="Oyuncuyu Kov"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               ))}
-            </div>
-            <div className="rps-game-over-controls">
-              <button className="rps-play-again-btn" onClick={handlePlayAgain}>
-                🔄 Tekrar Oyna
-              </button>
-              {onClose && (
-                <button
-                  className="rps-control-btn back"
-                  onClick={onClose}
-                  style={{ padding: '15px 30px', fontSize: '16px' }}
-                >
-                  Ana Menüye Dön
-                </button>
+              {players.length < 2 && (
+                <div style={{...styles.playerChip, opacity: 0.5}}>
+                  Bekleniyor...
+                </div>
               )}
             </div>
           </div>
+
+          {/* QR Code */}
+          <div style={styles.qrBox}>
+            <p style={styles.qrLabel}>QR Kod ile Katıl</p>
+            <div style={styles.qrWrapper}>
+              <QRCodeSVG
+                value={typeof window !== 'undefined'
+                  ? `${window.location.origin}/game/rps?roomId=${roomId}${customerCode && customerCode !== 'global' ? `&code=${customerCode}` : ''}`
+                  : ''
+                }
+                size={150}
+                bgColor="#ffffff"
+                fgColor="#000000"
+              />
+            </div>
+          </div>
+
+          {/* Copy link */}
+          <button onClick={copyRoomLink} style={styles.secondaryButton}>
+            {linkCopied ? '✅ Kopyalandı!' : '📋 Linki Kopyala'}
+          </button>
+
+          {/* Lobby toggle for host */}
+          {isHost && (
+            <div style={{
+              marginTop: 15,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px',
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: 12,
+              width: '100%'
+            }}>
+              <div>
+                <div style={{ color: 'white', fontSize: 14, fontWeight: 600 }}>🏛️ Lobby'de Göster</div>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Diğerleri katılabilir</div>
+              </div>
+              <label style={{ position: 'relative', display: 'inline-block', width: 50, height: 26 }}>
+                <input
+                  type="checkbox"
+                  checked={showInLobby}
+                  onChange={(e) => toggleLobbyVisibility(e.target.checked)}
+                  style={{ opacity: 0, width: 0, height: 0 }}
+                />
+                <span style={{
+                  position: 'absolute',
+                  cursor: 'pointer',
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  background: showInLobby ? '#27ae60' : 'rgba(255,255,255,0.2)',
+                  borderRadius: 26,
+                  transition: '0.3s'
+                }}>
+                  <span style={{
+                    position: 'absolute',
+                    height: 20, width: 20,
+                    left: showInLobby ? 26 : 3,
+                    bottom: 3,
+                    background: 'white',
+                    borderRadius: '50%',
+                    transition: '0.3s'
+                  }} />
+                </span>
+              </label>
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+
+        {/* Kick Onay Modalı */}
+        {kickTargetPlayer && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
+              borderRadius: 16,
+              padding: 24,
+              maxWidth: 320,
+              textAlign: 'center',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+            }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+              <h3 style={{ color: 'white', margin: '0 0 12px 0', fontSize: 18 }}>
+                Oyuncuyu Kov
+              </h3>
+              <p style={{ color: 'rgba(255,255,255,0.8)', margin: '0 0 20px 0', fontSize: 14 }}>
+                <strong>{kickTargetPlayer.name}</strong> oyuncusunu odadan çıkarmak istediğinize emin misiniz?
+              </p>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                <button
+                  onClick={cancelKickPlayer}
+                  style={{
+                    padding: '10px 24px',
+                    background: 'rgba(255,255,255,0.2)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 20,
+                    fontSize: 14,
+                    cursor: 'pointer'
+                  }}
+                >
+                  İptal
+                </button>
+                <button
+                  onClick={confirmKickPlayer}
+                  style={{
+                    padding: '10px 24px',
+                    background: '#e74c3c',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 20,
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Kov
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Playing or Result
+  if (gamePhase === 'playing' || gamePhase === 'result') {
+    return (
+      <div style={styles.container}>
+        <button onClick={handleBack} style={styles.topBackButton}>← Çık</button>
+
+        {/* Round info */}
+        <div style={styles.roundInfo}>
+          Round {Math.min(currentRound, MAX_ROUNDS)} / {MAX_ROUNDS}
+        </div>
+
+        {/* Opponent */}
+        <div style={styles.opponentSection}>
+          <div style={styles.playerName}>{opponent?.name || 'Rakip'}</div>
+          <div style={styles.playerScore}>{opponent?.score || 0}</div>
+          {gamePhase === 'result' && playerChoices[opponent?.id || ''] && (
+            <div style={styles.choiceDisplay}>
+              {CHOICE_ICONS[playerChoices[opponent?.id || '']]}
+            </div>
+          )}
+          {gamePhase === 'playing' && opponentChose && (
+            <div style={styles.waitingChoice}>✓ Seçti</div>
+          )}
+        </div>
+
+        {/* VS */}
+        <div style={styles.vsSection}>
+          {gamePhase === 'result' ? (
+            <div style={{
+              ...styles.resultBadge,
+              background: roundResult === 'win' ? '#27ae60' : roundResult === 'lose' ? '#e74c3c' : '#f39c12'
+            }}>
+              {roundResult === 'win' ? '🎉 Kazandın!' : roundResult === 'lose' ? '😢 Kaybettin!' : '🤝 Berabere!'}
+            </div>
+          ) : (
+            <div style={styles.vsText}>VS</div>
+          )}
+        </div>
+
+        {/* Me */}
+        <div style={styles.meSection}>
+          <div style={styles.playerName}>{me?.name || 'Sen'}</div>
+          <div style={styles.playerScore}>{me?.score || 0}</div>
+          {gamePhase === 'result' && playerChoices[playerId] && (
+            <div style={styles.choiceDisplay}>
+              {CHOICE_ICONS[playerChoices[playerId]]}
+            </div>
+          )}
+        </div>
+
+        {/* Choices */}
+        {gamePhase === 'playing' && (
+          <div style={styles.choicesSection}>
+            <p style={styles.chooseText}>Seçimini Yap</p>
+            <div style={styles.choicesRow}>
+              {(['rock', 'paper', 'scissors'] as Choice[]).map(choice => (
+                <button
+                  key={choice}
+                  onClick={() => handleMakeChoice(choice)}
+                  disabled={!!myChoice}
+                  style={{
+                    ...styles.choiceButton,
+                    ...(myChoice === choice ? styles.choiceSelected : {}),
+                    ...(myChoice && myChoice !== choice ? styles.choiceDisabled : {})
+                  }}
+                >
+                  <span style={styles.choiceIcon}>{CHOICE_ICONS[choice]}</span>
+                  <span style={styles.choiceName}>{CHOICE_NAMES[choice]}</span>
+                </button>
+              ))}
+            </div>
+            {myChoice && (
+              <p style={styles.waitingOpponent}>Rakip bekleniyor...</p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Finished
+  if (gamePhase === 'finished') {
+    return (
+      <div style={styles.container}>
+        <div style={styles.centerContent}>
+          <div style={styles.gameOverIcon}>🎮</div>
+          <h1 style={styles.gameOverTitle}>Oyun Bitti!</h1>
+          <p style={styles.gameOverMessage}>{gameOverMessage}</p>
+
+          {/* Final scores */}
+          <div style={styles.finalScores}>
+            {[...players].sort((a, b) => b.score - a.score).map((p, i) => (
+              <div
+                key={p.id}
+                style={{
+                  ...styles.scoreRow,
+                  background: p.id === playerId ? 'rgba(52, 152, 219, 0.3)' : 'transparent'
+                }}
+              >
+                <span>{i + 1}. {p.name}</span>
+                <span>{p.score} puan</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Buttons */}
+          <div style={styles.buttonGroup}>
+            <button onClick={handlePlayAgain} style={styles.primaryButton}>
+              🔄 Tekrar Oyna
+            </button>
+            <button onClick={handleBack} style={styles.secondaryButton}>
+              ← Ana Menü
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
+
+// Styles
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    width: '100%',
+    height: '100%',
+    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    position: 'relative',
+    overflow: 'auto'
+  },
+  centerContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+    gap: 15,
+    maxWidth: 350,
+    width: '100%'
+  },
+  gameIcon: {
+    fontSize: 48,
+    marginBottom: 10
+  },
+  title: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 700,
+    margin: 0
+  },
+  loadingText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16
+  },
+  errorText: {
+    color: '#e74c3c',
+    fontSize: 16
+  },
+  spinner: {
+    width: 40,
+    height: 40,
+    border: '4px solid rgba(255,255,255,0.2)',
+    borderTop: '4px solid #667eea',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
+  },
+  topBackButton: {
+    position: 'absolute',
+    top: 15,
+    left: 15,
+    padding: '10px 20px',
+    background: 'rgba(255,255,255,0.1)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer',
+    fontSize: 14,
+    zIndex: 10
+  },
+  primaryButton: {
+    width: '100%',
+    padding: '16px',
+    fontSize: 18,
+    fontWeight: 600,
+    color: '#fff',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    border: 'none',
+    borderRadius: 12,
+    cursor: 'pointer'
+  },
+  secondaryButton: {
+    width: '100%',
+    padding: '14px',
+    fontSize: 16,
+    color: '#fff',
+    background: 'rgba(255,255,255,0.1)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: 10,
+    cursor: 'pointer'
+  },
+  waitingBox: {
+    background: 'rgba(255,255,255,0.05)',
+    borderRadius: 15,
+    padding: 25,
+    width: '100%',
+    marginBottom: 15,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center'
+  },
+  waitingText: {
+    color: '#fff',
+    fontSize: 18,
+    marginTop: 15,
+    marginBottom: 15
+  },
+  playersList: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center'
+  },
+  playerChip: {
+    background: 'rgba(102, 126, 234, 0.3)',
+    color: '#fff',
+    padding: '8px 16px',
+    borderRadius: 20,
+    fontSize: 14
+  },
+  qrBox: {
+    background: 'rgba(255,255,255,0.05)',
+    borderRadius: 15,
+    padding: 20,
+    width: '100%',
+    marginBottom: 10,
+    textAlign: 'center'
+  },
+  qrLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    marginBottom: 15
+  },
+  qrWrapper: {
+    background: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    display: 'inline-block'
+  },
+  lobbyToggleBox: {
+    marginTop: 15,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '12px 16px',
+    background: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    width: '100%'
+  },
+  lobbyToggleTitle: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 600
+  },
+  lobbyToggleDesc: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11
+  },
+  switch: {
+    position: 'relative',
+    width: 50,
+    height: 26,
+    display: 'inline-block'
+  },
+  switchSlider: {
+    position: 'absolute',
+    cursor: 'pointer',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(255,255,255,0.2)',
+    borderRadius: 26,
+    transition: '0.3s'
+  },
+  roundInfo: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    background: 'rgba(102, 126, 234, 0.3)',
+    color: '#fff',
+    padding: '8px 16px',
+    borderRadius: 20,
+    fontSize: 14,
+    fontWeight: 600
+  },
+  opponentSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginTop: 60,
+    gap: 5
+  },
+  playerName: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 600
+  },
+  playerScore: {
+    color: '#667eea',
+    fontSize: 36,
+    fontWeight: 700
+  },
+  choiceDisplay: {
+    fontSize: 60,
+    marginTop: 10
+  },
+  waitingChoice: {
+    color: '#27ae60',
+    fontSize: 14,
+    marginTop: 10
+  },
+  vsSection: {
+    marginTop: 30,
+    marginBottom: 30
+  },
+  vsText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 24,
+    fontWeight: 700
+  },
+  resultBadge: {
+    padding: '12px 24px',
+    borderRadius: 25,
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 600
+  },
+  meSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 5
+  },
+  choicesSection: {
+    marginTop: 30,
+    width: '100%',
+    maxWidth: 350,
+    textAlign: 'center'
+  },
+  chooseText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16,
+    marginBottom: 20
+  },
+  choicesRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: 15
+  },
+  choiceButton: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 90,
+    height: 100,
+    background: 'rgba(255,255,255,0.1)',
+    border: '2px solid rgba(255,255,255,0.2)',
+    borderRadius: 15,
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    color: '#fff'
+  },
+  choiceSelected: {
+    background: 'rgba(102, 126, 234, 0.5)',
+    borderColor: '#667eea',
+    transform: 'scale(1.05)'
+  },
+  choiceDisabled: {
+    opacity: 0.4,
+    cursor: 'not-allowed'
+  },
+  choiceIcon: {
+    fontSize: 36
+  },
+  choiceName: {
+    fontSize: 12,
+    marginTop: 5
+  },
+  waitingOpponent: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    marginTop: 20
+  },
+  gameOverIcon: {
+    fontSize: 64,
+    marginBottom: 10
+  },
+  gameOverTitle: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 700,
+    margin: 0
+  },
+  gameOverMessage: {
+    color: '#ffd93d',
+    fontSize: 18,
+    marginTop: 10,
+    marginBottom: 20
+  },
+  finalScores: {
+    width: '100%',
+    background: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20
+  },
+  scoreRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '12px 15px',
+    color: '#fff',
+    fontSize: 16,
+    borderRadius: 8
+  },
+  buttonGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    width: '100%'
+  }
+};

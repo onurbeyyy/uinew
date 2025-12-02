@@ -12,41 +12,48 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #141415;
-  color: rgba(255, 255, 255, 0.87);
+  background-color: #8B4513;
+  color: #fff;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: all 0.25s;
 }
 
 button:hover {
-  border-color: #646cff;
+  background-color: #A0522D;
 }
 
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 2px solid #D2691E;
 }
 
+/* Klasik Tavla Tahtası - Ahşap tonları */
 .board-top {
-  background-color: black;
-  border: 8px solid #141415;
-  border-bottom: 0;
-  padding: 12px;
+  background-color: transparent;
+  border: none;
+  padding: 0;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding-left: 18px;
-  padding-right: 18px;
 }
 
 .board-bottom {
-  background-color: black;
-  border: 8px solid #141415;
-  padding: 12px;
+  background-color: #5d4e37;
+  border: none;
+  border-radius: 0 0 6px 6px;
+  padding: 8px;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Zar butonu gizli - sağ panelde var */
+.board-bottom > button {
+  display: none !important;
 }
 
 button {
   font-size: 14px;
 }
+
+/* Taş toplama alanları görünür */

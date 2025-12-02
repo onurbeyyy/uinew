@@ -9,16 +9,14 @@ type Props = {
 
 export default function EndBar(props: Props) {
   return (
-    <div className={styles.barWrapper} style={{ fill: props.fill }} {...props}>
-      <div className={styles.bar} style={{ justifyContent: "initial" }}>
+    <div
+      className={styles.barWrapper}
+      style={{ backgroundColor: props.fill }}
+      onClick={props.onClick}
+    >
+      <div className={styles.bar}>
         {props.children}
       </div>
-      <svg height="600" width="40">
-        <polygon
-          points={"0,300 20,0 40,300 20,600"}
-          className={styles.polygon}
-        />
-      </svg>
     </div>
   );
 }

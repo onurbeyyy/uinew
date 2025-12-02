@@ -258,10 +258,15 @@ let gameSignalRServiceInstance: GameSignalRService | null = null;
 
 export function getGameSignalRService(): GameSignalRService {
   if (!gameSignalRServiceInstance) {
-    // Environment variable varsa onu kullan, yoksa localhost
+    // Development vs Production URL
+    const isLocalhost = typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
     const hubUrl = process.env.NEXT_PUBLIC_GAME_HUB_URL
       ? `${process.env.NEXT_PUBLIC_GAME_HUB_URL}/gamehub`
-      : 'http://localhost:5071/gamehub';
+      : isLocalhost
+        ? 'http://localhost:5071/gamehub'
+        : 'https://game.canlimenu.com/gamehub';
 
     gameSignalRServiceInstance = new GameSignalRService(hubUrl);
   }

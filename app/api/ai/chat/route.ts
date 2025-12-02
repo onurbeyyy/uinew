@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyA_nBX7jeA7Ri77Z8Yh0JUQtvq4vtBfYZI';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 const BACKEND_API_URL = process.env.API_URL || 'https://canlimenu.online';
 
 export async function POST(request: NextRequest) {
@@ -234,11 +234,18 @@ export async function POST(request: NextRequest) {
 
       if (!geminiResponse.ok) {
         const errorText = await geminiResponse.text();
-        console.error('Gemini API error:', errorText);
-        throw new Error(`Gemini API error: ${geminiResponse.status}`);
+        console.error('❌ Gemini API error:', geminiResponse.status, errorText);
+        throw new Error(`Gemini API error: ${geminiResponse.status} - ${errorText}`);
       }
 
       const geminiData = await geminiResponse.json();
+      console.log('✅ Gemini response received:', JSON.stringify(geminiData).substring(0, 200));
+
+      if (!geminiData.candidates || !geminiData.candidates[0]?.content?.parts?.[0]?.text) {
+        console.error('❌ Invalid Gemini response structure:', geminiData);
+        throw new Error('Invalid Gemini response structure');
+      }
+
       const aiResponse = geminiData.candidates[0].content.parts[0].text;
 
       // Analytics log (fire and forget)

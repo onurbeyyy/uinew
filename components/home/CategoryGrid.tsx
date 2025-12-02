@@ -19,8 +19,9 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
   const { menuData, customerData, openProductListModal } = useMenu();
   const { language } = useLanguage();
 
-  // Font customization
+  // Font ve renk customization
   const categoryFont = customerData?.customer.categoryFont || 'Inter, serif';
+  const indexTextColor = customerData?.customer.indexTextColor || '#FFFFFF';
 
   const handleCategoryClick = (e: React.MouseEvent<HTMLAnchorElement>, categoryId: number) => {
     e.preventDefault();
@@ -62,7 +63,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
               unoptimized
             />
             <div className="card-content">
-              <h3 className="card-title" style={{ fontFamily: categoryFont }}>
+              <h3 className="card-title" style={{ fontFamily: categoryFont, color: indexTextColor }}>
                 {displayName}
               </h3>
             </div>

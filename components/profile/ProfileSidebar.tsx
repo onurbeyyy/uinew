@@ -22,16 +22,34 @@ interface ProfileSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   customerCode?: string;
+  isDeliveryMode?: boolean;
 }
 
-type TabType = 'orders' | 'tokens' | 'allergies' | 'settings';
+type TabType = 'orders' | 'tokens' | 'allergies' | 'addresses' | 'settings';
 
-export default function ProfileSidebar({ isOpen, onClose, customerCode }: ProfileSidebarProps) {
+// Adres tipi
+interface SavedAddress {
+  id: string;
+  title: string; // Ev, İş, vb.
+  city: string;
+  district: string;
+  neighborhood: string;
+  street: string;
+  buildingNo: string;
+  floor?: string;
+  apartmentNo?: string;
+  directions?: string;
+  isDefault?: boolean;
+}
+
+export default function ProfileSidebar({ isOpen, onClose, customerCode, isDeliveryMode = false }: ProfileSidebarProps) {
   const { currentUser, isAuthenticated, login, register, logout } = useAuth();
   const { sessionId, tableId, isSelfService } = useTable(); // 🔧 Self-servis session için
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [phoneOrEmail, setPhoneOrEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,6 +62,8 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
     phoneNumber: '',
     password: '',
     nickName: '',
+    birthDate: '',
+    kvkkAccepted: false,
   });
 
   // Tab data states
@@ -54,9 +74,30 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
   const [allergies, setAllergies] = useState<string[]>([]);
   const [allergiesLoading, setAllergiesLoading] = useState(false);
   const [otherAllergies, setOtherAllergies] = useState('');
+  const [allergyConsentGiven, setAllergyConsentGiven] = useState(false);
+
+  // Addresses tab states
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [showAddAddressModal, setShowAddAddressModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<SavedAddress | null>(null);
+  const [newAddress, setNewAddress] = useState<Omit<SavedAddress, 'id'>>({
+    title: '',
+    city: '',
+    district: '',
+    neighborhood: '',
+    street: '',
+    buildingNo: '',
+    floor: '',
+    apartmentNo: '',
+    directions: '',
+    isDefault: false,
+  });
 
   // Settings tab states
   const [settingsData, setSettingsData] = useState({
+    firstName: '',
+    lastName: '',
+    nickName: '',
     email: '',
     phoneNumber: '',
     birthDate: '',
@@ -81,6 +122,125 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
     window.addEventListener('tokenBalanceUpdated', handleTokenBalanceUpdate);
     return () => window.removeEventListener('tokenBalanceUpdated', handleTokenBalanceUpdate);
   }, [currentUser, activeTab]);
+
+  // 📍 Adresleri localStorage'dan yükle
+  useEffect(() => {
+    if (currentUser) {
+      loadSavedAddresses();
+    }
+  }, [currentUser]);
+
+  const loadSavedAddresses = () => {
+    const key = `savedAddresses_${currentUser?.id || 'guest'}`;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        setSavedAddresses(JSON.parse(saved));
+      } catch {
+        setSavedAddresses([]);
+      }
+    }
+  };
+
+  const saveAddressesToStorage = (addresses: SavedAddress[]) => {
+    const key = `savedAddresses_${currentUser?.id || 'guest'}`;
+    localStorage.setItem(key, JSON.stringify(addresses));
+    setSavedAddresses(addresses);
+  };
+
+  const handleAddAddress = () => {
+    if (!newAddress.title || !newAddress.city || !newAddress.district || !newAddress.neighborhood || !newAddress.street || !newAddress.buildingNo) {
+      alert('Lütfen zorunlu alanları doldurun');
+      return;
+    }
+
+    const address: SavedAddress = {
+      ...newAddress,
+      id: Date.now().toString(),
+    };
+
+    // Eğer varsayılan olarak işaretlendiyse, diğerlerini varsayılan olmaktan çıkar
+    let updatedAddresses = [...savedAddresses];
+    if (address.isDefault) {
+      updatedAddresses = updatedAddresses.map(a => ({ ...a, isDefault: false }));
+    }
+    updatedAddresses.push(address);
+
+    saveAddressesToStorage(updatedAddresses);
+    setShowAddAddressModal(false);
+    resetNewAddress();
+  };
+
+  const handleUpdateAddress = () => {
+    if (!editingAddress) return;
+    if (!newAddress.title || !newAddress.city || !newAddress.district || !newAddress.neighborhood || !newAddress.street || !newAddress.buildingNo) {
+      alert('Lütfen zorunlu alanları doldurun');
+      return;
+    }
+
+    let updatedAddresses = savedAddresses.map(a => {
+      if (a.id === editingAddress.id) {
+        return { ...newAddress, id: a.id };
+      }
+      // Eğer yeni adres varsayılan olarak işaretlendiyse, diğerlerini varsayılan olmaktan çıkar
+      if (newAddress.isDefault) {
+        return { ...a, isDefault: false };
+      }
+      return a;
+    });
+
+    saveAddressesToStorage(updatedAddresses);
+    setEditingAddress(null);
+    setShowAddAddressModal(false);
+    resetNewAddress();
+  };
+
+  const handleDeleteAddress = (addressId: string) => {
+    if (confirm('Bu adresi silmek istediğinize emin misiniz?')) {
+      const updatedAddresses = savedAddresses.filter(a => a.id !== addressId);
+      saveAddressesToStorage(updatedAddresses);
+    }
+  };
+
+  const handleSetDefaultAddress = (addressId: string) => {
+    const updatedAddresses = savedAddresses.map(a => ({
+      ...a,
+      isDefault: a.id === addressId,
+    }));
+    saveAddressesToStorage(updatedAddresses);
+  };
+
+  const startEditAddress = (address: SavedAddress) => {
+    setEditingAddress(address);
+    setNewAddress({
+      title: address.title,
+      city: address.city,
+      district: address.district,
+      neighborhood: address.neighborhood,
+      street: address.street,
+      buildingNo: address.buildingNo,
+      floor: address.floor || '',
+      apartmentNo: address.apartmentNo || '',
+      directions: address.directions || '',
+      isDefault: address.isDefault || false,
+    });
+    setShowAddAddressModal(true);
+  };
+
+  const resetNewAddress = () => {
+    setNewAddress({
+      title: '',
+      city: '',
+      district: '',
+      neighborhood: '',
+      street: '',
+      buildingNo: '',
+      floor: '',
+      apartmentNo: '',
+      directions: '',
+      isDefault: false,
+    });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,6 +395,11 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
       return;
     }
 
+    if (!registerData.kvkkAccepted) {
+      alert('Devam etmek için KVKK metnini kabul etmeniz gerekmektedir');
+      return;
+    }
+
     try {
       setIsLoggingIn(true);
 
@@ -244,14 +409,19 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
         email: registerData.email,
         password: registerData.password,
         phoneNumber: registerData.phoneNumber,
+        nickName: registerData.nickName, // ✅ Kullanıcı adı (sipariş için gerekli)
+        birthDate: registerData.birthDate || undefined, // 🎂 Doğum tarihi
         sessionId: sessionId || undefined, // 🔧 Self-servis session ID
         customerCode: customerCode || undefined, // Kayıt olduğu restoran kodu
         tableCode: tableId || undefined, // Kayıt olduğu masa kodu
       });
 
       if (result.success) {
-        alert(`Hoşgeldin ${registerData.firstName}! Kayıt başarıyla tamamlandı.`);
+        // Email doğrulama modalını göster (eski yapıdaki gibi)
+        setVerificationEmail(registerData.email);
         setShowRegisterModal(false);
+        setShowEmailVerificationModal(true);
+
         // Reset form
         setRegisterData({
           firstName: '',
@@ -260,7 +430,12 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
           phoneNumber: '',
           password: '',
           nickName: '',
+          birthDate: '',
+          kvkkAccepted: false,
         });
+
+        // NOT: Otomatik giriş YAPMA - email doğrulanana kadar bekle
+        // Email doğrulandıktan sonra kullanıcı login yapacak
       } else {
         alert(result.error || 'Kayıt işlemi başarısız');
       }
@@ -377,6 +552,12 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
   };
 
   const loadAllergies = () => {
+    // Load allergy consent status
+    const savedConsent = localStorage.getItem('allergyDataConsent');
+    if (savedConsent === 'true') {
+      setAllergyConsentGiven(true);
+    }
+
     // Load standard allergies
     const savedAllergies = localStorage.getItem('global_userAllergies');
     if (savedAllergies) {
@@ -404,6 +585,9 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
   const loadSettings = () => {
     if (currentUser) {
       setSettingsData({
+        firstName: currentUser.firstName || '',
+        lastName: currentUser.lastName || '',
+        nickName: currentUser.nickName || '',
         email: currentUser.email || '',
         phoneNumber: currentUser.phoneNumber || '',
         birthDate: currentUser.birthDate || '',
@@ -413,6 +597,12 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
   };
 
   const handleAllergiesUpdate = async () => {
+    // KVKK Md. 6 - Özel nitelikli veri için açık rıza kontrolü
+    if (!allergyConsentGiven) {
+      alert('Alerji bilgisi özel nitelikli kişisel veridir. Kaydetmek için açık rıza vermeniz gerekmektedir.');
+      return;
+    }
+
     const token = localStorage.getItem('userToken');
 
     // Combine standard allergies with "other" allergies
@@ -425,6 +615,9 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
       allAllergies.push(...otherItems);
     }
 
+    // Save consent status
+    localStorage.setItem('allergyDataConsent', 'true');
+    localStorage.setItem('allergyDataConsentDate', new Date().toISOString());
     localStorage.setItem('global_userAllergies', JSON.stringify(allAllergies));
 
     if (token) {
@@ -447,6 +640,18 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
   };
 
   const handleProfileUpdate = async () => {
+    // Validate firstName
+    if (settingsData.firstName && settingsData.firstName.trim().length < 2) {
+      alert('İsim en az 2 karakter olmalıdır');
+      return;
+    }
+
+    // Validate lastName
+    if (settingsData.lastName && settingsData.lastName.trim().length < 2) {
+      alert('Soyisim en az 2 karakter olmalıdır');
+      return;
+    }
+
     // Validate phone number if provided
     if (settingsData.phoneNumber && settingsData.phoneNumber.trim()) {
       if (settingsData.phoneNumber.length !== 11) {
@@ -476,6 +681,9 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          firstName: settingsData.firstName || null,
+          lastName: settingsData.lastName || null,
+          nickName: settingsData.nickName || null,
           email: settingsData.email || null,
           phoneNumber: settingsData.phoneNumber || null,
           birthDate: settingsData.birthDate || null,
@@ -490,6 +698,9 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         const updatedUserData = {
           ...userData,
+          firstName: settingsData.firstName || userData.firstName,
+          lastName: settingsData.lastName || userData.lastName,
+          nickName: settingsData.nickName || userData.nickName,
           email: settingsData.email || userData.email,
           phoneNumber: settingsData.phoneNumber || userData.phoneNumber,
           birthDate: settingsData.birthDate || userData.birthDate,
@@ -617,7 +828,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
             padding: '15px',
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '6px',
+            gap: '4px',
           }}
         >
           {[
@@ -1019,31 +1230,244 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                     </div>
                   </div>
 
+                  {/* KVKK Md. 6 - Özel Nitelikli Veri İçin Açık Rıza */}
+                  <div style={{
+                    marginTop: '20px',
+                    padding: '15px',
+                    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1))',
+                    border: '2px solid rgba(102, 126, 234, 0.3)',
+                    borderRadius: '12px',
+                  }}>
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#333',
+                      marginBottom: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}>
+                      <span style={{ fontSize: '16px' }}>⚖️</span>
+                      KVKK Md. 6 - Özel Nitelikli Kişisel Veri
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#555', marginBottom: '12px', lineHeight: '1.5' }}>
+                      Alerji bilgileriniz, KVKK kapsamında <strong>"sağlık verisi"</strong> olarak özel nitelikli
+                      kişisel veri kategorisindedir. Bu bilgilerin işlenmesi için açık rızanız gerekmektedir.
+                    </p>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      color: '#333',
+                      lineHeight: '1.4',
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={allergyConsentGiven}
+                        onChange={(e) => setAllergyConsentGiven(e.target.checked)}
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          marginTop: '2px',
+                          cursor: 'pointer',
+                          accentColor: '#667eea',
+                        }}
+                      />
+                      <span>
+                        Alerji bilgilerimin, bana daha iyi hizmet sunulması ve sağlığımın korunması amacıyla
+                        işlenmesine{' '}
+                        <a
+                          href="/kvkk"
+                          target="_blank"
+                          style={{ color: '#667eea', textDecoration: 'underline' }}
+                        >
+                          KVKK Aydınlatma Metni
+                        </a>
+                        {' '}kapsamında <strong>açık rıza</strong> veriyorum.
+                      </span>
+                    </label>
+                  </div>
+
                   <button
                     onClick={handleAllergiesUpdate}
+                    disabled={!allergyConsentGiven && (allergies.length > 0 || otherAllergies.trim().length > 0)}
                     style={{
                       width: '100%',
                       padding: '12px',
-                      background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                      background: (!allergyConsentGiven && (allergies.length > 0 || otherAllergies.trim().length > 0))
+                        ? '#ccc'
+                        : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '10px',
                       fontSize: '14px',
                       fontWeight: 600,
-                      cursor: 'pointer',
+                      cursor: (!allergyConsentGiven && (allergies.length > 0 || otherAllergies.trim().length > 0))
+                        ? 'not-allowed'
+                        : 'pointer',
                       marginTop: '15px',
                     }}
                   >
                     <i className="fas fa-save" style={{ marginRight: '8px' }}></i>
                     Kaydet
                   </button>
+
+                  {!allergyConsentGiven && (allergies.length > 0 || otherAllergies.trim().length > 0) && (
+                    <div style={{
+                      marginTop: '10px',
+                      fontSize: '11px',
+                      color: '#dc3545',
+                      textAlign: 'center',
+                    }}>
+                      Kaydetmek için yukarıdaki açık rıza kutucuğunu işaretlemeniz gerekmektedir.
+                    </div>
+                  )}
+                </div>
+              )}
+              {activeTab === 'addresses' && isDeliveryMode && (
+                <div style={{ padding: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', color: '#333' }}>📍 Adreslerim</h4>
+                    <button
+                      onClick={() => {
+                        setEditingAddress(null);
+                        resetNewAddress();
+                        setShowAddAddressModal(true);
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                      }}
+                    >
+                      <i className="fas fa-plus"></i> Yeni Adres
+                    </button>
+                  </div>
+
+                  {savedAddresses.length === 0 ? (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '40px 20px',
+                      color: '#6c757d',
+                    }}>
+                      <i className="fas fa-map-marker-alt" style={{ fontSize: '40px', marginBottom: '15px', opacity: 0.3 }}></i>
+                      <p style={{ margin: 0 }}>Henüz kayıtlı adresiniz yok.</p>
+                      <p style={{ margin: '10px 0 0 0', fontSize: '13px' }}>Paket servis siparişlerinizde kullanmak için adres ekleyin.</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {savedAddresses.map((address) => (
+                        <div
+                          key={address.id}
+                          style={{
+                            background: 'white',
+                            borderRadius: '10px',
+                            padding: '12px 15px',
+                            border: address.isDefault ? '2px solid #667eea' : '1px solid #e9ecef',
+                            position: 'relative',
+                          }}
+                        >
+                          {address.isDefault && (
+                            <span style={{
+                              position: 'absolute',
+                              top: '-8px',
+                              right: '10px',
+                              background: '#667eea',
+                              color: 'white',
+                              fontSize: '10px',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                            }}>
+                              Varsayılan
+                            </span>
+                          )}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 600, fontSize: '14px', color: '#333', marginBottom: '5px' }}>
+                                <i className="fas fa-home" style={{ marginRight: '6px', color: '#667eea' }}></i>
+                                {address.title}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#666', lineHeight: 1.5 }}>
+                                {address.neighborhood} Mah. {address.street} No:{address.buildingNo}
+                                {address.floor && ` Kat:${address.floor}`}
+                                {address.apartmentNo && ` Daire:${address.apartmentNo}`}
+                                <br />
+                                {address.district}/{address.city}
+                              </div>
+                              {address.directions && (
+                                <div style={{ fontSize: '11px', color: '#888', marginTop: '5px', fontStyle: 'italic' }}>
+                                  📝 {address.directions}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '10px', justifyContent: 'flex-end' }}>
+                            {!address.isDefault && (
+                              <button
+                                onClick={() => handleSetDefaultAddress(address.id)}
+                                style={{
+                                  background: '#f8f9fa',
+                                  border: '1px solid #dee2e6',
+                                  borderRadius: '6px',
+                                  padding: '5px 10px',
+                                  fontSize: '11px',
+                                  cursor: 'pointer',
+                                  color: '#495057',
+                                }}
+                              >
+                                Varsayılan Yap
+                              </button>
+                            )}
+                            <button
+                              onClick={() => startEditAddress(address)}
+                              style={{
+                                background: '#e7f1ff',
+                                border: '1px solid #b6d4fe',
+                                borderRadius: '6px',
+                                padding: '5px 10px',
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                color: '#0d6efd',
+                              }}
+                            >
+                              <i className="fas fa-edit"></i> Düzenle
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAddress(address.id)}
+                              style={{
+                                background: '#f8d7da',
+                                border: '1px solid #f5c2c7',
+                                borderRadius: '6px',
+                                padding: '5px 10px',
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                color: '#842029',
+                              }}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === 'settings' && (
-                <div style={{ padding: '15px' }}>
+                <div style={{ padding: '15px', paddingBottom: '100px' }}>
                   <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#333' }}>⚙️ Hesap Ayarları</h4>
 
-                  {/* Basic Info Display */}
+                  {/* Profile Form */}
                   <div style={{
                     background: 'white',
                     padding: '15px',
@@ -1051,33 +1475,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                     marginBottom: '15px',
                     border: '1px solid #e9ecef'
                   }}>
-                    <div style={{ fontSize: '13px', marginBottom: '8px' }}>
-                      <strong>İsim Soyisim:</strong> {currentUser.firstName} {currentUser.lastName}
-                    </div>
-                    {currentUser.email && (
-                      <div style={{ fontSize: '13px', marginBottom: '8px' }}>
-                        <strong>Email:</strong> {currentUser.email}
-                      </div>
-                    )}
-                    {currentUser.phoneNumber && (
-                      <div style={{ fontSize: '13px', marginBottom: '8px' }}>
-                        <strong>Telefon:</strong> {currentUser.phoneNumber}
-                      </div>
-                    )}
-                    {currentUser.birthDate && (
-                      <div style={{ fontSize: '13px', marginBottom: '8px' }}>
-                        <strong>Doğum Tarihi:</strong> {new Date(currentUser.birthDate).toLocaleDateString('tr-TR')}
-                      </div>
-                    )}
-                    {currentUser.gender && (
-                      <div style={{ fontSize: '13px' }}>
-                        <strong>Cinsiyet:</strong> {currentUser.gender === 'Male' ? 'Erkek' : currentUser.gender === 'Female' ? 'Kadın' : 'Diğer'}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Conditional Email Input */}
-                  {!currentUser.email && (
+                    {/* İsim */}
                     <div style={{ marginBottom: '15px' }}>
                       <label style={{
                         display: 'block',
@@ -1086,7 +1484,100 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                         marginBottom: '6px',
                         color: '#333'
                       }}>
-                        📧 Email Adresi Ekle
+                        👤 İsim
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsData.firstName}
+                        onChange={(e) => setSettingsData({ ...settingsData, firstName: e.target.value })}
+                        placeholder="İsminiz"
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Soyisim */}
+                    <div style={{ marginBottom: '15px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        marginBottom: '6px',
+                        color: '#333'
+                      }}>
+                        👤 Soyisim
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsData.lastName}
+                        onChange={(e) => setSettingsData({ ...settingsData, lastName: e.target.value })}
+                        placeholder="Soyisminiz"
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Kullanıcı Adı (Nickname) */}
+                    <div style={{ marginBottom: '15px' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        marginBottom: '6px',
+                        color: '#333'
+                      }}>
+                        🏷️ Kullanıcı Adı
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsData.nickName}
+                        onChange={(e) => setSettingsData({ ...settingsData, nickName: e.target.value })}
+                        placeholder="Kullanıcı adınız"
+                        disabled={currentUser.nickNameChanged || !currentUser.googleId}
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          background: (currentUser.nickNameChanged || !currentUser.googleId) ? '#f8f9fa' : '#ffffff',
+                          cursor: (currentUser.nickNameChanged || !currentUser.googleId) ? 'not-allowed' : 'text',
+                          opacity: (currentUser.nickNameChanged || !currentUser.googleId) ? 0.7 : 1,
+                        }}
+                      />
+                      <div style={{ fontSize: '11px', color: '#6c757d', marginTop: '4px' }}>
+                        {currentUser.googleId ? (
+                          currentUser.nickNameChanged ? (
+                            <span>✓ Kullanıcı adı değiştirilmiş, tekrar değiştirilemez.</span>
+                          ) : (
+                            <span style={{ color: '#ff6b6b' }}>⚠️ Sadece 1 kere değiştirebilirsiniz.</span>
+                          )
+                        ) : (
+                          <span>Kullanıcı adı değiştirilemez.</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div style={{ marginBottom: '15px', display: currentUser.email ? 'none' : 'block' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        marginBottom: '6px',
+                        color: '#333'
+                      }}>
+                        📧 Email Adresi
                       </label>
                       <input
                         type="email"
@@ -1102,11 +1593,35 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                         }}
                       />
                     </div>
-                  )}
+                    {currentUser.email && (
+                      <div style={{ marginBottom: '15px' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          marginBottom: '6px',
+                          color: '#333'
+                        }}>
+                          📧 Email Adresi
+                        </label>
+                        <div style={{
+                          padding: '10px',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          background: '#f8f9fa',
+                          color: '#495057'
+                        }}>
+                          {currentUser.email}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6c757d', marginTop: '4px' }}>
+                          ✓ Email adresi kayıtlı
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Conditional Phone Input */}
-                  {!currentUser.phoneNumber && (
-                    <div style={{ marginBottom: '15px' }}>
+                    {/* Telefon Numarası */}
+                    <div style={{ marginBottom: '15px', display: currentUser.phoneNumber ? 'none' : 'block' }}>
                       <label style={{
                         display: 'block',
                         fontSize: '13px',
@@ -1114,7 +1629,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                         marginBottom: '6px',
                         color: '#333'
                       }}>
-                        📱 Telefon Numarası Ekle
+                        📱 Telefon Numarası
                       </label>
                       <input
                         type="tel"
@@ -1134,75 +1649,150 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                         11 hane, 05 ile başlamalı
                       </div>
                     </div>
-                  )}
-
-                  {/* Birthdate Input */}
-                  {!currentUser.birthDate && (
-                    <div style={{ marginBottom: '15px' }}>
-                      <label style={{
-                        display: 'block',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        marginBottom: '6px',
-                        color: '#333'
-                      }}>
-                        🎂 Doğum Tarihi
-                      </label>
-                      <input
-                        type="date"
-                        value={settingsData.birthDate}
-                        onChange={(e) => setSettingsData({ ...settingsData, birthDate: e.target.value })}
-                        style={{
-                          width: '100%',
+                    {currentUser.phoneNumber && (
+                      <div style={{ marginBottom: '15px' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          marginBottom: '6px',
+                          color: '#333'
+                        }}>
+                          📱 Telefon Numarası
+                        </label>
+                        <div style={{
                           padding: '10px',
                           border: '1px solid #ddd',
                           borderRadius: '8px',
                           fontSize: '13px',
-                        }}
-                      />
-                      <div style={{ fontSize: '11px', color: '#dc3545', marginTop: '4px', fontWeight: 500 }}>
-                        🎉 Doğru tarihi yazın, doğum gününüz unutulmayacak! Bir daha değiştirilemez.
+                          background: '#f8f9fa',
+                          color: '#495057'
+                        }}>
+                          {currentUser.phoneNumber}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6c757d', marginTop: '4px' }}>
+                          ✓ Telefon numarası kayıtlı
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Gender Select */}
-                  {!currentUser.gender && (
-                    <div style={{ marginBottom: '15px' }}>
-                      <label style={{
-                        display: 'block',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        marginBottom: '6px',
-                        color: '#333'
-                      }}>
-                        👤 Cinsiyet
-                      </label>
-                      <select
-                        value={settingsData.gender}
-                        onChange={(e) => setSettingsData({ ...settingsData, gender: e.target.value })}
-                        style={{
-                          width: '100%',
+                    {/* Doğum Tarihi */}
+                    {!currentUser.birthDate ? (
+                      <div style={{ marginBottom: '15px' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          marginBottom: '6px',
+                          color: '#333'
+                        }}>
+                          🎂 Doğum Tarihi
+                        </label>
+                        <input
+                          type="date"
+                          value={settingsData.birthDate}
+                          onChange={(e) => setSettingsData({ ...settingsData, birthDate: e.target.value })}
+                          max={new Date().toISOString().split('T')[0]}
+                          style={{
+                            width: '100%',
+                            padding: '10px',
+                            border: '1px solid #ddd',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                          }}
+                        />
+                        <div style={{ fontSize: '11px', color: '#dc3545', marginTop: '4px', fontWeight: 500 }}>
+                          🎉 Doğru tarihi yazın, doğum gününüz unutulmayacak! Bir daha değiştirilemez.
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginBottom: '15px' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          marginBottom: '6px',
+                          color: '#333'
+                        }}>
+                          🎂 Doğum Tarihi
+                        </label>
+                        <div style={{
                           padding: '10px',
                           border: '1px solid #ddd',
                           borderRadius: '8px',
                           fontSize: '13px',
-                          background: 'white',
-                        }}
-                      >
-                        <option value="">Seçiniz</option>
-                        <option value="Male">Erkek</option>
-                        <option value="Female">Kadın</option>
-                        <option value="Other">Diğer</option>
-                      </select>
-                      <div style={{ fontSize: '11px', color: '#dc3545', marginTop: '4px', fontWeight: 500 }}>
-                        ⚠️ Bir defa seçebilirsiniz, sonra değiştirilemez.
+                          background: '#f8f9fa',
+                          color: '#495057'
+                        }}>
+                          {new Date(currentUser.birthDate).toLocaleDateString('tr-TR')}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6c757d', marginTop: '4px' }}>
+                          ✓ Doğum gününüz kayıtlı, değiştirilemez.
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Update Button */}
-                  {(!currentUser.email || !currentUser.phoneNumber || !currentUser.birthDate || !currentUser.gender) && (
+                    {/* Cinsiyet */}
+                    {!currentUser.gender ? (
+                      <div style={{ marginBottom: '15px' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          marginBottom: '6px',
+                          color: '#333'
+                        }}>
+                          ⚧ Cinsiyet
+                        </label>
+                        <select
+                          value={settingsData.gender}
+                          onChange={(e) => setSettingsData({ ...settingsData, gender: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '10px',
+                            border: '1px solid #ddd',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            background: 'white',
+                          }}
+                        >
+                          <option value="">Seçiniz</option>
+                          <option value="Male">Erkek</option>
+                          <option value="Female">Kadın</option>
+                          <option value="Other">Diğer</option>
+                        </select>
+                        <div style={{ fontSize: '11px', color: '#dc3545', marginTop: '4px', fontWeight: 500 }}>
+                          ⚠️ Bir defa seçebilirsiniz, sonra değiştirilemez.
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginBottom: '15px' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          marginBottom: '6px',
+                          color: '#333'
+                        }}>
+                          ⚧ Cinsiyet
+                        </label>
+                        <div style={{
+                          padding: '10px',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          background: '#f8f9fa',
+                          color: '#495057'
+                        }}>
+                          {currentUser.gender === 'Male' ? 'Erkek' : currentUser.gender === 'Female' ? 'Kadın' : 'Diğer'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6c757d', marginTop: '4px' }}>
+                          ✓ Cinsiyet bilginiz kayıtlı, değiştirilemez.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Update Button */}
                     <button
                       onClick={handleProfileUpdate}
                       disabled={isUpdatingProfile}
@@ -1218,13 +1808,12 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                         fontSize: '14px',
                         fontWeight: 600,
                         cursor: isUpdatingProfile ? 'not-allowed' : 'pointer',
-                        marginBottom: '15px',
                       }}
                     >
                       <i className="fas fa-save" style={{ marginRight: '8px' }}></i>
-                      {isUpdatingProfile ? 'Güncelleniyor...' : 'Profili Güncelle'}
+                      {isUpdatingProfile ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}
                     </button>
-                  )}
+                  </div>
 
                   {/* Logout Button */}
                   <button
@@ -1589,6 +2178,28 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                 />
               </div>
 
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: '#333', fontWeight: 500 }}>
+                  Doğum Tarihi (Opsiyonel)
+                </label>
+                <input
+                  type="date"
+                  value={registerData.birthDate}
+                  onChange={(e) => setRegisterData({ ...registerData, birthDate: e.target.value })}
+                  max={new Date().toISOString().split('T')[0]}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                  }}
+                />
+                <small style={{ color: '#888', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                  Doğum gününüzde size özel sürprizler hazırlarız!
+                </small>
+              </div>
+
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: '#333', fontWeight: 500 }}>
                   Şifre
@@ -1610,13 +2221,65 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                 />
               </div>
 
+              {/* KVKK Onay Checkbox */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  color: '#555',
+                  lineHeight: '1.4',
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={registerData.kvkkAccepted}
+                    onChange={(e) => setRegisterData({ ...registerData, kvkkAccepted: e.target.checked })}
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      marginTop: '2px',
+                      cursor: 'pointer',
+                      accentColor: '#667eea',
+                    }}
+                  />
+                  <span>
+                    <a
+                      href="/kvkk"
+                      target="_blank"
+                      style={{ color: '#667eea', textDecoration: 'underline' }}
+                    >
+                      KVKK Aydınlatma Metni
+                    </a>
+                    {`'ni, `}
+                    <a
+                      href="/kullanim-kosullari"
+                      target="_blank"
+                      style={{ color: '#667eea', textDecoration: 'underline' }}
+                    >
+                      Kullanım Koşulları
+                    </a>
+                    {`'nı ve `}
+                    <a
+                      href="/cerez-politikasi"
+                      target="_blank"
+                      style={{ color: '#667eea', textDecoration: 'underline' }}
+                    >
+                      Çerez Politikası
+                    </a>
+                    {`'nı okudum, kabul ediyorum.`}
+                  </span>
+                </label>
+              </div>
+
               <button
                 type="submit"
-                disabled={isLoggingIn}
+                disabled={isLoggingIn || !registerData.kvkkAccepted}
                 style={{
                   width: '100%',
                   padding: '14px',
-                  background: isLoggingIn
+                  background: (isLoggingIn || !registerData.kvkkAccepted)
                     ? '#ccc'
                     : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   color: 'white',
@@ -1624,7 +2287,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                   borderRadius: '10px',
                   fontSize: '16px',
                   fontWeight: 600,
-                  cursor: isLoggingIn ? 'not-allowed' : 'pointer',
+                  cursor: (isLoggingIn || !registerData.kvkkAccepted) ? 'not-allowed' : 'pointer',
                   boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
                   transition: 'all 0.3s ease',
                 }}
@@ -1647,6 +2310,149 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode }: Profil
                 Zaten hesabın var mı? Giriş yap
               </a>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Verification Modal */}
+      {showEmailVerificationModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0, 0, 0, 0.6)',
+            zIndex: 100000,
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowEmailVerificationModal(false)}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '20px',
+              padding: '30px',
+              width: '90%',
+              maxWidth: '450px',
+              textAlign: 'center',
+              position: 'relative',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowEmailVerificationModal(false)}
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                color: '#999',
+                cursor: 'pointer',
+              }}
+            >
+              <i className="fas fa-times"></i>
+            </button>
+
+            {/* Success Icon */}
+            <div
+              style={{
+                width: '80px',
+                height: '80px',
+                background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px auto',
+                boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)',
+              }}
+            >
+              <i className="fas fa-envelope" style={{ fontSize: '36px', color: 'white' }}></i>
+            </div>
+
+            <h2 style={{ margin: '0 0 15px 0', fontSize: '22px', fontWeight: 600, color: '#333' }}>
+              📧 Email Doğrulama Gerekli
+            </h2>
+
+            <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666', lineHeight: 1.6 }}>
+              Kayıt işleminiz başarıyla tamamlandı!
+            </p>
+
+            <div
+              style={{
+                background: '#f8f9fa',
+                borderRadius: '10px',
+                padding: '15px',
+                margin: '15px 0',
+                border: '1px solid #e9ecef',
+              }}
+            >
+              <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#6c757d' }}>
+                Doğrulama linki gönderilen adres:
+              </p>
+              <p style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#333' }}>
+                {verificationEmail}
+              </p>
+            </div>
+
+            <div
+              style={{
+                background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 152, 0, 0.1))',
+                border: '1px solid rgba(255, 193, 7, 0.3)',
+                borderRadius: '10px',
+                padding: '15px',
+                margin: '15px 0',
+              }}
+            >
+              <p style={{ margin: 0, fontSize: '13px', color: '#856404', lineHeight: 1.6 }}>
+                <strong>⚠️ Önemli:</strong> Lütfen email kutunuzu kontrol edin ve doğrulama linkine tıklayın.
+                Spam/Gereksiz klasörünü de kontrol etmeyi unutmayın.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowEmailVerificationModal(false);
+                setShowLoginModal(true);
+              }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+                marginTop: '10px',
+              }}
+            >
+              <i className="fas fa-sign-in-alt" style={{ marginRight: '8px' }}></i>
+              Doğruladım, Giriş Yap
+            </button>
+
+            <p style={{ margin: '15px 0 0 0', fontSize: '12px', color: '#999' }}>
+              Email gelmedi mi?{' '}
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  alert('Yeni doğrulama emaili gönderildi!');
+                }}
+                style={{ color: '#667eea', textDecoration: 'none' }}
+              >
+                Tekrar gönder
+              </a>
+            </p>
           </div>
         </div>
       )}

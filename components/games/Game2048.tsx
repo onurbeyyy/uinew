@@ -128,30 +128,24 @@ export default function Game2048({ onGameOver, onGameWon, playerNickname: initia
     loadLeaderboard();
     restoreGameState();
 
-    // Nickname kontrolü
-    console.log('🎮 Game2048 mounted - initialNickname:', initialNickname);
+    // Nickname kontrolü - Öncelik sırası:
+    // 1. Giriş yapmış kullanıcının nickname'i (initialNickname prop)
+    // 2. localStorage'daki nickname
+    // 3. Modal göster
 
-    // ÖNCE: initialNickname boş string ise localStorage'ı temizle (logout yapılmış demektir)
-    if (initialNickname === '') {
-      console.log('🗑️ Logout tespit edildi - localStorage temizleniyor');
-      localStorage.removeItem('playerNickname_2048');
-    }
-
-    // Nickname kontrolü (retry yok, direkt kontrol)
-    if (initialNickname !== undefined && initialNickname.trim()) {
-      // Giriş yapmış kullanıcı → nickname kullan
-      console.log('✅ Giriş yapmış kullanıcı:', initialNickname);
+    if (initialNickname && initialNickname.trim()) {
+      // Giriş yapmış kullanıcı → nickname'i otomatik kullan
       setNickname(initialNickname);
       localStorage.setItem('playerNickname_2048', initialNickname);
+      setShowNicknameModal(false); // Modal kesinlikle kapalı
     } else {
-      // LocalStorage'a bak
+      // LocalStorage'a bak (giriş yapmamış kullanıcılar için)
       const savedNickname = localStorage.getItem('playerNickname_2048');
       if (savedNickname && savedNickname.trim()) {
-        console.log('📦 LocalStorage nickname:', savedNickname);
         setNickname(savedNickname);
+        setShowNicknameModal(false);
       } else {
         // Nickname yok → Modal göster
-        console.log('⚠️ Nickname yok - Modal gösteriliyor');
         setShowNicknameModal(true);
       }
     }
@@ -562,9 +556,17 @@ export default function Game2048({ onGameOver, onGameWon, playerNickname: initia
       onGameOver?.(finalScore);
     }
 
-    if (!nickname && finalScore > 0) {
+    // Giriş yapmış kullanıcı (initialNickname) varsa direkt skor kaydet
+    const effectiveNickname = initialNickname?.trim() || nickname;
+
+    if (!effectiveNickname && finalScore > 0) {
+      // Nickname yoksa modal göster
       setShowNicknameModal(true);
-    } else if (nickname && finalScore > 0 && !scoreSubmitted) {
+    } else if (effectiveNickname && finalScore > 0 && !scoreSubmitted) {
+      // Nickname varsa direkt skor kaydet
+      if (!nickname && effectiveNickname) {
+        setNickname(effectiveNickname);
+      }
       await submitPlayerScore(finalScore);
     }
   };
@@ -572,9 +574,13 @@ export default function Game2048({ onGameOver, onGameWon, playerNickname: initia
   const submitPlayerScore = async (finalScore: number) => {
     if (!finalScore || scoreSubmitted) return;
 
+    // Giriş yapmış kullanıcının nickname'ini kullan
+    const effectiveNickname = initialNickname?.trim() || nickname;
+    if (!effectiveNickname) return;
+
     const result = await submitScore({
       GameType: '2048',
-      PlayerNickname: nickname,
+      PlayerNickname: effectiveNickname,
       Score: finalScore,
       DeviceType: /mobile/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
       VenueCode: customerCode || 'demo',

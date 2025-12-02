@@ -34,6 +34,18 @@ export interface CustomerEntity {
   youtube?: string;
   googleUrl?: string;
   whatsApp?: string;
+  // Feature Access (Süperadmin tarafından verilir)
+  hasBasketAccess?: boolean;      // Sipariş sistemi erişim hakkı
+  hasDeliveryAccess?: boolean;    // Paket servis erişim hakkı
+  // Feature Settings (Müşteri tarafından açılır/kapatılır)
+  basketSystemEnabled?: boolean;  // Sipariş sistemi aktif mi
+  isDeliveryEnabled?: boolean;    // Paket servis aktif mi
+  // Delivery Settings
+  minimumOrderAmount?: number;
+  deliveryFee?: number;
+  freeDeliveryThreshold?: number;
+  estimatedDeliveryTime?: number;
+  deliveryZones?: string;
   // 🔒 GÜVENLİK: token field'ı API'den artık gelmiyor (güvenlik nedeniyle kaldırıldı)
   // database, email, emailVerificationToken field'ları da asla frontend'e gelmemeli
 }

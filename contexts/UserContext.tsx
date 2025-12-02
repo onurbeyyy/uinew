@@ -37,6 +37,8 @@ interface RegisterData {
   email: string;
   password: string;
   phoneNumber?: string;
+  nickName?: string; // Kullanıcı adı (sipariş için gerekli)
+  birthDate?: string; // Doğum tarihi (YYYY-MM-DD formatında)
   sessionId?: string; // 🔧 Self-servis session ID
   customerCode?: string; // Kayıt olduğu restoran kodu
   tableCode?: string; // Kayıt olduğu masa kodu
@@ -94,17 +96,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
           setCurrentUser(cleanUser);
 
-          // Validate token in background
-          validateToken(token).catch(() => {
-            logout();
-          });
+          // Validate token in background (ağ hatalarında logout yapma)
+          // Sadece 401 hatalarında logout yap
+          validateToken(token, true);
         } catch (e) {
           console.error('❌ Failed to parse user data:', e);
           localStorage.removeItem('userData');
         }
       } else if (token) {
         // We have token but no userData, fetch from API
-        await validateToken(token);
+        // Bu durumda 401 olursa logout yap
+        await validateToken(token, true);
       }
     } catch (error) {
       console.error('❌ Session check error:', error);
@@ -115,8 +117,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Validate token and fetch user profile
+   * @param shouldLogoutOnError - Sadece 401 hatalarında logout yap, ağ hatalarında yapma
    */
-  const validateToken = async (token: string): Promise<boolean> => {
+  const validateToken = async (token: string, shouldLogoutOnError: boolean = false): Promise<boolean> => {
     try {
       const response = await fetch('/api/auth/profile', {
         headers: {
@@ -126,7 +129,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Token validation failed');
+        // Sadece 401 (Unauthorized) hatalarında logout yap
+        if (response.status === 401 && shouldLogoutOnError) {
+          console.warn('⚠️ Token geçersiz, çıkış yapılıyor...');
+          logout();
+        }
+        return false;
       }
 
       const userData = await response.json();
@@ -135,8 +143,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('userData', JSON.stringify(cleanUser));
       return true;
     } catch (error) {
-      console.error('❌ Token validation error:', error);
-      logout();
+      // Ağ hataları (network error, timeout vb.) kullanıcıyı logout etmemeli
+      console.warn('⚠️ Token doğrulama hatası (ağ sorunu olabilir):', error);
       return false;
     }
   };
@@ -197,6 +205,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           email: registerData.email,
           password: registerData.password,
           phoneNumber: registerData.phoneNumber,
+          nickName: registerData.nickName, // Kullanıcı adı (sipariş için)
+          birthDate: registerData.birthDate, // Doğum tarihi
           sessionId: registerData.sessionId, // 🔧 Self-servis session ID
           customerCode: registerData.customerCode, // Kayıt olduğu restoran kodu
           tableCode: registerData.tableCode, // Kayıt olduğu masa kodu
@@ -212,14 +222,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      // Auto-login after registration
-      if (data.token && data.user) {
-        const cleanUser = extractUser(data);
-        localStorage.setItem('userToken', data.token);
-        localStorage.setItem('userData', JSON.stringify(cleanUser));
-        localStorage.setItem('lastLoginTime', Date.now().toString());
-        setCurrentUser(cleanUser);
-      }
+      // ❌ Otomatik giriş YAPMA - email doğrulanana kadar bekle
+      // Email doğrulandıktan sonra kullanıcı manual login yapacak
+      // if (data.token && data.user) {
+      //   const cleanUser = extractUser(data);
+      //   localStorage.setItem('userToken', data.token);
+      //   localStorage.setItem('userData', JSON.stringify(cleanUser));
+      //   localStorage.setItem('lastLoginTime', Date.now().toString());
+      //   setCurrentUser(cleanUser);
+      // }
 
       return { success: true };
     } catch (error) {

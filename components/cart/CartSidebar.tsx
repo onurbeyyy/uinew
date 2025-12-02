@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useMenu } from '@/contexts/MenuContext';
 import { useAuth } from '@/contexts/UserContext';
+import { useTable } from '@/contexts/TableContext';
 import { saveCart as saveCartToStorage, loadCart as loadCartFromStorage, clearCart as clearCartFromStorage } from '@/utils/cartUtils';
 import ProductSuggestions from './ProductSuggestions';
 
@@ -18,20 +19,41 @@ interface CartItem {
   tokenQuantity?: number; // Kaç adet jeton ile alınacak
 }
 
+interface DeliveryInfo {
+  address: {
+    city: string;
+    district: string;
+    neighborhood: string;
+    street: string;
+    buildingNo: string;
+    floor?: string;
+    apartmentNo?: string;
+    directions?: string;
+  };
+  deliveryFee: number;
+  minOrderAmount: number;
+  freeDeliveryThreshold: number;
+}
+
 interface CartSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   tableId?: string;
   customerCode?: string;
+  deliveryInfo?: DeliveryInfo;
 }
 
-export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: CartSidebarProps) {
+export default function CartSidebar({ isOpen, onClose, tableId, customerCode, deliveryInfo }: CartSidebarProps) {
   const { customerData, productTokenSettings, cartKey: menuCartKey, isSelfService, sessionId, openProfile } = useMenu();
-  const { isAuthenticated } = useAuth();
+  const isDelivery = !!deliveryInfo;
+  const { isAuthenticated, currentUser, refreshUserProfile } = useAuth();
+  const { clearTableInfo } = useTable();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerNote, setCustomerNote] = useState('');
   const [userTokenBalance, setUserTokenBalance] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'ticket' | 'edenred' | 'sodexo' | 'multinet' | 'setcard' | 'metropol'>('cash');
+  const [showOtherPayments, setShowOtherPayments] = useState(false);
 
   // Use cartKey from MenuContext, fallback to tableId prop
   const cartKey = menuCartKey || tableId || '';
@@ -256,9 +278,9 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
 
   const showOrderConfirmation = (): Promise<boolean> => {
     return new Promise((resolve) => {
-      // Get user data
+      // Get user data from context (most up-to-date) and localStorage as fallback
       const userData = localStorage.getItem('userData');
-      const user = userData ? JSON.parse(userData) : null;
+      const user = currentUser || (userData ? JSON.parse(userData) : null);
 
       // Get table name from localStorage or use tableId/sessionId
       const storedTableName = localStorage.getItem('currentTableName');
@@ -266,14 +288,27 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
         ? 'Self-Servis'
         : (storedTableName || `Masa ${tableId}`);
 
+      // Delivery için hesaplamalar
+      const actualDeliveryFee = isDelivery && deliveryInfo
+        ? (totalPrice >= deliveryInfo.freeDeliveryThreshold ? 0 : deliveryInfo.deliveryFee)
+        : 0;
+      const grandTotal = totalPrice + actualDeliveryFee;
+
+      // Delivery adresi formatla
+      const formatDeliveryAddress = () => {
+        if (!isDelivery || !deliveryInfo?.address) return '';
+        const addr = deliveryInfo.address;
+        return `${addr.neighborhood} Mah. ${addr.street} No:${addr.buildingNo}${addr.floor ? ', Kat:' + addr.floor : ''}${addr.apartmentNo ? ', Daire:' + addr.apartmentNo : ''}`;
+      };
+
       // Create modal HTML
       const modalHTML = `
         <div id="orderConfirmationModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100000;">
           <div style="background: white; border-radius: 15px; padding: 25px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
             <div style="text-align: center; margin-bottom: 20px;">
-              <h3 style="color: #2c5530; margin: 0; font-size: 22px;">
-                <i class="fas fa-receipt" style="margin-right: 8px;"></i>
-                Sipariş Özeti
+              <h3 style="color: ${isDelivery ? '#ff6b00' : '#2c5530'}; margin: 0; font-size: 22px;">
+                <i class="fas ${isDelivery ? 'fa-motorcycle' : 'fa-receipt'}" style="margin-right: 8px;"></i>
+                ${isDelivery ? 'Paket Sipariş Özeti' : 'Sipariş Özeti'}
               </h3>
             </div>
 
@@ -282,10 +317,45 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
                 <span><strong>👤 Müşteri:</strong></span>
                 <span>${user ? user.firstName + (user.nickName ? ` (${user.nickName})` : '') : 'Misafir'}</span>
               </div>
+              ${isDelivery ? `
+              <!-- Delivery Bilgileri -->
+              <div style="background: #fff8f0; border: 1px solid #ffd699; border-radius: 8px; padding: 12px; margin-top: 10px;">
+                <div style="margin-bottom: 8px;">
+                  <div style="font-size: 11px; color: #666; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">📍 Teslimat Adresi</div>
+                  <div style="font-size: 14px; color: #333; font-weight: 500;">${formatDeliveryAddress()}</div>
+                  <div style="font-size: 12px; color: #666;">${deliveryInfo?.address?.district || ''}/${deliveryInfo?.address?.city || ''}</div>
+                  ${deliveryInfo?.address?.directions ? `<div style="font-size: 11px; color: #888; margin-top: 4px; font-style: italic;">📝 ${deliveryInfo.address.directions}</div>` : ''}
+                </div>
+                <div style="border-top: 1px dashed #ffd699; padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-size: 11px; color: #666; text-transform: uppercase; font-weight: 600;">💳 Ödeme Yöntemi</div>
+                    <div style="font-size: 14px; color: ${paymentMethod === 'cash' ? '#28a745' : paymentMethod === 'card' ? '#007bff' : '#ff6b00'}; font-weight: 600;">
+                      Kapıda ${{
+                        cash: 'Nakit',
+                        card: 'Kredi Kartı',
+                        ticket: 'Ticket',
+                        edenred: 'Edenred',
+                        sodexo: 'Sodexo',
+                        multinet: 'Multinet',
+                        setcard: 'Setcard',
+                        metropol: 'Metropol'
+                      }[paymentMethod] || 'Nakit'}
+                    </div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-size: 11px; color: #666;">🚚 Teslimat</div>
+                    <div style="font-size: 14px; color: ${actualDeliveryFee === 0 ? '#28a745' : '#ff6b00'}; font-weight: 600;">
+                      ${actualDeliveryFee === 0 ? 'Ücretsiz' : actualDeliveryFee.toFixed(2) + ' ₺'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              ` : `
               <div style="display: flex; justify-content: space-between;">
                 <span><strong>🍽️ Masa:</strong></span>
                 <span>${displayTableName}</span>
               </div>
+              `}
             </div>
 
             <div style="margin-bottom: 20px;">
@@ -348,12 +418,30 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
               </div>
             ` : ''}
 
+            ${isDelivery ? `
+            <!-- Delivery Toplam Özeti -->
+            <div style="background: linear-gradient(135deg, #ff6b00, #ff9500); border-radius: 10px; padding: 15px; margin-bottom: 25px; color: white;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                <span>Ürün Toplamı:</span>
+                <span>${totalPrice.toFixed(2)} ₺</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                <span>Teslimat Ücreti:</span>
+                <span>${actualDeliveryFee === 0 ? 'Ücretsiz 🎉' : actualDeliveryFee.toFixed(2) + ' ₺'}</span>
+              </div>
+              <div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px; margin-top: 8px; display: flex; justify-content: space-between; font-size: 20px; font-weight: bold;">
+                <span>TOPLAM:</span>
+                <span>${grandTotal.toFixed(2)} ₺</span>
+              </div>
+            </div>
+            ` : `
             <div style="background: linear-gradient(135deg, #2c5530, #3a6b3f); border-radius: 10px; padding: 15px; margin-bottom: 25px; color: white; text-align: center;">
               <div style="font-size: 18px; font-weight: bold;">
                 <i class="fas fa-calculator" style="margin-right: 8px;"></i>
                 TOPLAM: ${totalPrice.toFixed(2)} ₺
               </div>
             </div>
+            `}
 
             <div style="display: flex; gap: 15px; justify-content: center;">
               <button id="confirmOrderBtn" style="flex: 1; max-width: 180px; background: linear-gradient(135deg, #28a745, #20c997); color: white; border: none; padding: 15px 20px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;">
@@ -394,8 +482,26 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
   };
 
   const submitOrder = async () => {
+    // Çift tıklama koruması
+    if (isSubmitting) return;
     if (items.length === 0) return;
-    if (!customerCode || (!tableId && !sessionId)) {
+
+    // Delivery mode check
+    if (isDelivery) {
+      if (!customerCode) {
+        alert('Müşteri bilgisi bulunamadı.');
+        return;
+      }
+      if (!deliveryInfo?.address?.city || !deliveryInfo?.address?.street) {
+        alert('Lütfen teslimat adresinizi eksiksiz girin.\n\nAşağıdaki "Adresler" butonundan adres ekleyebilirsiniz.');
+        return;
+      }
+      // Minimum sipariş tutarı kontrolü
+      if (deliveryInfo && totalPrice < deliveryInfo.minOrderAmount) {
+        alert(`Minimum sipariş tutarı ${deliveryInfo.minOrderAmount.toFixed(0)} ₺'dir.\n\nSepetinize daha fazla ürün ekleyin.`);
+        return;
+      }
+    } else if (!customerCode || (!tableId && !sessionId)) {
       alert(isSelfService ? 'Oturum bilgisi bulunamadı.' : 'Masa bilgisi bulunamadı.');
       return;
     }
@@ -416,17 +522,44 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
 
     setIsSubmitting(true);
     try {
-      // Get user ID if logged in
-      const userData = localStorage.getItem('userData');
-      const endUserId = userData ? JSON.parse(userData).id : null;
+      // Get user data if logged in
+      const userDataStr = localStorage.getItem('userData');
+      const userDataParsed = userDataStr ? JSON.parse(userDataStr) : null;
+      const endUserId = userDataParsed?.id || null;
+      const userNickname = userDataParsed?.nickName || userDataParsed?.nickname || '';
+
+      // Delivery için tableName = "Paket Servis" + kullanıcı adı
+      // Self-service için tableName = kullanıcı nickname'i (eski yapı gibi)
+      // Normal masa için tableName = localStorage'dan gerçek masa adı
+      let orderTableName = tableId;
+      if (isDelivery) {
+        orderTableName = `Paket - ${userNickname || 'Müşteri'}`;
+      } else if (isSelfService && userNickname && userNickname.trim() !== '') {
+        orderTableName = userNickname;
+      } else if (isSelfService) {
+        orderTableName = sessionId || 'Self-Service';
+      } else {
+        // Normal masa modu - gerçek masa adını localStorage'dan al
+        const storedTableName = localStorage.getItem('currentTableName');
+        if (storedTableName) {
+          orderTableName = storedTableName;
+        }
+      }
+
+      // Teslimat ücreti hesapla
+      const actualDeliveryFee = isDelivery && deliveryInfo
+        ? (totalPrice >= deliveryInfo.freeDeliveryThreshold ? 0 : deliveryInfo.deliveryFee)
+        : 0;
 
       // Sipariş verisini hazırla
-      const orderData = {
+      const orderData: any = {
         customerCode: customerCode,
-        tableName: isSelfService ? sessionId : tableId,
+        tableName: orderTableName,
         endUserId: endUserId, // Logged in user ID (for token deduction)
         Source: 'UI',
         isSelfService: isSelfService,
+        isDelivery: isDelivery,
+        orderType: isDelivery ? 'Delivery' : (isSelfService ? 'SelfService' : 'Table'), // Sipariş tipi
         items: items.map(item => {
           const tokenSettings = productTokenSettings?.[item.sambaId || item.productId];
           const tokenQty = item.tokenQuantity || 0;
@@ -444,6 +577,37 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
         notificationMessage: customerNote ? `📝 Müşteri Notu: ${customerNote}` : '',
         customerNote: customerNote
       };
+
+      // Delivery ise adres bilgilerini ekle
+      if (isDelivery && deliveryInfo) {
+        const addr = deliveryInfo.address;
+        // Mahalle adı zaten "Mah." içeriyorsa ekleme
+        const neighborhoodText = addr.neighborhood.includes('Mah.') ? addr.neighborhood : `${addr.neighborhood} Mah.`;
+        const fullAddress = `${neighborhoodText} ${addr.street} No:${addr.buildingNo}${addr.floor ? ' Kat:' + addr.floor : ''}${addr.apartmentNo ? ' Daire:' + addr.apartmentNo : ''}, ${addr.district}/${addr.city}`;
+        // Kullanıcı telefon numarası (UserContext'ten al - en güncel veri)
+        const userPhone = currentUser?.phoneNumber || userDataParsed?.phoneNumber || userDataParsed?.phone || '';
+        const paymentMethodLabels: Record<string, string> = {
+          cash: 'Nakit',
+          card: 'Kredi Kartı',
+          ticket: 'Ticket',
+          edenred: 'Edenred',
+          sodexo: 'Sodexo',
+          multinet: 'Multinet',
+          setcard: 'Setcard',
+          metropol: 'Metropol'
+        };
+        const paymentMethodText = paymentMethodLabels[paymentMethod] || 'Nakit';
+
+        // Delivery bilgilerini orderData'ya ekle (backend uyumlu)
+        orderData.deliveryAddress = fullAddress;
+        orderData.deliveryFee = actualDeliveryFee;
+        orderData.customerPhone = userPhone; // Müşteri telefon numarası
+        orderData.paymentMethod = paymentMethod;
+        orderData.paymentMethodText = paymentMethodText;
+        // Adres, telefon ve ödeme bilgisini Notes alanına da ekle (her zaman görünsün)
+        orderData.customerNote = `📍 Adres: ${fullAddress}${addr.directions ? `\n🗺️ Tarif: ${addr.directions}` : ''}${userPhone ? `\n📞 Tel: ${userPhone}` : ''}\n💳 Ödeme: Kapıda ${paymentMethodText}${customerNote ? `\n📝 Not: ${customerNote}` : ''}`;
+        orderData.notificationMessage = `📍 Paket Servis - ${addr.district}/${addr.city}${userPhone ? ` - Tel: ${userPhone}` : ''}\n💳 Ödeme: Kapıda ${paymentMethodText}`;
+      }
 
       const response = await fetch('/api/order', {
         method: 'POST',
@@ -470,15 +634,32 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
           }
         }
 
-        alert(`Siparişiniz başarıyla alındı! Sipariş No: #${result.orderNumber || 'N/A'}`);
-
         // Sepeti temizle
         if (cartKey) {
           clearCartFromStorage(cartKey);
           setItems([]);
           setCustomerNote('');
         }
+
+        // ✅ Sipariş verildiğinde table/session bilgisini temizle (delivery değilse)
+        // Böylece aynı QR ile tekrar sipariş verilemez (15 dk süresi dolmadan bile)
+        if (!isDelivery) {
+          clearTableInfo();
+          console.log('🔒 Table/Session bilgisi temizlendi - sipariş tamamlandı');
+        }
+
         onClose();
+
+        // ✅ Başarı mesajı göster
+        if (isDelivery) {
+          alert(`🎉 Paket siparişiniz başarıyla alındı!\n\nSipariş No: #${result.orderNumber || 'N/A'}\n\nSiparişiniz en kısa sürede hazırlanıp adresinize teslim edilecektir.`);
+          // Delivery'de ana sayfaya yönlendir (yeni sipariş için tekrar gelebilir)
+          window.location.href = `/${customerCode}/delivery`;
+        } else {
+          alert(`Siparişiniz başarıyla alındı! Sipariş No: #${result.orderNumber || 'N/A'}\n\nYeni sipariş için QR kodu tekrar okutun.`);
+          // Sayfayı yenile - temiz başlangıç için
+          window.location.href = `/${customerCode}`;
+        }
       } else {
         // Hata durumları
         if (result.requiresLogin) {
@@ -850,12 +1031,14 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
               </div>
             ))}
 
-            {/* Ürün Önerileri - Sepette ürün varsa göster */}
-            <ProductSuggestions
-              cartItems={items}
-              onAddToCart={handleAddSuggestedProduct}
-              maxSuggestions={4}
-            />
+            {/* Ürün Önerileri - Sepette ürün varsa göster (delivery'de gizli) */}
+            {!isDelivery && (
+              <ProductSuggestions
+                cartItems={items}
+                onAddToCart={handleAddSuggestedProduct}
+                maxSuggestions={4}
+              />
+            )}
             </>
           )}
         </div>
@@ -891,6 +1074,148 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
               />
             </div>
 
+            {/* Delivery Info Section - Kompakt */}
+            {isDelivery && deliveryInfo && (
+              <div style={{
+                background: '#fff8f0',
+                border: '1px solid #ffd699',
+                borderRadius: '8px',
+                padding: '8px 10px',
+                marginBottom: '8px',
+                fontSize: '11px',
+              }}>
+                {/* Adres + Ücretler Yan Yana veya Alt Alta */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {/* Teslimat Adresi */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                    <i className="fas fa-map-marker-alt" style={{ color: '#ff6b00', marginTop: '2px' }}></i>
+                    {deliveryInfo.address.city ? (
+                      <span style={{ color: '#333', lineHeight: 1.3 }}>
+                        {deliveryInfo.address.neighborhood}, {deliveryInfo.address.street} No:{deliveryInfo.address.buildingNo}
+                        {deliveryInfo.address.floor && ` K:${deliveryInfo.address.floor}`}
+                        {deliveryInfo.address.apartmentNo && ` D:${deliveryInfo.address.apartmentNo}`}
+                        <span style={{ color: '#888' }}> - {deliveryInfo.address.district}/{deliveryInfo.address.city}</span>
+                      </span>
+                    ) : (
+                      <span style={{ color: '#dc3545' }}>⚠️ Adres giriniz</span>
+                    )}
+                  </div>
+
+                  {/* Ücret Özeti - Tek Satır */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed #ffd699', paddingTop: '6px' }}>
+                    <div style={{ display: 'flex', gap: '10px', color: '#666' }}>
+                      <span>Ürün: <b style={{ color: '#333' }}>{totalPrice.toFixed(0)}₺</b></span>
+                      <span>Teslimat: <b style={{ color: totalPrice >= deliveryInfo.freeDeliveryThreshold ? '#28a745' : '#333' }}>
+                        {totalPrice >= deliveryInfo.freeDeliveryThreshold ? 'Ücretsiz' : `${deliveryInfo.deliveryFee.toFixed(0)}₺`}
+                      </b></span>
+                    </div>
+                    <span style={{ fontWeight: 700, color: '#ff6b00', fontSize: '13px' }}>
+                      {(totalPrice + (totalPrice >= deliveryInfo.freeDeliveryThreshold ? 0 : deliveryInfo.deliveryFee)).toFixed(2)} ₺
+                    </span>
+                  </div>
+
+                  {/* Min Sipariş Uyarısı */}
+                  {totalPrice < deliveryInfo.minOrderAmount && (
+                    <div style={{ fontSize: '10px' }}>
+                      <span style={{ color: '#856404', background: '#fff3cd', padding: '2px 6px', borderRadius: '4px' }}>
+                        ⚠️ Min. {deliveryInfo.minOrderAmount.toFixed(0)}₺ sipariş tutarı gerekli
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Ödeme Yöntemi Seçimi */}
+                  <div style={{ borderTop: '1px dashed #ffd699', paddingTop: '8px', marginTop: '4px' }}>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600 }}>💳 Ödeme Yöntemi:</div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        onClick={() => { setPaymentMethod('cash'); setShowOtherPayments(false); }}
+                        style={{
+                          flex: 1,
+                          padding: '8px 6px',
+                          border: paymentMethod === 'cash' ? '2px solid #28a745' : '1px solid #ddd',
+                          background: paymentMethod === 'cash' ? 'linear-gradient(135deg, #e8f5e9, #c8e6c9)' : '#fff',
+                          borderRadius: '8px',
+                          fontSize: '10px',
+                          fontWeight: paymentMethod === 'cash' ? 700 : 500,
+                          color: paymentMethod === 'cash' ? '#28a745' : '#666',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        💵 Nakit
+                      </button>
+                      <button
+                        onClick={() => { setPaymentMethod('card'); setShowOtherPayments(false); }}
+                        style={{
+                          flex: 1,
+                          padding: '8px 6px',
+                          border: paymentMethod === 'card' ? '2px solid #007bff' : '1px solid #ddd',
+                          background: paymentMethod === 'card' ? 'linear-gradient(135deg, #e3f2fd, #bbdefb)' : '#fff',
+                          borderRadius: '8px',
+                          fontSize: '10px',
+                          fontWeight: paymentMethod === 'card' ? 700 : 500,
+                          color: paymentMethod === 'card' ? '#007bff' : '#666',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        💳 Kart
+                      </button>
+                      <button
+                        onClick={() => setShowOtherPayments(!showOtherPayments)}
+                        style={{
+                          flex: 1,
+                          padding: '8px 6px',
+                          border: ['ticket', 'edenred', 'sodexo', 'multinet', 'setcard', 'metropol'].includes(paymentMethod) ? '2px solid #ff6b00' : '1px solid #ddd',
+                          background: ['ticket', 'edenred', 'sodexo', 'multinet', 'setcard', 'metropol'].includes(paymentMethod) ? 'linear-gradient(135deg, #fff3e0, #ffe0b2)' : '#fff',
+                          borderRadius: '8px',
+                          fontSize: '10px',
+                          fontWeight: ['ticket', 'edenred', 'sodexo', 'multinet', 'setcard', 'metropol'].includes(paymentMethod) ? 700 : 500,
+                          color: ['ticket', 'edenred', 'sodexo', 'multinet', 'setcard', 'metropol'].includes(paymentMethod) ? '#ff6b00' : '#666',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        🎫 Diğer {showOtherPayments ? '▲' : '▼'}
+                      </button>
+                    </div>
+
+                    {/* Diğer Ödeme Yöntemleri */}
+                    {showOtherPayments && (
+                      <div style={{ marginTop: '8px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                        {[
+                          { id: 'ticket', label: 'Ticket', icon: '🎟️' },
+                          { id: 'edenred', label: 'Edenred', icon: '🔴' },
+                          { id: 'sodexo', label: 'Sodexo', icon: '🟠' },
+                          { id: 'multinet', label: 'Multinet', icon: '🟣' },
+                          { id: 'setcard', label: 'Setcard', icon: '🔵' },
+                          { id: 'metropol', label: 'Metropol', icon: '🟢' },
+                        ].map((method) => (
+                          <button
+                            key={method.id}
+                            onClick={() => setPaymentMethod(method.id as any)}
+                            style={{
+                              padding: '6px 4px',
+                              border: paymentMethod === method.id ? '2px solid #ff6b00' : '1px solid #ddd',
+                              background: paymentMethod === method.id ? 'linear-gradient(135deg, #fff3e0, #ffe0b2)' : '#fff',
+                              borderRadius: '6px',
+                              fontSize: '9px',
+                              fontWeight: paymentMethod === method.id ? 700 : 500,
+                              color: paymentMethod === method.id ? '#ff6b00' : '#666',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            {method.icon} {method.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
@@ -916,11 +1241,11 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
               </button>
               <button
                 onClick={submitOrder}
-                disabled={isSubmitting}
+                disabled={isSubmitting || (isDelivery && deliveryInfo && (totalPrice < deliveryInfo.minOrderAmount || !deliveryInfo.address.city))}
                 style={{
                   flex: 2,
                   padding: '12px',
-                  background: isSubmitting
+                  background: isSubmitting || (isDelivery && deliveryInfo && (totalPrice < deliveryInfo.minOrderAmount || !deliveryInfo.address.city))
                     ? '#ccc'
                     : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
                   color: 'white',
@@ -928,8 +1253,8 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
                   borderRadius: '6px',
                   fontSize: '14px',
                   fontWeight: 600,
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  boxShadow: isSubmitting ? 'none' : '0 4px 12px rgba(40, 167, 69, 0.3)',
+                  cursor: isSubmitting || (isDelivery && deliveryInfo && (totalPrice < deliveryInfo.minOrderAmount || !deliveryInfo.address.city)) ? 'not-allowed' : 'pointer',
+                  boxShadow: isSubmitting || (isDelivery && deliveryInfo && (totalPrice < deliveryInfo.minOrderAmount || !deliveryInfo.address.city)) ? 'none' : '0 4px 12px rgba(40, 167, 69, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -937,7 +1262,16 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode }: 
                 }}
               >
                 <i className="fas fa-paper-plane"></i>
-                <span>{isSubmitting ? 'Gönderiliyor...' : 'Sipariş Ver'}</span>
+                <span>
+                  {isSubmitting
+                    ? 'Gönderiliyor...'
+                    : isDelivery && deliveryInfo && !deliveryInfo.address.city
+                      ? 'Adres Gerekli'
+                      : isDelivery && deliveryInfo && totalPrice < deliveryInfo.minOrderAmount
+                        ? `Min. ${deliveryInfo.minOrderAmount}₺`
+                        : 'Sipariş Ver'
+                  }
+                </span>
               </button>
             </div>
           </div>

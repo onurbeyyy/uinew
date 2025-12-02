@@ -10,7 +10,7 @@ import AllergenWarning from '@/components/common/AllergenWarning';
 import { useToast } from '@/components/ui/Toast';
 
 export default function ProductDetailModal() {
-  const { menuData, customerData, selectedProduct, isProductDetailModalOpen, closeProductDetailModal, isTableMode, cartKey, productTokenSettings, openProfile } = useMenu();
+  const { menuData, customerData, selectedProduct, isProductDetailModalOpen, closeProductDetailModal, isTableMode, canUseBasket, cartKey, productTokenSettings, openProfile } = useMenu();
   const { language, t } = useLanguage();
   const { isAuthenticated } = useAuth();
   const { showCartToast } = useToast();
@@ -176,7 +176,7 @@ export default function ProductDetailModal() {
           )}
 
           {/* Jeton Bilgisi */}
-          {isTableMode && (() => {
+          {isTableMode && canUseBasket && (() => {
             const productId = selectedProduct.Id ?? selectedProduct.id;
             const sambaId = selectedProduct.SambaId ?? selectedProduct.sambaId;
             const tokenSetting = (productId && productTokenSettings[productId]) || (sambaId && productTokenSettings[sambaId]);
@@ -186,40 +186,49 @@ export default function ProductDetailModal() {
             if (!hasEarn && !hasRedeem) return null;
 
             return (
-              <div style={{ marginBottom: '18px' }}>
+              <div style={{ marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {hasEarn && (
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 152, 0, 0.15))',
-                    border: '1px solid rgba(255, 193, 7, 0.3)',
+                    gap: '10px',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(46, 125, 50, 0.2))',
+                    border: '2px solid rgba(76, 175, 80, 0.5)',
                     backdropFilter: 'blur(10px)',
-                    marginBottom: hasRedeem ? '8px' : '0',
                   }}>
-                    <span style={{ fontSize: '20px' }}>🪙</span>
-                    <span style={{ color: 'white', fontSize: '0.95rem', fontWeight: 500 }}>
-                      {t('earnTokensMessage').replace('{count}', String(tokenSetting.earnTokens))}
-                    </span>
+                    <span style={{ fontSize: '24px' }}>🎁</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ color: '#4caf50', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Jeton Kazanın
+                      </span>
+                      <span style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700 }}>
+                        +{tokenSetting.earnTokens} jeton kazanacaksınız
+                      </span>
+                    </div>
                   </div>
                 )}
                 {hasRedeem && (
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, rgba(40, 167, 69, 0.2), rgba(32, 201, 151, 0.15))',
-                    border: '1px solid rgba(40, 167, 69, 0.3)',
+                    gap: '10px',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.25), rgba(255, 109, 0, 0.2))',
+                    border: '2px solid rgba(255, 152, 0, 0.5)',
                     backdropFilter: 'blur(10px)',
                   }}>
-                    <span style={{ fontSize: '20px' }}>🪙</span>
-                    <span style={{ color: 'white', fontSize: '0.95rem', fontWeight: 500 }}>
-                      {t('redeemTokensMessage').replace('{count}', String(tokenSetting.redeemTokens))}
-                    </span>
+                    <span style={{ fontSize: '24px' }}>🪙</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ color: '#ff9800', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Jetonla Alın
+                      </span>
+                      <span style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700 }}>
+                        {tokenSetting.redeemTokens} jetona alabilirsiniz
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -230,7 +239,7 @@ export default function ProductDetailModal() {
             {(selectedProduct.Price ?? selectedProduct.price ?? 0) > 0 ? `${(selectedProduct.Price ?? selectedProduct.price ?? 0).toFixed(2)} TL` : t('noPriceInfo')}
           </div>
 
-          {isTableMode && (
+          {isTableMode && canUseBasket && (
             <>
               {/* Quantity Selector */}
               <div

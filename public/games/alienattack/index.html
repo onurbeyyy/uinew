@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <title>Uzaylı Saldırısı</title>
+
+    <link rel="manifest" href="app.manifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <link rel="apple-touch-icon" sizes="256x256" href="icon-256.png" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="shortcut icon" sizes="256x256" href="icon-256.png" />
+
+    <style type="text/css">
+        * { padding: 0; margin: 0; }
+        html, body {
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+            -ms-touch-action: none;
+        }
+        canvas {
+            touch-action-delay: none;
+            touch-action: none;
+            -ms-touch-action: none;
+        }
+        /* Liderlik Tablosu - Sol Üst Köşe Widget */
+        .leaderboard-widget {
+            position: fixed;
+            top: 50px;
+            left: 5px;
+            width: 140px;
+            background: rgba(0, 0, 0, 0.75);
+            border: 2px solid #4a7c20;
+            border-radius: 8px;
+            z-index: 9999;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        .leaderboard-widget.hidden {
+            display: none;
+        }
+        .lb-header {
+            background: linear-gradient(180deg, #5a8f28, #3d6b15);
+            color: #fff;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            padding: 4px 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #4a7c20;
+        }
+        .lb-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .lb-item {
+            display: flex;
+            align-items: center;
+            padding: 3px 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 10px;
+        }
+        .lb-item:last-child {
+            border-bottom: none;
+        }
+        .lb-item.top-1 { background: rgba(255, 215, 0, 0.2); }
+        .lb-item.top-2 { background: rgba(192, 192, 192, 0.15); }
+        .lb-item.top-3 { background: rgba(205, 127, 50, 0.15); }
+        .lb-rank {
+            width: 16px;
+            font-weight: bold;
+            color: #ffd700;
+            text-align: center;
+        }
+        .lb-item.top-1 .lb-rank { color: #ffd700; }
+        .lb-item.top-2 .lb-rank { color: #c0c0c0; }
+        .lb-item.top-3 .lb-rank { color: #cd7f32; }
+        .lb-name {
+            flex: 1;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin: 0 4px;
+        }
+        .lb-score {
+            color: #7fff00;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        .lb-loading {
+            color: #888;
+            text-align: center;
+            padding: 10px;
+            font-size: 9px;
+        }
+    </style>
+
+    <script src="jquery-2.1.1.min.js"></script>
+</head>
+
+<body>
+    <div id="fb-root"></div>
+
+    <!-- Liderlik Tablosu Widget - Sol Üst -->
+    <div id="leaderboard-widget" class="leaderboard-widget hidden">
+        <div class="lb-header">🏆 TOP 5</div>
+        <ul class="lb-list" id="lb-list">
+            <li class="lb-loading">Yükleniyor...</li>
+        </ul>
+    </div>
+
+    <div id="c2canvasdiv">
+        <canvas id="c2canvas" width="1003" height="590">
+            <h1>Tarayıcınız HTML5 desteklemiyor. Lütfen güncelleyin.</h1>
+        </canvas>
+    </div>
+
+    <script>
+        // Parent window'a mesaj gönderme (GERİ butonu için)
+        window.goBackToMenu = function() {
+            if (window.parent !== window) {
+                window.parent.postMessage('alienattack-back', '*');
+            } else {
+                window.history.back();
+            }
+        };
+
+        // Skor gönderme
+        window.gameScoreSent = false; // Skor bir kez gönderilsin
+        window.lastPlayerScore = 0; // Son oyuncu skoru
+        window.sendGameScore = function(score, level, aliensKilled) {
+            if (window.gameScoreSent) return; // Zaten gönderildi
+            window.gameScoreSent = true;
+            window.lastPlayerScore = score;
+            console.log('[AlienAttack] Skor gönderiliyor:', score, level, aliensKilled);
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'alienAttackGameOver',
+                    score: score || 0,
+                    level: level || 1,
+                    aliensKilled: aliensKilled || 0
+                }, '*');
+            }
+            // Liderlik tablosunu yenile (skor kaydedildikten sonra)
+            setTimeout(function() {
+                window.refreshLeaderboard();
+            }, 1500);
+        };
+
+        // Liderlik Tablosu Widget Fonksiyonları
+        window.showLeaderboardWidget = function() {
+            var widget = document.getElementById('leaderboard-widget');
+            if (widget) {
+                widget.classList.remove('hidden');
+            }
+            // Parent'tan leaderboard verisi iste
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'alienAttackGetLeaderboard',
+                    score: 0
+                }, '*');
+            }
+        };
+
+        window.hideLeaderboardWidget = function() {
+            var widget = document.getElementById('leaderboard-widget');
+            if (widget) {
+                widget.classList.add('hidden');
+            }
+        };
+
+        window.refreshLeaderboard = function() {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'alienAttackGetLeaderboard',
+                    score: window.lastPlayerScore || 0
+                }, '*');
+            }
+        };
+
+        // Parent'tan gelen leaderboard verisini dinle
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'alienAttackLeaderboardData') {
+                renderLeaderboardWidget(event.data.leaderboard);
+            }
+        });
+
+        function renderLeaderboardWidget(data) {
+            var list = document.getElementById('lb-list');
+            if (!list) return;
+
+            if (!data || data.length === 0) {
+                list.innerHTML = '<li class="lb-loading">Henüz skor yok</li>';
+                return;
+            }
+
+            var html = '';
+            // Sadece top 5 göster
+            var topData = data.slice(0, 5);
+            topData.forEach(function(entry, index) {
+                var rank = index + 1;
+                var topClass = rank <= 3 ? ' top-' + rank : '';
+                html += '<li class="lb-item' + topClass + '">';
+                html += '<span class="lb-rank">' + rank + '</span>';
+                html += '<span class="lb-name">' + (entry.playerNickname || 'Misafir') + '</span>';
+                html += '<span class="lb-score">' + entry.score + '</span>';
+                html += '</li>';
+            });
+
+            list.innerHTML = html;
+        }
+
+        // Sayfa yüklendiğinde leaderboard'u göster
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.showLeaderboardWidget();
+            }, 2000); // Oyun yüklendikten 2 saniye sonra
+        });
+
+        // Console.log'u yakala - c2runtime ekran değişikliklerini tespit et
+        (function() {
+            var originalLog = console.log;
+            console.log = function() {
+                originalLog.apply(console, arguments);
+                // c2runtime'dan gelen ekran değişikliği mesajını yakala
+                var msg = arguments[0];
+                if (typeof msg === 'string' && msg.indexOf('Ekran:') !== -1) {
+                    var lowerMsg = msg.toLowerCase();
+                    if (lowerMsg.indexOf('gameplay') !== -1) {
+                        window.currentGameScreen = 'gameplay';
+                        window.hideLeaderboardWidget();
+                    } else if (lowerMsg.indexOf('cover') !== -1 || lowerMsg.indexOf('menu') !== -1 || lowerMsg.indexOf('main') !== -1) {
+                        window.currentGameScreen = 'cover';
+                        window.showLeaderboardWidget();
+                    } else if (lowerMsg.indexOf('end') !== -1 || lowerMsg.indexOf('over') !== -1 || lowerMsg.indexOf('result') !== -1) {
+                        window.currentGameScreen = 'gameover';
+                        window.showLeaderboardWidget();
+                    }
+                }
+            };
+        })();
+
+        // localStorage.setItem hook - Construct 2 skoru kaydettiğinde yakalayalım
+        (function() {
+            var originalSetItem = localStorage.setItem.bind(localStorage);
+            var lastScore = 0;
+            var lastAliensKilled = 0;
+            var currentGameScore = 0; // Mevcut oyun skoru
+
+            // Runtime'dan skoru okumaya çalış
+            window.getCurrentScore = function() {
+                try {
+                    var canvas = document.getElementById('c2canvas');
+                    if (!canvas || !canvas.c2runtime) return currentGameScore;
+                    var rt = canvas.c2runtime;
+
+                    // Global değişkenlerden skoru bul (Ug objesi)
+                    if (rt.Ug) {
+                        for (var key in rt.Ug) {
+                            if (rt.Ug.hasOwnProperty(key)) {
+                                var v = rt.Ug[key];
+                                // "score" adında değişken ara
+                                if (v && v.name && v.name.toLowerCase() === 'score') {
+                                    var s = parseInt(v.data) || 0;
+                                    if (s > 0) return s;
+                                }
+                            }
+                        }
+                    }
+
+                    // Alternatif: types içinde Score textinden oku
+                    if (rt.types_by_name && rt.types_by_name.Score) {
+                        var scoreType = rt.types_by_name.Score;
+                        if (scoreType.d && scoreType.d[0]) {
+                            var text = scoreType.d[0].text || '';
+                            var s = parseInt(text.replace(/[^0-9]/g, '')) || 0;
+                            if (s > 0) return s;
+                        }
+                    }
+                } catch(e) {
+                    console.log('[AlienAttack] Skor okuma hatası:', e);
+                }
+                return currentGameScore;
+            };
+
+            localStorage.setItem = function(key, value) {
+                originalSetItem(key, value);
+                console.log('[AlienAttack] localStorage.setItem:', key, '=', value);
+
+                // Mevcut skoru güncelle (score key'i)
+                if (key === 'score' || key.endsWith('score')) {
+                    currentGameScore = parseInt(value) || 0;
+                    console.log('[AlienAttack] Mevcut skor güncellendi:', currentGameScore);
+                }
+
+                // Alien Attack skorları kaydedildiğinde (PB_HIGHSCORE, medals)
+                if (key === 'PB_HIGHSCORE' || key.endsWith('PB_HIGHSCORE')) {
+                    var scoreValue = parseInt(value) || 0;
+                    console.log('[AlienAttack] Best skor güncellendi:', scoreValue, 'key:', key);
+                    if (scoreValue > lastScore) {
+                        lastScore = scoreValue;
+                    }
+                    // Personal best yazıldıysa current score da bu kadar olmalı
+                    if (scoreValue > currentGameScore) {
+                        currentGameScore = scoreValue;
+                    }
+                    // PB_HIGHSCORE yazıldığında oyun bitmiş demektir - skoru gönder
+                    if (scoreValue > 0) {
+                        console.log('[AlienAttack] PB_HIGHSCORE kaydedildi - skor gönderiliyor');
+                        // Oyun bitti, widget'ı göster
+                        window.currentGameScreen = 'gameover';
+                        window.showLeaderboardWidget();
+                        setTimeout(function() {
+                            // medals veya PB_MONEY'den öldürülen uzaylı sayısını al
+                            var aliensKilled = parseInt(localStorage.getItem('medals')) ||
+                                               parseInt(localStorage.getItem('PB_MONEY')) ||
+                                               lastAliensKilled || 0;
+                            window.sendGameScore(scoreValue, 1, aliensKilled);
+                        }, 300);
+                    }
+                }
+                if (key === 'medals' || key.endsWith('medals')) {
+                    lastAliensKilled = parseInt(value) || 0;
+                    console.log('[AlienAttack] Medals güncellendi:', lastAliensKilled, 'key:', key);
+                }
+            };
+
+            // c2_callFunction hook - showGameOver çağrıldığında
+            var checkForGameOver = setInterval(function() {
+                if (typeof window.c2_callFunction === 'function') {
+                    clearInterval(checkForGameOver);
+                    var originalCallFunction = window.c2_callFunction;
+                    window.c2_callFunction = function(name, params) {
+                        var result = originalCallFunction.apply(this, arguments);
+                        var lowerName = (name || '').toLowerCase();
+                        console.log('[AlienAttack] c2_callFunction:', name);
+
+                        // GERİ butonu - menüye dönüş fonksiyonları (gotoCover hariç - o oyun menüsü)
+                        if (lowerName === 'gotomoregames' || lowerName === 'gotomain') {
+                            console.log('[AlienAttack] GERİ butonu tıklandı (' + name + ') - menüye dönülüyor');
+                            window.currentGameScreen = 'cover';
+                            window.showLeaderboardWidget(); // Geri dönmeden önce widget'ı göster
+                            window.goBackToMenu();
+                            return; // Orijinal fonksiyonu çalıştırma
+                        }
+
+                        // Yeni oyun başladığında flag'i sıfırla ve ekran durumunu güncelle
+                        if (lowerName === 'gotogameplay' || lowerName === 'gotorestart') {
+                            window.gameScoreSent = false;
+                            window.currentGameScreen = 'gameplay';
+                            window.hideLeaderboardWidget(); // Oyun başlayınca gizle
+                            console.log('[AlienAttack] Oyun başladı - ekran: gameplay');
+                        }
+                        if (lowerName === 'gotocover') {
+                            window.gameScoreSent = false;
+                            window.currentGameScreen = 'cover';
+                            window.showLeaderboardWidget(); // Cover'a dönünce göster
+                            console.log('[AlienAttack] Cover ekranına dönüldü');
+                        }
+
+                        // showGameOver, saveHighscore, EndScreen, GameCompleted çağrıldığında skoru gönder
+                        if (lowerName === 'showgameover' || lowerName === 'savehighscore' || lowerName === 'endscreen' || lowerName === 'locisended' || lowerName === 'gamecompleted') {
+                            console.log('[AlienAttack] GAME OVER TESPİT EDİLDİ! Fonksiyon:', name);
+                            window.showLeaderboardWidget(); // Oyun bitince göster
+                            // Biraz bekle ki localStorage güncellensin
+                            setTimeout(function() {
+                                // Runtime'dan mevcut skoru al
+                                var runtimeScore = window.getCurrentScore ? window.getCurrentScore() : 0;
+                                console.log('[AlienAttack] Runtime skor:', runtimeScore);
+
+                                // Alien Attack'ın kullandığı localStorage anahtarları (PB_HIGHSCORE, medals)
+                                var pbScore = parseInt(localStorage.getItem('PB_HIGHSCORE')) || 0;
+                                var medals = parseInt(localStorage.getItem('medals')) || 0;
+
+                                // En yüksek skoru seç: runtime > currentGameScore > lastScore > pbScore
+                                var score = Math.max(runtimeScore, currentGameScore, lastScore, pbScore);
+                                if (lastAliensKilled > medals) medals = lastAliensKilled;
+
+                                console.log('[AlienAttack] Skor okundu - Score:', score, 'PB:', pbScore, 'Medals:', medals);
+
+                                if (score > 0) {
+                                    window.sendGameScore(score, 1, medals);
+                                } else {
+                                    console.log('[AlienAttack] UYARI: Skor 0, gönderilmiyor!');
+                                }
+                            }, 500);
+                        }
+                        return result;
+                    };
+                    console.log('[AlienAttack] c2_callFunction hook aktif');
+                }
+            }, 100);
+        })();
+
+        // GERİ butonu koordinat yakalayıcı (c2runtime'dan ÖNCE)
+        // Hangi ekranda olduğumuzu takip et
+        window.currentGameScreen = 'cover'; // Başlangıçta cover ekranı
+
+        document.addEventListener('pointerdown', function(e) {
+            // Sadece Cover ekranında koordinat algılama aktif
+            if (window.currentGameScreen !== 'cover') {
+                return; // Oyun oynanırken bu algılama çalışmasın
+            }
+
+            console.log('[AlienAttack] POINTER (Cover) x=' + e.clientX + ' y=' + e.clientY);
+
+            // Sol alttaki GERİ butonu - sabit piksel değerleri
+            // x: 25-145, y: 315-375
+            if (e.clientX >= 25 && e.clientX <= 145 &&
+                e.clientY >= 315 && e.clientY <= 375) {
+                console.log('[AlienAttack] GERİ butonuna tıklandı - menüye dön');
+                window.goBackToMenu();
+            }
+        }, true);
+
+        // URL değişikliğini yakala ve müşteri menüsüne yönlendir
+        (function() {
+            // window.open'ı yakala
+            var originalOpen = window.open;
+            window.open = function(url) {
+                console.log('[AlienAttack] window.open yakalandı:', url);
+                window.goBackToMenu();
+                return null;
+            };
+
+            // location.href değişikliğini yakala
+            var originalLocation = window.location.href;
+            setInterval(function() {
+                // Eğer oyun URL değiştirmeye çalışırsa
+                if (window.location.href !== originalLocation && !window.location.href.includes('alienattack')) {
+                    console.log('[AlienAttack] location değişikliği yakalandı');
+                    window.goBackToMenu();
+                }
+            }, 100);
+        })();
+    </script>
+
+    <script src="c2runtime.js"></script>
+    <!-- data.js c2runtime tarafından AJAX ile yüklenir -->
+
+    <script>
+        // Oyun başlatma
+        jQuery(document).ready(function() {
+            cr_createRuntime("c2canvas");
+
+            // Canvas tıklama koordinatları - GERİ butonunu bulmak için
+            document.addEventListener('mousedown', function(e) {
+                var canvas = document.getElementById('c2canvas');
+                if (!canvas) return;
+                var rect = canvas.getBoundingClientRect();
+
+                // Tıklama canvas içinde mi?
+                if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                    e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                    var scaleX = 1003 / rect.width;
+                    var scaleY = 590 / rect.height;
+                    var x = Math.round((e.clientX - rect.left) * scaleX);
+                    var y = Math.round((e.clientY - rect.top) * scaleY);
+                    console.log('[AlienAttack] TIKLAMA x=' + x + ' y=' + y);
+
+                    // Sol alttaki GERİ butonu - tahmini koordinatlar (ekran görüntüsüne göre)
+                    // Buton yaklaşık x:20-150, y:380-480 civarında
+                    if (x >= 10 && x <= 180 && y >= 350 && y <= 500) {
+                        console.log('[AlienAttack] GERİ butonuna tıklandı (koordinat) - menüye dön');
+                        window.goBackToMenu();
+                    }
+                }
+            }, true);
+        });
+
+        // Pencere boyutlandırma
+        jQuery(window).resize(function() {
+            cr_sizeCanvas(jQuery(window).width(), jQuery(window).height());
+        });
+
+        // Sayfa görünürlüğü
+        document.addEventListener("visibilitychange", function() {
+            cr_setSuspended(document.hidden);
+        }, false);
+
+    </script>
+</body>
+</html>

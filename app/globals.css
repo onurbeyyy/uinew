@@ -2499,6 +2499,21 @@ body {
   box-shadow: 0 6px 16px rgba(237, 194, 46, 0.3);
 }
 
+.rps-player-card.choice-made {
+  border: 3px solid #27ae60;
+  box-shadow: 0 6px 16px rgba(39, 174, 96, 0.4);
+  background: rgba(39, 174, 96, 0.3);
+}
+
+.rps-choice-indicator {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  font-size: 18px;
+  color: #27ae60;
+  font-weight: bold;
+}
+
 .rps-player-name {
   font-size: 20px;
   font-weight: 700;
@@ -3861,16 +3876,16 @@ body {
 
 .game-modal-close-btn {
   position: fixed;
-  top: 15px;
-  right: 15px;
+  top: 8px;
+  right: 10px;
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
   border: none;
   color: white;
-  font-size: 32px;
+  font-size: 24px;
   cursor: pointer;
-  width: 45px;
-  height: 45px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3890,31 +3905,29 @@ body {
 
 /* Games Container */
 .games-container {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
   width: 100%;
-  padding: 20px;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
 /* Games Header */
 .games-header {
   text-align: center;
   color: white;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   width: 100%;
 }
 
 .games-header h2 {
-  font-size: 26px;
-  margin-bottom: 8px;
+  font-size: 20px;
+  margin-bottom: 5px;
   color: white;
 }
 
 .games-header p {
   color: white;
-  margin: 5px 0;
-  font-size: 15px;
+  margin: 3px 0;
+  font-size: 13px;
 }
 
 .games-header small {
@@ -3926,26 +3939,33 @@ body {
 
 /* 4'lü Oyun Grid */
 .games-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 8px;
   width: 100%;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
 }
 
 .game-card-btn {
   background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-  border-radius: 15px;
-  padding: 25px 15px;
+  border-radius: 8px;
+  padding: 8px 2px;
   text-align: center;
   cursor: pointer;
   transition: transform 0.2s;
   color: white !important;
   text-decoration: none;
   border: none;
-  width: 100%;
-  display: block;
-  min-height: 130px;
+  min-width: 0 !important;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .game-card-btn:hover {
@@ -3955,24 +3975,25 @@ body {
 }
 
 .game-card-btn .game-icon {
-  font-size: 50px;
-  margin-bottom: 12px;
+  font-size: 20px;
+  margin-bottom: 3px;
   display: block;
   color: white !important;
   font-style: normal;
 }
 
 .game-card-btn h3 {
-  font-size: 17px;
+  font-size: 10px;
   margin: 0;
   color: white !important;
-  line-height: 1.2;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .game-card-btn .player-count {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.9) !important;
-  margin: 8px 0 0 0;
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.8) !important;
+  margin: 2px 0 0 0;
   font-weight: 400;
 }
 
@@ -4164,16 +4185,18 @@ body {
 
 @media (max-width: 768px) {
   .games-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px;
     max-width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
 
   .game-card-btn {
-    padding: 16px 10px;
-    border-radius: 12px;
-    min-height: 110px;
+    padding: 8px 2px;
+    border-radius: 8px;
+    min-height: 60px;
+    min-width: 0 !important;
   }
 
   .lobby-section {
@@ -4183,18 +4206,29 @@ body {
 
 @media (max-width: 480px) {
   .games-grid {
-    gap: 8px;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px;
   }
 
   .game-card-btn {
-    padding: 14px 8px;
-    border-radius: 10px;
-    min-height: 95px;
+    padding: 6px 2px;
+    border-radius: 6px;
+    min-height: 55px;
+    min-width: 0 !important;
   }
 
   .game-card-btn .game-icon {
-    font-size: 28px;
-    margin-bottom: 6px;
+    font-size: 18px;
+    margin-bottom: 2px;
+  }
+
+  .game-card-btn h3 {
+    font-size: 9px;
+  }
+
+  .game-card-btn .player-count {
+    font-size: 7px;
   }
 }
 /* ========================================
@@ -4939,3 +4973,247 @@ body {
 .backgammon-half.bottom .backgammon-point.light::before {
   border-bottom-color: #d4a574 !important;
 }
+
+/* ===============================================
+   ALIEN ATTACK OYUN STİLLERİ
+   =============================================== */
+
+/* Alien Attack Card - Oyun seçim kartı */
+.game-card-btn.alien-attack-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+  border: 2px solid #0f3460 !important;
+}
+
+.game-card-btn.alien-attack-card:hover {
+  background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%) !important;
+  border-color: #00ff88 !important;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3) !important;
+}
+
+.game-card-btn.alien-attack-card .game-icon {
+  animation: alien-float 2s ease-in-out infinite;
+}
+
+@keyframes alien-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Alien Attack Ana Container */
+.alien-attack-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+/* Oyun iframe */
+.alien-attack-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* Yükleme Ekranı */
+.alien-attack-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  color: white;
+}
+
+.alien-attack-loading-icon {
+  animation: alien-pulse 1.5s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes alien-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.alien-attack-loading h2 {
+  font-size: 32px;
+  margin-bottom: 10px;
+  background: linear-gradient(90deg, #00ff88, #00d4ff, #ff00ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.alien-attack-loading p {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 30px;
+}
+
+.alien-attack-loading-bar {
+  width: 200px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.alien-attack-loading-progress {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #00ff88, #00d4ff);
+  animation: alien-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes alien-loading {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Kontroller */
+.alien-attack-controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.alien-attack-controls.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Üst Bar */
+.alien-attack-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+}
+
+.alien-attack-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.alien-attack-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.alien-attack-btn.back-btn:hover {
+  background: rgba(231, 76, 60, 0.3);
+  border-color: #e74c3c;
+}
+
+.alien-attack-btn.fullscreen-btn:hover {
+  background: rgba(46, 204, 113, 0.3);
+  border-color: #2ecc71;
+}
+
+.alien-attack-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* İpucu */
+.alien-attack-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  padding: 15px 25px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  text-align: center;
+  z-index: 50;
+  animation: hint-fade-in 0.5s ease;
+}
+
+.alien-attack-hint p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.alien-attack-hint strong {
+  color: #00ff88;
+}
+
+@keyframes hint-fade-in {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Mobil uyumluluk */
+@media (max-width: 768px) {
+  .alien-attack-top-bar {
+    padding: 8px 10px;
+  }
+
+  .alien-attack-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .alien-attack-btn span:last-child {
+    display: none;
+  }
+
+  .alien-attack-title {
+    font-size: 14px;
+  }
+
+  .alien-attack-hint {
+    padding: 10px 15px;
+    width: 90%;
+    max-width: 350px;
+  }
+
+  .alien-attack-hint p {
+    font-size: 12px;
+  }
+}
+
+/* Tam ekran modu */
+.alien-attack-container:fullscreen {
+  background: #000;
+}
+
+.alien-attack-container:fullscreen .alien-attack-iframe {
+  width: 100vw;
+  height: 100vh;
+}
+

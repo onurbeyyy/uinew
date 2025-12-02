@@ -28,10 +28,10 @@ interface MenuContextType {
   closeProductDetailModal: () => void;
   // Game modal
   isGameModalOpen: boolean;
-  selectedGame: '2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | null;
-  activeGame: '2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | null;
-  setActiveGame: (game: '2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | null) => void;
-  openGameModal: (game?: '2048' | 'rps' | 'quiz' | 'okey' | 'backgammon') => void;
+  selectedGame: '2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | 'ludo' | 'alienattack' | null;
+  activeGame: '2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | 'ludo' | 'alienattack' | null;
+  setActiveGame: (game: '2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | 'ludo' | 'alienattack' | null) => void;
+  openGameModal: (game?: '2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | 'ludo' | 'alienattack') => void;
   closeGameModal: () => void;
   pendingJoinRoomId: string | null;
   setPendingJoinRoomId: (roomId: string | null) => void;
@@ -52,6 +52,10 @@ interface MenuContextType {
   isSelfService: boolean;
   sessionId: string | null;
   cartKey: string; // tableId or sessionId for cart storage
+  // Feature access (computed from customerData)
+  canUseBasket: boolean; // hasBasketAccess && basketSystemEnabled && hasValidSubscription
+  hasValidSubscription: boolean;
+  basketDisabledMessage: string | null; // Sepet neden kapalı?
 }
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
@@ -70,8 +74,8 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const [isProductListModalOpen, setIsProductListModalOpen] = useState(false);
   const [isProductDetailModalOpen, setIsProductDetailModalOpen] = useState(false);
   const [isGameModalOpen, setIsGameModalOpen] = useState(false);
-  const [selectedGame, setSelectedGame] = useState<'2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | null>(null);
-  const [activeGame, setActiveGame] = useState<'2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | null>(null);
+  const [selectedGame, setSelectedGame] = useState<'2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | 'ludo' | 'alienattack' | null>(null);
+  const [activeGame, setActiveGame] = useState<'2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | 'ludo' | 'alienattack' | null>(null);
   const [pendingJoinRoomId, setPendingJoinRoomId] = useState<string | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [productTokenSettings, setProductTokenSettings] = useState<Record<number, ProductTokenSetting>>({});
@@ -128,7 +132,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setSelectedProduct(null), 300);
   };
 
-  const openGameModal = (game?: '2048' | 'rps' | 'quiz' | 'okey' | 'backgammon') => {
+  const openGameModal = (game?: '2048' | 'rps' | 'quiz' | 'okey' | 'backgammon' | 'ludo' | 'alienattack') => {
     // Diğer modalları kapat
     setIsProductListModalOpen(false);
     setIsProductDetailModalOpen(false);
@@ -213,6 +217,18 @@ export function MenuProvider({ children }: { children: ReactNode }) {
         isSelfService,
         sessionId: tableSessionId,
         cartKey,
+        // Feature access (computed)
+        hasValidSubscription: customerData?.hasValidSubscription ?? true,
+        canUseBasket: (customerData?.hasValidSubscription ?? true) &&
+                      (customerData?.customer?.hasBasketAccess ?? false) &&
+                      (customerData?.customer?.basketSystemEnabled ?? false),
+        basketDisabledMessage: (() => {
+          if (!customerData) return null;
+          if (!customerData.hasValidSubscription) return 'Abonelik süresi dolmuş';
+          if (!customerData.customer?.basketSystemEnabled) return 'Sipariş sistemi şu an kapalı';
+          if (!customerData.customer?.hasBasketAccess) return 'Sipariş sistemi bu restoran için aktif değil';
+          return null;
+        })(),
       }}
     >
       {children}

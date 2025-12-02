@@ -9,17 +9,18 @@ type Props = {
 };
 
 export default function OutBar(props: Props) {
+  const { fill, isLeft, children, onClick } = props;
   return (
-    <div className={styles.barWrapper} style={{ fill: props.fill }} {...props}>
+    <div className={styles.barWrapper} style={{ fill }} onClick={onClick}>
       <div
         className={styles.bar}
-        style={{ justifyContent: props.isLeft ? "initial" : "flex-end" }}
+        style={{ justifyContent: isLeft ? "initial" : "flex-end" }}
       >
-        {props.children}
+        {children}
       </div>
       <svg height="32" width="200">
         <polygon
-          points={props.isLeft ? "0,0 0,32 200,16" : "0,16 200,0 200,32"}
+          points={isLeft ? "0,0 0,32 200,16" : "0,16 200,0 200,32"}
           className={styles.polygon}
         />
       </svg>

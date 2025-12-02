@@ -9,17 +9,18 @@ type Props = {
 };
 
 export default function Bar(props: Props) {
+  const { fill, isTopRow, children, onClick } = props;
   return (
-    <div className={styles.barWrapper} style={{ fill: props.fill }} {...props}>
+    <div className={styles.barWrapper} style={{ fill }} onClick={onClick}>
       <div
         className={styles.bar}
-        style={{ justifyContent: props.isTopRow ? "flex-end" : "initial" }}
+        style={{ justifyContent: isTopRow ? "flex-end" : "initial" }}
       >
-        {props.children}
+        {children}
       </div>
-      <svg height="200" width="32">
+      <svg height="100%" width="100%" viewBox="0 0 32 100" preserveAspectRatio="none">
         <polygon
-          points={props.isTopRow ? "16,0 0,200 32,200" : "0,0 16,200 32,0"}
+          points={isTopRow ? "16,0 0,100 32,100" : "0,0 16,100 32,0"}
           className={styles.polygon}
         />
       </svg>

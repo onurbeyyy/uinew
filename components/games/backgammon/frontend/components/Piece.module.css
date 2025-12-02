@@ -1,11 +1,57 @@
 .piece {
-  width: 32px;
-  height: 32px;
+  width: clamp(26px, 5.5vw, 40px);
+  height: clamp(26px, 5.5vw, 40px);
   border-radius: 50%;
   display: flex;
   align-items: center;
   text-align: center;
   justify-content: center;
   font-family: inherit;
-  font-size: 11px;
+  font-size: clamp(9px, 1.6vw, 12px);
+  font-weight: bold;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  overflow: hidden;
+}
+
+/* Ortadaki çukur efekti */
+.innerHole {
+  position: absolute;
+  width: 55%;
+  height: 55%;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Üst parlama efekti */
+.highlight {
+  position: absolute;
+  top: 5%;
+  left: 15%;
+  width: 70%;
+  height: 40%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Taş sayısı */
+.count {
+  position: relative;
+  z-index: 2;
+  font-weight: bold;
+  text-shadow: inherit;
+}
+
+/* Hover efekti */
+.piece:hover {
+  transform: translateY(-3px) scale(1.08);
+}
+
+/* Aktif/seçili taş */
+.piece:active {
+  transform: scale(0.95);
 }
