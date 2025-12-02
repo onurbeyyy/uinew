@@ -68,12 +68,7 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
   // SignalR bağlantısı
   useEffect(() => {
     const setupConnection = async () => {
-      // Development vs Production URL
-      const isLocalhost = typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      const hubUrl = isLocalhost
-        ? 'http://localhost:5071/gamehub'
-        : 'https://game.canlimenu.com/gamehub';
+      const hubUrl = 'https://game.canlimenu.com/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {

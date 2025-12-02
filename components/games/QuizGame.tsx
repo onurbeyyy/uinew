@@ -154,9 +154,7 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
   // SignalR Connection
   useEffect(() => {
     const setupConnection = async () => {
-      const isLocal = typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      const hubUrl = isLocal ? 'http://localhost:5071/gamehub' : 'https://game.canlimenu.com/gamehub';
+      const hubUrl = 'https://game.canlimenu.com/gamehub';
 
       const conn = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {

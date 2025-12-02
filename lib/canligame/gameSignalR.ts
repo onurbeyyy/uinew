@@ -39,7 +39,7 @@ class GameSignalRService {
   private hubUrl: string;
   private eventHandlers: Map<string, Function[]> = new Map();
 
-  constructor(hubUrl: string = 'http://localhost:5071/gamehub') {
+  constructor(hubUrl: string = 'https://game.canlimenu.com/gamehub') {
     this.hubUrl = hubUrl;
   }
 
@@ -258,15 +258,9 @@ let gameSignalRServiceInstance: GameSignalRService | null = null;
 
 export function getGameSignalRService(): GameSignalRService {
   if (!gameSignalRServiceInstance) {
-    // Development vs Production URL
-    const isLocalhost = typeof window !== 'undefined' &&
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
     const hubUrl = process.env.NEXT_PUBLIC_GAME_HUB_URL
       ? `${process.env.NEXT_PUBLIC_GAME_HUB_URL}/gamehub`
-      : isLocalhost
-        ? 'http://localhost:5071/gamehub'
-        : 'https://game.canlimenu.com/gamehub';
+      : 'https://game.canlimenu.com/gamehub';
 
     gameSignalRServiceInstance = new GameSignalRService(hubUrl);
   }

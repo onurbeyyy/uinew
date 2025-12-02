@@ -126,11 +126,7 @@ export default function DrawGuess({ onClose, playerNickname, customerCode, joinR
   // SignalR bağlantısı
   useEffect(() => {
     const setupConnection = async () => {
-      const isLocalhost = typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      const hubUrl = isLocalhost
-        ? 'http://localhost:5071/drawguesshub'
-        : 'https://game.canlimenu.com/drawguesshub';
+      const hubUrl = 'https://game.canlimenu.com/drawguesshub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl)

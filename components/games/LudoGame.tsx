@@ -188,10 +188,7 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       const myRanking = gameRankings.find(r => r.playerId === playerIdRef.current);
       if (!myRanking) return;
 
-      const apiUrl = typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'https://localhost:5072/api/gameleaderboard/submit'
-        : 'https://canlimenu.online/api/gameleaderboard/submit';
+      const apiUrl = 'https://canlimenu.online/api/gameleaderboard/submit';
 
       // Skor hesapla: 1. = 100 puan, 2. = 75 puan, 3. = 50 puan, 4. = 25 puan
       const scoreByRank: Record<number, number> = { 1: 100, 2: 75, 3: 50, 4: 25 };
@@ -240,11 +237,7 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
   // SignalR Connection - RPS pattern (empty dependency array)
   useEffect(() => {
     const setupConnection = async () => {
-      const isLocalhost = typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      const hubUrl = isLocalhost
-        ? 'http://localhost:5071/gamehub'
-        : 'https://game.canlimenu.com/gamehub';
+      const hubUrl = 'https://game.canlimenu.com/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {

@@ -31,7 +31,7 @@ class OkeySignalRService {
   private connection: signalR.HubConnection | null = null;
   private hubUrl: string;
 
-  constructor(hubUrl: string = 'http://localhost:5071/okeyhub') {
+  constructor(hubUrl: string = 'https://game.canlimenu.com/okeyhub') {
     this.hubUrl = hubUrl;
   }
 
@@ -209,7 +209,7 @@ export function getOkeySignalRService(): OkeySignalRService {
   if (!okeyServiceInstance) {
     const hubUrl = process.env.NEXT_PUBLIC_GAME_HUB_URL
       ? `${process.env.NEXT_PUBLIC_GAME_HUB_URL}/okeyhub`
-      : 'http://localhost:5071/okeyhub';
+      : 'https://game.canlimenu.com/okeyhub';
 
     okeyServiceInstance = new OkeySignalRService(hubUrl);
   }

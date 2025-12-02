@@ -252,11 +252,7 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
   useEffect(() => {
     const setupConnection = async () => {
-      const isLocalhost = typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      const hubUrl = isLocalhost
-        ? 'http://localhost:5071/gamehub'
-        : 'https://game.canlimenu.com/gamehub';
+      const hubUrl = 'https://game.canlimenu.com/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
