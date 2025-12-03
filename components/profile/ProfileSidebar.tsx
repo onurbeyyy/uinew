@@ -317,46 +317,28 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
           }
         },
         ux_mode: 'popup',
-        use_fedcm_for_prompt: false
+        use_fedcm_for_prompt: false,
+        cancel_on_tap_outside: false
       });
 
-      // Gizli Google buton render et ve otomatik tıkla
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'fixed';
-      tempDiv.style.top = '50%';
-      tempDiv.style.left = '50%';
-      tempDiv.style.transform = 'translate(-50%, -50%)';
-      tempDiv.style.zIndex = '999999';
-      tempDiv.style.background = 'white';
-      tempDiv.style.padding = '20px';
-      tempDiv.style.borderRadius = '12px';
-      tempDiv.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
-      document.body.appendChild(tempDiv);
-
-      window.google.accounts.id.renderButton(tempDiv, {
-        theme: 'outline',
-        size: 'large',
-        width: 300,
-        text: 'continue_with',
-        shape: 'rectangular',
-        logo_alignment: 'center'
-      });
-
-      // Butona otomatik tıkla
-      setTimeout(() => {
-        const googleBtn = tempDiv.querySelector('div[role="button"]') as HTMLElement;
-        if (googleBtn) {
-          googleBtn.click();
-        }
-        // Div'i kaldır
-        setTimeout(() => {
-          if (document.body.contains(tempDiv)) {
-            document.body.removeChild(tempDiv);
+      // One Tap UI'ı göster
+      window.google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed()) {
+          // One Tap gösterilemedi - nedeni kontrol et
+          const reason = notification.getNotDisplayedReason();
+          if (reason === 'opt_out_or_no_session') {
+            alert('Google hesabınızla giriş yapmak için tarayıcınızda Google hesabına giriş yapın.');
+          } else {
+            alert('Google One Tap şu an kullanılamıyor. Lütfen e-posta ile devam edin.');
           }
-        }, 500);
-      }, 100);
-
-      setIsLoggingIn(false);
+          setIsLoggingIn(false);
+        } else if (notification.isSkippedMoment()) {
+          // Kullanıcı kapadı veya atladı
+          setIsLoggingIn(false);
+        } else if (notification.isDismissedMoment()) {
+          setIsLoggingIn(false);
+        }
+      });
 
     } catch (error) {
       console.error('Google Auth hatası:', error);
