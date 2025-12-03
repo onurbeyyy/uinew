@@ -37,7 +37,13 @@
       "WebFetch(domain:www.calinokcuhukuk.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(python3:*)",
-      "Bash(npx js-beautify:*)"
+      "Bash(npx js-beautify:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:dnschecker.org)",
+      "Bash(host:*)",
+      "Bash(timeout 10 bash:*)",
+      "Bash(dotnet publish:*)"
     ],
     "deny": [],
     "ask": []

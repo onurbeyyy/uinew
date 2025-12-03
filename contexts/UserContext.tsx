@@ -194,26 +194,31 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
    */
   const register = async (registerData: RegisterData): Promise<{ success: boolean; error?: string }> => {
     try {
+      const requestBody = {
+        firstName: registerData.name,
+        lastName: registerData.surname,
+        email: registerData.email,
+        password: registerData.password,
+        phoneNumber: registerData.phoneNumber,
+        nickName: registerData.nickName,
+        birthDate: registerData.birthDate,
+        sessionId: registerData.sessionId,
+        customerCode: registerData.customerCode,
+        tableCode: registerData.tableCode,
+      };
+
+      console.log('📤 Register request:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          firstName: registerData.name,
-          lastName: registerData.surname,
-          email: registerData.email,
-          password: registerData.password,
-          phoneNumber: registerData.phoneNumber,
-          nickName: registerData.nickName, // Kullanıcı adı (sipariş için)
-          birthDate: registerData.birthDate, // Doğum tarihi
-          sessionId: registerData.sessionId, // 🔧 Self-servis session ID
-          customerCode: registerData.customerCode, // Kayıt olduğu restoran kodu
-          tableCode: registerData.tableCode, // Kayıt olduğu masa kodu
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
+      console.log('📥 Register response:', response.status, data);
 
       if (!response.ok || !data.success) {
         return {

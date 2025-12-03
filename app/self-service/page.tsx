@@ -31,7 +31,7 @@ export default function SelfServicePage() {
 
   const CONFIG = {
     signalRBaseUrl: process.env.NEXT_PUBLIC_SIGNALR_URL || 'https://canlimenu.online',
-    uiBaseUrl: process.env.NEXT_PUBLIC_UI_URL || 'http://localhost:3000',
+    uiBaseUrl: process.env.NEXT_PUBLIC_UI_URL || 'https://canlimenu.com',
     expirySeconds: 90,
     qrSize: 240,
     maxChecks: 100
