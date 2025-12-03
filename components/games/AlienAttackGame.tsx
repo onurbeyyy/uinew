@@ -85,6 +85,51 @@ export default function AlienAttackGame({ onBack, playerNickname, customerCode }
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Yatay mod algılama - otomatik tam ekran
+  useEffect(() => {
+    const handleOrientationChange = async () => {
+      if (!containerRef.current) return;
+
+      // Yatay mod kontrolü
+      const isLandscape = window.matchMedia("(orientation: landscape)").matches;
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+      if (isLandscape && isMobile && !document.fullscreenElement) {
+        try {
+          await containerRef.current.requestFullscreen();
+          setIsFullscreen(true);
+
+          // Ekranı yatay modda kilitle (destekleniyorsa)
+          if (screen.orientation && screen.orientation.lock) {
+            try {
+              await screen.orientation.lock('landscape');
+            } catch (e) {
+              // Bazı tarayıcılar desteklemiyor, devam et
+            }
+          }
+        } catch (err) {
+          // Kullanıcı etkileşimi olmadan fullscreen açılamayabilir
+          console.log('Otomatik tam ekran için dokunun');
+        }
+      }
+    };
+
+    // Orientation change event
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    // Media query listener (daha güvenilir)
+    const mediaQuery = window.matchMedia("(orientation: landscape)");
+    mediaQuery.addEventListener('change', handleOrientationChange);
+
+    // İlk yüklemede kontrol et
+    handleOrientationChange();
+
+    return () => {
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      mediaQuery.removeEventListener('change', handleOrientationChange);
+    };
+  }, []);
+
   // 5 saniye sonra kontrolleri gizle
   useEffect(() => {
     if (!isLoading) {
