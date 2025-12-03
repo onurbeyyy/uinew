@@ -277,7 +277,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
 
     // Google SDK yüklü mü kontrol et
     if (!window.google?.accounts) {
-      alert('Google servisi yüklenemedi. Lütfen ad blocker\'ı kapatıp sayfayı yenileyin veya e-posta ile devam edin.');
+      alert('Google servisi şu an kullanılamıyor. Lütfen e-posta ile devam edin.');
       return;
     }
 
@@ -316,7 +316,8 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
             setIsLoggingIn(false);
           }
         },
-        ux_mode: 'popup'
+        ux_mode: 'popup',
+        use_fedcm_for_prompt: false
       });
 
       // Ortalanmış popup göster
@@ -2498,7 +2499,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
         </div>
       )}
 
-      {/* Google Sign-In Popup - Ortada */}
+      {/* Google Sign-In Popup - Giriş modalıyla aynı konumda */}
       {showGooglePopup && (
         <div
           style={{
@@ -2508,7 +2509,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
             width: '100%',
             height: '100%',
             background: 'rgba(0, 0, 0, 0.6)',
-            zIndex: 100001,
+            zIndex: 100000,
             backdropFilter: 'blur(5px)',
             display: 'flex',
             alignItems: 'center',
@@ -2522,7 +2523,9 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
               borderRadius: '20px',
               padding: '30px',
               width: '90%',
-              maxWidth: '350px',
+              maxWidth: '450px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
               textAlign: 'center',
               position: 'relative',
             }}
@@ -2532,19 +2535,22 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
               onClick={() => setShowGooglePopup(false)}
               style={{
                 position: 'absolute',
-                top: '10px',
-                right: '10px',
+                top: '15px',
+                right: '15px',
                 background: 'none',
                 border: 'none',
-                fontSize: '20px',
+                fontSize: '24px',
                 color: '#999',
                 cursor: 'pointer',
+                padding: '5px',
+                borderRadius: '50%',
+                transition: 'all 0.3s ease',
               }}
             >
-              ✕
+              <i className="fas fa-times"></i>
             </button>
 
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', color: '#333' }}>
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 600, color: '#333' }}>
               Google ile Devam Et
             </h3>
 
