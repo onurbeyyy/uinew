@@ -130,8 +130,8 @@ body {
   .language-selector {
     position: absolute !important;
     top: 10px !important;
-    right: 15px !important;
-    left: auto !important;
+    left: 15px !important;
+    right: auto !important;
   }
 
   .category-name,
@@ -171,11 +171,11 @@ body {
   position: relative;
 }
 
-/* Language Selector - Sağ Üst Köşe */
+/* Language Selector - Sol Üst Köşe */
 .language-selector {
   position: fixed;
   top: 10px;
-  right: 15px;
+  left: 15px;
   z-index: 1000;
 }
 

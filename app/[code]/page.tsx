@@ -7,7 +7,6 @@ import { useTable } from '@/contexts/TableContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/UserContext';
 import { useSignalR } from '@/hooks/useSignalR';
-import SplashScreen from '@/components/layout/SplashScreen';
 import BannerModal from '@/components/layout/BannerModal';
 import LoadingScreen from '@/components/layout/LoadingScreen';
 import LanguageSelector from '@/components/layout/LanguageSelector';
@@ -73,7 +72,6 @@ export default function CustomerMenu() {
     }
   }, [tableContextId, tableId, setTableId]);
 
-  const [showSplash, setShowSplash] = useState(true);
   const [showBanner, setShowBanner] = useState(false);
   const [menuDataLocal, setMenuDataLocal] = useState<MenuDto | null>(null);
   const [customerData, setCustomerData] = useState<CustomerInfoResponse | null>(null);
@@ -320,8 +318,8 @@ export default function CustomerMenu() {
 
   // joinRoom parametresi kontrolü - link ile gelen kullanıcılar için
   useEffect(() => {
-    // Splash ekranı kapandıktan ve data yüklendikten sonra kontrol et
-    if (showSplash || initialLoading || !joinRoomParam) return;
+    // Data yüklendikten sonra kontrol et
+    if (initialLoading || !joinRoomParam) return;
 
     // ========================================
     // 🔧 TEST MODU: Authentication kontrolü bypass
@@ -352,12 +350,12 @@ export default function CustomerMenu() {
     url.searchParams.delete('joinRoom');
     window.history.replaceState({}, '', url.toString());
     // ========================================
-  }, [showSplash, initialLoading, joinRoomParam, currentUser, setPendingJoinRoomId, openProfile, openGameModal]);
+  }, [initialLoading, joinRoomParam, currentUser, setPendingJoinRoomId, openProfile, openGameModal]);
 
   // joinBackgammon parametresi kontrolü - Tavla link ile gelen kullanıcılar için
   useEffect(() => {
-    // Splash ekranı kapandıktan ve data yüklendikten sonra kontrol et
-    if (showSplash || initialLoading || !joinBackgammonParam) return;
+    // Data yüklendikten sonra kontrol et
+    if (initialLoading || !joinBackgammonParam) return;
 
     // TEST: Direkt pending room ID'yi kaydet ve Tavla oyun modalını aç
     setPendingJoinRoomId(joinBackgammonParam);
@@ -367,11 +365,7 @@ export default function CustomerMenu() {
     const url = new URL(window.location.href);
     url.searchParams.delete('joinBackgammon');
     window.history.replaceState({}, '', url.toString());
-  }, [showSplash, initialLoading, joinBackgammonParam, currentUser, setPendingJoinRoomId, openProfile, openGameModal]);
-
-  const handleSplashComplete = () => {
-    setShowSplash(false);
-  };
+  }, [initialLoading, joinBackgammonParam, currentUser, setPendingJoinRoomId, openProfile, openGameModal]);
 
   const handleImagesLoaded = () => {
     // Görseller arka planda yüklendi
@@ -573,16 +567,7 @@ export default function CustomerMenu() {
 
   return (
     <>
-      {/* Splash Screen with Liquid Morph Animation */}
-      {showSplash && logoUrl && (
-        <SplashScreen
-          logoUrl={logoUrl}
-          backgroundUrl={backgroundUrl}
-          onComplete={handleSplashComplete}
-        />
-      )}
-
-      {/* Banner Modal - Splash'den sonra göster, kapatılınca menü görünsün */}
+      {/* Banner Modal */}
       {bannerUrl && (
         <BannerModal
           bannerUrl={bannerUrl}
