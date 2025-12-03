@@ -7,7 +7,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Register request body:', body);
 
-    const response = await fetch(`${API_BASE_URL}/api/Auth/register`, {
+    // EndUser kaydı için doğru endpoint'i kullan
+    const response = await fetch(`${API_BASE_URL}/api/EndUser/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -19,10 +20,10 @@ export async function POST(request: NextRequest) {
     console.log('Register API response:', result, 'Status:', response.status);
 
     return NextResponse.json(result, { status: response.status });
-  } catch (error) {
-    console.error('Register API Error:', error);
+  } catch (error: any) {
+    console.error('Register API Error:', error?.message || error);
     return NextResponse.json(
-      { success: false, error: 'Failed to register' },
+      { success: false, error: error?.message || 'Failed to register' },
       { status: 500 }
     );
   }
