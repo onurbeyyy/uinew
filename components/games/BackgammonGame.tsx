@@ -157,16 +157,8 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
   const isMyTurn = useCallback(() => {
     if (players.length === 0) return false;
     const currentPlayer = players[currentPlayerIndex];
-    const result = currentPlayer?.id === playerIdRef.current;
-    console.log('[Backgammon] isMyTurn check:', {
-      currentPlayerIndex,
-      currentPlayerId: currentPlayer?.id,
-      myPlayerId: playerIdRef.current,
-      playerId: playerId,
-      result
-    });
-    return result;
-  }, [players, currentPlayerIndex, playerId]);
+    return currentPlayer?.id === playerIdRef.current;
+  }, [players, currentPlayerIndex]);
 
   const currentTurnPlayer = players[currentPlayerIndex];
 
@@ -235,7 +227,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
     if (conn && currentRoomId && currentPlayerId) {
       try {
         await conn.invoke('LeaveBackgammonRoom', currentRoomId, currentPlayerId);
-        console.log('[Backgammon] Left room:', currentRoomId);
       } catch (err) {
         console.error('[Backgammon] Error leaving room:', err);
       }
@@ -252,7 +243,7 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
   useEffect(() => {
     const setupConnection = async () => {
-      const hubUrl = 'https://game.canlimenu.com/gamehub';
+      const hubUrl = 'https://canlimenu.online/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
@@ -267,7 +258,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       // =====================================
 
       newConnection.on('BackgammonRoomCreated', (data: any) => {
-        console.log('[Backgammon] RoomCreated:', data);
         if (data.success) {
           const newRoomId = data.room?.id;
           setRoomId(newRoomId);
@@ -291,7 +281,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       });
 
       newConnection.on('BackgammonRoomJoined', (data: any) => {
-        console.log('[Backgammon] RoomJoined:', data);
         if (data.success && data.room) {
           setRoomId(data.room.id);
           roomIdRef.current = data.room.id;
@@ -324,12 +313,10 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       });
 
       newConnection.on('BackgammonJoinFailed', (data: any) => {
-        console.log('[Backgammon] JoinFailed:', data);
         setConnectionError(data.error || 'Odaya katılınamadı');
       });
 
       newConnection.on('BackgammonPlayerJoined', (data: any) => {
-        console.log('[Backgammon] PlayerJoined:', data);
         if (data.players) {
           setPlayers(data.players.map((p: any) => ({
             id: p.id,
@@ -342,7 +329,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       });
 
       newConnection.on('BackgammonPlayerLeft', (data: any) => {
-        console.log('[Backgammon] PlayerLeft:', data);
         if (gamePhase === 'playing') {
           setGameOverMessage('Rakibiniz oyundan ayrıldı!');
           setGamePhase('finished');
@@ -351,7 +337,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // Oyuncu kovuldu
       newConnection.on('BackgammonPlayerKicked', (data: any) => {
-        console.log('[Backgammon] PlayerKicked:', data);
         // Ben kovuldum mu?
         if (data.kickedPlayerId === playerIdRef.current) {
           alert('Oda sahibi sizi odadan çıkardı.');
@@ -371,7 +356,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       });
 
       newConnection.on('BackgammonGameStarted', (data: any) => {
-        console.log('[Backgammon] GameStarted:', data);
         setGamePhase('playing');
         setBoard(data.board || []);
         setCurrentPlayerIndex(data.currentPlayerIndex || 0);
@@ -406,7 +390,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // Açılış zarı atıldı
       newConnection.on('BackgammonOpeningRoll', (data: any) => {
-        console.log('[Backgammon] OpeningRoll:', data);
         setWhiteOpeningDice(data.whiteOpeningDice);
         setBlackOpeningDice(data.blackOpeningDice);
         setIsOpeningRoll(data.isOpeningRoll);
@@ -424,7 +407,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // Açılış zarı tamamlandı, oyun başlıyor
       newConnection.on('BackgammonOpeningRollComplete', (data: any) => {
-        console.log('[Backgammon] OpeningRollComplete:', data);
         setIsOpeningRoll(false);
         setCurrentPlayerIndex(data.currentPlayerIndex);
         setDiceValues(data.diceValues);
@@ -436,24 +418,20 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       });
 
       newConnection.on('BackgammonDiceRolled', (data: any) => {
-        console.log('[Backgammon] DiceRolled:', data);
         setDiceValues(data.diceValues);
         setDiceRolled(true);
         setAvailableDice(data.availableDice || []);
         // validMoves'u da al (backend'den geliyor)
         if (data.validMoves) {
-          console.log('[Backgammon] ValidMoves from DiceRolled:', data.validMoves);
           setValidMoves(data.validMoves);
         }
       });
 
       newConnection.on('BackgammonValidMoves', (data: any) => {
-        console.log('[Backgammon] ValidMoves:', data);
         setValidMoves(data.validMoves || []);
       });
 
       newConnection.on('BackgammonPieceMoved', (data: any) => {
-        console.log('[Backgammon] PieceMoved:', data);
         setBoard(data.board || []);
         setAvailableDice(data.availableDice || []);
         setSelectedPosition(null);
@@ -471,7 +449,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
         // Yeni validMoves'u al (kalan hamleler için)
         if (data.validMoves && data.validMoves.length > 0) {
-          console.log('[Backgammon] New validMoves after move:', data.validMoves);
           setValidMoves(data.validMoves);
         } else if (data.turnEnded || !data.availableDice || data.availableDice.length === 0) {
           // Sıra bittiyse veya zar kalmadıysa validMoves'u temizle
@@ -485,7 +462,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       });
 
       newConnection.on('BackgammonTurnChanged', (data: any) => {
-        console.log('[Backgammon] TurnChanged:', data);
         setCurrentPlayerIndex(data.currentPlayerIndex);
         setDiceRolled(false);
         setDiceValues(null);
@@ -505,7 +481,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       });
 
       newConnection.on('BackgammonGameFinished', (data: any) => {
-        console.log('[Backgammon] GameFinished:', data);
         setWinner(data.winnerName);
 
         if (data.winnerId === playerIdRef.current) {
@@ -521,7 +496,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // El sonu (birisi 15 taş topladı)
       newConnection.on('BackgammonRoundEnded', (data: any) => {
-        console.log('[Backgammon] RoundEnded:', data);
         setWhiteScore(data.whiteScore);
         setBlackScore(data.blackScore);
         setCurrentRound(data.currentRound);
@@ -538,7 +512,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // Maç sonu (3 el kazanan)
       newConnection.on('BackgammonMatchFinished', (data: any) => {
-        console.log('[Backgammon] MatchFinished:', data);
         setWhiteScore(data.whiteScore);
         setBlackScore(data.blackScore);
         setIsMatchOver(true);
@@ -555,7 +528,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // Yeni el başladı
       newConnection.on('BackgammonNewRoundStarted', (data: any) => {
-        console.log('[Backgammon] NewRoundStarted:', data);
         setBoard(data.board || []);
         setWhiteScore(data.whiteScore);
         setBlackScore(data.blackScore);
@@ -591,13 +563,11 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
         // Açılış zarı yoksa (kazanan başlıyor), log göster
         if (!data.isOpeningRoll) {
-          console.log(`[Backgammon] Round ${data.currentRound} - ${data.starterName} (${data.starterColor}) başlıyor`);
         }
       });
 
       // Pes etme isteği geldi
       newConnection.on('BackgammonSurrenderRequested', (data: any) => {
-        console.log('[Backgammon] SurrenderRequested:', data);
         setSurrenderRequestedBy(data.requestedBy);
         setSurrenderRequestedByName(data.requestedByName);
         // Rakip pes isteği gönderdi, bana modal göster
@@ -608,7 +578,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // Pes isteği kabul edildi
       newConnection.on('BackgammonSurrenderAccepted', (data: any) => {
-        console.log('[Backgammon] SurrenderAccepted:', data);
         setSurrenderRequestedBy(null);
         setSurrenderRequestedByName(null);
         setShowSurrenderModal(false);
@@ -619,7 +588,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // Pes isteği reddedildi
       newConnection.on('BackgammonSurrenderRejected', (data: any) => {
-        console.log('[Backgammon] SurrenderRejected:', data);
         setSurrenderRequestedBy(null);
         setSurrenderRequestedByName(null);
         setShowSurrenderModal(false);
@@ -627,14 +595,12 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // Pes isteği iptal edildi
       newConnection.on('BackgammonSurrenderCancelled', (data: any) => {
-        console.log('[Backgammon] SurrenderCancelled:', data);
         setSurrenderRequestedBy(null);
         setSurrenderRequestedByName(null);
         setShowSurrenderModal(false);
       });
 
       newConnection.on('BackgammonGameRestarted', (data: any) => {
-        console.log('[Backgammon] GameRestarted:', data);
         setGamePhase('waiting');
         setBoard([]);
         setDiceRolled(false);
@@ -655,7 +621,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       });
 
       newConnection.on('BackgammonVisibilityChanged', (data: any) => {
-        console.log('[Backgammon] VisibilityChanged:', data);
         setShowInLobby(data.isPublic);
       });
 
@@ -667,7 +632,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       // Start connection
       try {
         await newConnection.start();
-        console.log('[Backgammon] Connected to SignalR');
         setIsConnected(true);
         setConnection(newConnection);
         connectionRef.current = newConnection;
@@ -680,7 +644,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
           return;
         }
         const newPlayerId = endUserId.toString();
-        console.log('[Backgammon] Using playerId (endUserId):', newPlayerId);
         setPlayerId(newPlayerId);
         playerIdRef.current = newPlayerId;
 
@@ -725,7 +688,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       const newRoomId = generateRoomId();
       const endUserId = currentUser?.id || currentUser?.userId || null;
 
-      console.log('[Backgammon] Creating room:', newRoomId);
       connection.invoke('CreateBackgammonRoom', newRoomId, playerId, createNickname, 'global', endUserId, true)
         .catch(err => {
           console.error('[Backgammon] Create room error:', err);
@@ -740,7 +702,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       const joinNickname = nickname || generateRandomNickname();
       const endUserId = currentUser?.id || currentUser?.userId || null;
 
-      console.log('[Backgammon] Joining room:', joinRoomId);
       connection.invoke('JoinBackgammonRoom', joinRoomId, playerId, joinNickname, endUserId)
         .catch(err => {
           console.error('[Backgammon] Join room error:', err);
@@ -834,18 +795,7 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
   };
 
   const handleRollDice = async () => {
-    console.log('[Backgammon] handleRollDice called:', {
-      hasConnection: !!connection,
-      roomId,
-      playerId,
-      isOpeningRoll,
-      myOpeningDiceRolled,
-      isMyTurn: isMyTurn(),
-      diceRolled
-    });
-
     if (!connection || !roomId) {
-      console.log('[Backgammon] No connection or roomId');
       return;
     }
 
@@ -855,14 +805,11 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
     // Açılış zarı aşamasında
     if (isOpeningRoll) {
       if (myOpeningDiceRolled) {
-        console.log('[Backgammon] Already rolled opening dice');
         setIsDiceRolling(false);
         return;
       }
-      console.log('[Backgammon] Rolling opening dice for player:', playerId);
       try {
         await connection.invoke('BackgammonRollOpeningDice', roomId, playerId);
-        console.log('[Backgammon] Opening dice roll invoked successfully');
       } catch (err) {
         console.error('[Backgammon] Opening roll error:', err);
       }
@@ -887,21 +834,7 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
   };
 
   const handleSelectPosition = async (position: number | string) => {
-    console.log('[Backgammon] handleSelectPosition called:', {
-      position,
-      isMyTurn: isMyTurn(),
-      diceRolled,
-      validMoves,
-      selectedPosition
-    });
-
     if (!connection || !roomId || !isMyTurn() || !diceRolled) {
-      console.log('[Backgammon] handleSelectPosition blocked:', {
-        connection: !!connection,
-        roomId,
-        isMyTurn: isMyTurn(),
-        diceRolled
-      });
       return;
     }
 
@@ -921,14 +854,8 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
     if (selectedPosition === null) {
       // Geçerli bir başlangıç pozisyonu mu?
       const canMoveFrom = validMoves.some(m => m.fromPosition === posNum);
-      console.log('[Backgammon] Checking canMoveFrom:', {
-        posNum,
-        validMoves: validMoves.map(m => ({ from: m.fromPosition, to: m.toPosition })),
-        canMoveFrom
-      });
       if (canMoveFrom) {
         setSelectedPosition(posNum);
-        console.log('[Backgammon] Position selected:', posNum);
       }
     } else {
       // Hedef pozisyon seçildi - hamle yap
@@ -1092,7 +1019,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       thisMove.canSelectOutBar = fromPositions.includes(-1);
     }
 
-    console.log('[Backgammon] thisMove.canGoTo:', thisMove.canGoTo, 'canSelectOutBar:', thisMove.canSelectOutBar);
     return thisMove;
   }, [selectedPosition, validMoves]);
 

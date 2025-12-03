@@ -145,7 +145,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
           winner: winner?.name || winner?.Name || null
         })
       });
-      console.log('[Quiz] Score submitted to API');
     } catch (e) {
       console.error('[Quiz] Score submit error:', e);
     }
@@ -154,7 +153,7 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
   // SignalR Connection
   useEffect(() => {
     const setupConnection = async () => {
-      const hubUrl = 'https://game.canlimenu.com/gamehub';
+      const hubUrl = 'https://canlimenu.online/gamehub';
 
       const conn = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
@@ -167,11 +166,9 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       // === EVENT HANDLERS ===
 
       conn.on('QuizRoomCreated', (data: any) => {
-        console.log('QuizRoomCreated:', data);
         if (data.success || data.Success) {
           // roomId direkt veya room.id içinde olabilir
           const newRoomId = data.roomId || data.RoomId || data.room?.id || data.room?.Id;
-          console.log('[Quiz] Room created with ID:', newRoomId);
           setRoomId(newRoomId);
           roomIdRef.current = newRoomId;
           setPlayers([{ id: playerIdRef.current, name: nicknameRef.current, score: 0 }]);
@@ -198,7 +195,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       });
 
       conn.on('QuizJoined', (data: any) => {
-        console.log('QuizJoined:', data);
         // Success kontrolü - farklı formatları destekle
         const isSuccess = data.success || data.Success || data.room || data.roomId || data.RoomId;
         if (isSuccess) {
@@ -218,7 +214,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       });
 
       conn.on('PlayerJoinedQuiz', (data: any) => {
-        console.log('PlayerJoinedQuiz:', data);
         // Players dizisi room içinde olabilir
         const playersData = data.room?.players || data.room?.Players || data.players || data.Players || [];
         if (playersData.length > 0) {
@@ -241,7 +236,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       });
 
       conn.on('PlayerLeft', (data: any) => {
-        console.log('PlayerLeft:', data);
         // Players dizisi room içinde olabilir
         const playersData = data.room?.players || data.room?.Players || data.players || data.Players || [];
         setPlayers(playersData.map(normalizePlayer));
@@ -282,7 +276,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
 
       // Oyuncu kovuldu
       conn.on('QuizPlayerKicked', (data: any) => {
-        console.log('QuizPlayerKicked:', data);
         // Ben kovuldum mu?
         if (data.kickedPlayerId === playerIdRef.current) {
           alert('Oda sahibi sizi odadan çıkardı.');
@@ -297,7 +290,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       });
 
       conn.on('QuizStarted', (data: any) => {
-        console.log('QuizStarted:', data);
         setTotalQuestions(data.totalQuestions || QUESTION_COUNT);
         const startTime = new Date();
         setGameStartTime(startTime);
@@ -328,7 +320,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       });
 
       conn.on('NextQuestion', (data: any) => {
-        console.log('NextQuestion:', data);
         const q = data.currentQuestion || data.question;
         if (q) {
           setCurrentQuestion({ id: q.id, text: q.text, answers: q.options || q.answers });
@@ -347,7 +338,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       });
 
       conn.on('QuestionResults', (data: any) => {
-        console.log('QuestionResults:', data);
         setCorrectAnswer(data.correctAnswer ?? data.CorrectAnswer);
         setShowResult(true);
 
@@ -377,7 +367,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       });
 
       conn.on('QuizFinished', (data: any) => {
-        console.log('QuizFinished:', data);
         const winner = data.winner || data.Winner;
         // Scores dizisi room içinde olabilir
         const scoresData = data.room?.players || data.room?.Players || data.finalScores || data.FinalScores || data.players || data.Players || [];
@@ -410,7 +399,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       });
 
       conn.on('QuizRestarted', (data: any) => {
-        console.log('QuizRestarted:', data);
         // State'leri sıfırla
         setGamePhase('playing');
         setCurrentQuestion(null);
@@ -445,7 +433,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
 
       // Host odadan çıktığında oda kapandı
       conn.on('QuizRoomClosed', (data: any) => {
-        console.log('QuizRoomClosed:', data);
         alert(data.reason || data.Reason || 'Oda kapatıldı');
         // Ana sayfaya dön
         if (onBackRef.current) {
@@ -455,7 +442,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
 
       // Oyuncular ayrıldığında oyun sonlandı (1 kişi kaldı)
       conn.on('QuizEnded', (data: any) => {
-        console.log('QuizEnded:', data);
         setGameOverMessage(data.message || '😢 Diğer oyuncular ayrıldı! Lobby\'ye dönülüyor...');
         setGamePhase('finished');
 
@@ -470,7 +456,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       // === CONNECT ===
       try {
         await conn.start();
-        console.log('Quiz SignalR Connected');
         setIsConnected(true);
         connectionRef.current = conn;
 
@@ -487,11 +472,9 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
 
           try {
             if (joinRoomId) {
-              console.log('Joining room:', joinRoomId);
               await conn.invoke('JoinQuiz', joinRoomId, playerIdRef.current, nicknameRef.current);
             } else {
               const newRoomId = generateRoomId();
-              console.log('Creating room:', newRoomId, 'Player:', playerIdRef.current, 'Nick:', nicknameRef.current);
               await conn.invoke('CreateQuizRoom', newRoomId, 'global', playerIdRef.current, nicknameRef.current,
                 QUIZ_CATEGORY, QUIZ_DIFFICULTY, QUESTION_COUNT, showInLobby);
             }
@@ -516,7 +499,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       const currentPlayerId = playerIdRef.current;
 
       if (conn && currentPlayerId) {
-        console.log('[Quiz] Component unmounting, leaving room:', currentRoomId);
         // LeaveQuiz sadece playerId alıyor
         conn.invoke('LeaveQuiz', currentPlayerId).catch(err => {
           console.error('[Quiz] Error leaving room on unmount:', err);
@@ -621,7 +603,6 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       try {
         // LeaveQuiz sadece playerId alıyor
         await connectionRef.current.invoke('LeaveQuiz', playerIdRef.current);
-        console.log('[Quiz] Left room:', roomIdRef.current);
 
         // Lobby'ye bildir - oda silindi/güncellendi
         if (typeof window !== 'undefined') {

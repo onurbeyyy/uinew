@@ -28,5 +28,4 @@ export function readyToEnd(game: Game, thisTurn: ThisTurn): boolean {
 }
 
 export function celebrateGameEnd(thisTurn: ThisTurn): void {
-  console.log(`${thisTurn.turnPlayer.icon} Oyunu Kazandı!`);
 }

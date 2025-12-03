@@ -23,12 +23,10 @@ export function selecting(
   const newMove = () => new ThisMove();
 
   if (!game.gameOn) {
-    console.log("Önce oyunu başlatın!");
     return [game, thisTurn, thisMove];
   }
 
   if (!thisTurn.rolledDice) {
-    console.log("Önce zar atın!");
     return [game, thisTurn, thisMove];
   }
 
@@ -36,7 +34,6 @@ export function selecting(
     thisTurn.turnPlayer.outBar.length == 0 &&
     index === thisTurn.turnPlayer.outBarIdx
   ) {
-    console.log("Dışarıda taşınız yok.");
     return [game, thisTurn, thisMove];
   }
 
@@ -44,7 +41,6 @@ export function selecting(
     !thisTurn.turnPlayer.inTheEnd &&
     index === thisTurn.turnPlayer.endBarIdx
   ) {
-    console.log(
       "Henüz tüm taşlarınızı son alana getirmediniz."
     );
     return [game, thisTurn, thisMove];
@@ -55,7 +51,6 @@ export function selecting(
     typeof index === "number" &&
     game.board[index].length == 0
   ) {
-    console.log("Boş bir alan seçemezsiniz.");
     return [game, thisTurn, thisMove];
   }
 
@@ -64,7 +59,6 @@ export function selecting(
     game.board[index].includes(thisTurn.opponentPlayer.name) &&
     game.board[index].length > 1
   ) {
-    console.log("Rakibin alanını seçemezsiniz.");
     return [game, thisTurn, thisMove];
   }
 
@@ -73,7 +67,6 @@ export function selecting(
     thisMove.fromBarIdx !== thisTurn.turnPlayer.outBarIdx &&
     index !== thisTurn.turnPlayer.outBarIdx
   ) {
-    console.log(
       "Önce dışarıdaki taşlarınızı oynamalısınız."
     );
     return [game, thisTurn, thisMove];
@@ -101,7 +94,6 @@ export function selecting(
   }
 
   if (typeof index !== "number") {
-    console.log("Rakibin alanını seçemezsiniz.");
     return [game, thisTurn, thisMove];
   }
 
@@ -124,7 +116,6 @@ export function selecting(
     if (!thisTurn.turnPlayer.inTheEnd && readyToEnd(game, thisTurn)) {
       thisTurn.turnPlayer.inTheEnd = true;
 
-      console.log(`${thisTurn.turnPlayer.icon} son alanda! Taşları çıkarmaya başlayın.`);
     }
 
     if (thisTurn.maxMoves === 0) {
@@ -137,11 +128,9 @@ export function selecting(
       return [game, thisTurn, thisMove];
     }
   } else {
-    console.log("Oraya seçemezsiniz.");
     return [game, thisTurn, thisMove];
   }
 
-  console.log("Beklenmeyen durum:", thisTurn);
 
   return [game, thisTurn, thisMove];
 }
@@ -158,7 +147,6 @@ export function settingFromBar(
     thisMove.fromBarIdx = index;
     thisMove.canGoTo = canGoTo;
   } else {
-    console.log("Oraya seçemezsiniz.");
   }
 
   return thisMove;
@@ -192,7 +180,6 @@ export function settingFromEndBar(
       thisMove.canGoTo = endingDiceBars;
       return thisMove;
     } else {
-      console.log("Oraya seçemezsiniz.");
     }
   }
 

@@ -68,7 +68,7 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
   // SignalR bağlantısı
   useEffect(() => {
     const setupConnection = async () => {
-      const hubUrl = 'https://game.canlimenu.com/gamehub';
+      const hubUrl = 'https://canlimenu.online/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
@@ -82,7 +82,6 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
 
       // VenueLobby - JoinVenueLobby sonrası sunucu bu eventi gönderir
       newConnection.on('VenueLobby', (data: any) => {
-        console.log('🏛️ Lobby: VenueLobby received', data);
         const rooms = data?.rooms || data?.activeGames || [];
         const formattedRooms = rooms.map(formatGameData);
         setGames(formattedRooms);
@@ -90,7 +89,6 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
 
       // VenueLobbyJoined - Lobby'ye katılım onayı
       newConnection.on('VenueLobbyJoined', (data: any) => {
-        console.log('🏛️ Lobby: VenueLobbyJoined received', data);
         const rooms = data?.games || [];
         const formattedRooms = rooms.map(formatGameData);
         setGames(formattedRooms);
@@ -98,14 +96,12 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
 
       // LobbyUpdated - Oda listesi güncellendiğinde
       newConnection.on('LobbyUpdated', (data: any) => {
-        console.log('🏛️ Lobby: LobbyUpdated received', data);
         const rooms = data?.lobby || data?.rooms || [];
         const formattedRooms = rooms.map(formatGameData);
         setGames(formattedRooms);
       });
 
       newConnection.on('RoomCreated', (data: any) => {
-        console.log('🏛️ Lobby: RoomCreated received', data);
         if (data.room) {
           const room = formatGameData(data.room);
           setGames(prev => {
@@ -119,26 +115,22 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
       });
 
       newConnection.on('RoomUpdated', (data: any) => {
-        console.log('🏛️ Lobby: RoomUpdated received', data);
         const room = formatGameData(data);
         setGames(prev => prev.map(g => g.id === room.id ? room : g));
       });
 
       newConnection.on('RoomDeleted', (data: any) => {
-        console.log('🏛️ Lobby: RoomDeleted received', data);
         const roomId = data.roomId || data.id;
         setGames(prev => prev.filter(g => g.id !== roomId));
       });
 
       // RoomRemoved - Oyun bitince veya oda boşalınca (Ludo vs.)
       newConnection.on('RoomRemoved', (data: any) => {
-        console.log('🏛️ Lobby: RoomRemoved received', data);
         const roomId = data.roomId || data.id;
         setGames(prev => prev.filter(g => g.id !== roomId));
       });
 
       newConnection.on('GameStarted', (data: any) => {
-        console.log('🏛️ Lobby: GameStarted received', data);
         const roomId = data.roomId || data.id;
         setGames(prev => prev.map(g =>
           g.id === roomId ? { ...g, status: 'active' as const } : g
@@ -146,7 +138,6 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
       });
 
       newConnection.on('GameFinished', (data: any) => {
-        console.log('🏛️ Lobby: GameFinished received', data);
         const roomId = data.roomId || data.id;
         setGames(prev => prev.map(g =>
           g.id === roomId ? { ...g, status: 'finished' as const } : g
@@ -154,14 +145,12 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
       });
 
       newConnection.on('GameEnded', (data: any) => {
-        console.log('🏛️ Lobby: GameEnded received', data);
         const roomId = data.roomId || data.id;
         setGames(prev => prev.filter(g => g.id !== roomId));
       });
 
       // PlayerJoined - oda güncellemesi için
       newConnection.on('PlayerJoined', (data: any) => {
-        console.log('🏛️ Lobby: PlayerJoined received', data);
         if (data.roomId && data.players) {
           setGames(prev => prev.map(g =>
             g.id === data.roomId ? { ...g, players: data.players } : g
@@ -171,7 +160,6 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
 
       // PlayerLeft - oda güncellemesi için
       newConnection.on('PlayerLeft', (data: any) => {
-        console.log('🏛️ Lobby: PlayerLeft received', data);
         if (data.roomId && data.players) {
           setGames(prev => prev.map(g =>
             g.id === data.roomId ? { ...g, players: data.players } : g
@@ -181,16 +169,13 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
 
       try {
         await newConnection.start();
-        console.log('🏛️ Lobby: SignalR Connected');
         setIsConnected(true);
         connectionRef.current = newConnection;
 
         // Venue lobby'ye katıl - sunucu VenueLobby eventi gönderecek
         try {
           await newConnection.invoke('JoinVenueLobby', venueCode);
-          console.log('🏛️ Lobby: JoinVenueLobby called with', venueCode);
         } catch (err) {
-          console.log('🏛️ Lobby: JoinVenueLobby error:', err);
         }
 
         setIsLoading(false);
@@ -212,7 +197,6 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
   // Ayrıca local events de dinle (aynı sayfa içindeki güncellemeler için)
   useEffect(() => {
     const handleRoomCreated = (event: CustomEvent) => {
-      console.log('🏛️ Lobby: Local room created event', event.detail);
       const room = formatGameData(event.detail);
       setGames(prev => {
         const exists = prev.some(g => g.id === room.id);
@@ -224,7 +208,6 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
     };
 
     const handleRoomDeleted = (event: CustomEvent) => {
-      console.log('🏛️ Lobby: Local room deleted event', event.detail);
       setGames(prev => prev.filter(g => g.id !== event.detail.roomId));
     };
 
@@ -244,7 +227,6 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
 
     // Oyuncu katıldığında veya ayrıldığında lobby güncelleme
     const handleRoomUpdated = (event: CustomEvent) => {
-      console.log('🏛️ Lobby: Local room updated event', event.detail);
       const room = formatGameData(event.detail);
       setGames(prev => prev.map(g => g.id === room.id ? room : g));
     };

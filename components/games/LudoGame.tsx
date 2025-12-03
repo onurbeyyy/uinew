@@ -212,7 +212,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
         })
       };
 
-      console.log('Submitting game result:', scoreData);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -223,7 +222,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       if (response.ok) {
-        console.log('Game result submitted successfully');
         resultSubmittedRef.current = true;
         setResultSubmitted(true);
       } else {
@@ -237,7 +235,7 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
   // SignalR Connection - RPS pattern (empty dependency array)
   useEffect(() => {
     const setupConnection = async () => {
-      const hubUrl = 'https://game.canlimenu.com/gamehub';
+      const hubUrl = 'https://canlimenu.online/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
@@ -275,7 +273,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       };
 
       newConnection.on('LudoRoomCreated', (data: any) => {
-        console.log('LudoRoomCreated:', data);
         if (data.success) {
           const room = data.room || data.Room;
           const newRoomId = room?.id || room?.Id || data.roomId;
@@ -306,7 +303,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       newConnection.on('LudoGameJoined', (data: any) => {
-        console.log('LudoGameJoined:', data);
         if (data.success) {
           const room = data.room || data.Room;
           const newRoomId = room?.id || room?.Id || data.roomId;
@@ -350,25 +346,20 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       newConnection.on('LudoPlayerReconnected', (data: any) => {
-        console.log('LudoPlayerReconnected:', data);
         const normalizedPlayers = normalizePlayersData(data.players || data.Players);
         setPlayers(normalizedPlayers);
         setGameMessage(`${data.playerName || data.PlayerName} geri döndü!`);
       });
 
       newConnection.on('LudoPlayerDisconnected', (data: any) => {
-        console.log('LudoPlayerDisconnected:', data);
         const normalizedPlayers = normalizePlayersData(data.players || data.Players);
         setPlayers(normalizedPlayers);
         setGameMessage(`${data.playerName || data.PlayerName} bağlantısı koptu, bekleniyor...`);
       });
 
       newConnection.on('LudoPlayerJoined', (data: any) => {
-        console.log('LudoPlayerJoined RAW:', JSON.stringify(data));
         const playersData = data.players || data.Players || [];
-        console.log('LudoPlayerJoined playersData:', JSON.stringify(playersData));
         const normalizedPlayers = normalizePlayersData(playersData);
-        console.log('LudoPlayerJoined normalized:', JSON.stringify(normalizedPlayers));
         setPlayers(normalizedPlayers);
         setGameMessage(`${data.playerName || data.PlayerName} katıldı!`);
 
@@ -389,7 +380,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       newConnection.on('LudoPlayerLeft', (data: any) => {
-        console.log('LudoPlayerLeft:', data);
         const normalizedPlayers = normalizePlayersData(data.players || data.Players);
         setPlayers(normalizedPlayers);
 
@@ -429,7 +419,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
 
       // Oyuncu kovuldu
       newConnection.on('LudoPlayerKicked', (data: any) => {
-        console.log('LudoPlayerKicked:', data);
         // Ben kovuldum mu?
         if (data.kickedPlayerId === playerIdRef.current) {
           alert('Oda sahibi sizi odadan çıkardı.');
@@ -444,7 +433,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       newConnection.on('LudoGameStarted', (data: any) => {
-        console.log('LudoGameStarted:', data);
         setPlayers(normalizePlayersData(data.players || data.Players));
         setCurrentPlayerIndex(0);
         setGamePhase('playing');
@@ -465,7 +453,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       newConnection.on('LudoDiceRolled', (data: any) => {
-        console.log('LudoDiceRolled:', data);
         setDiceValue(data.value);
         setIsRolling(false);
 
@@ -484,17 +471,14 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       newConnection.on('LudoPieceMoved', (data: any) => {
-        console.log('LudoPieceMoved RAW:', JSON.stringify(data));
         const captured = data.captured || data.Captured;
         const reachedHome = data.reachedHome || data.ReachedHome;
-        console.log('Captured:', captured, 'ReachedHome:', reachedHome);
 
         const normalizedPlayers = normalizePlayersData(data.players || data.Players);
         const normalizedRankings = normalizeRankings(data.rankings || data.Rankings);
 
         // Debug: Log all piece positions
         normalizedPlayers.forEach((p: any) => {
-          console.log(`Player ${p.name} (${p.color}) pieces:`, p.pieces, 'rank:', p.finishRank);
         });
 
         setPlayers(normalizedPlayers);
@@ -504,14 +488,12 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
 
         if (captured) {
           setGameMessage('🎯 Rakip yendi! Tekrar at!');
-          console.log('CAPTURE DETECTED!');
         } else if (reachedHome) {
           setGameMessage('🏠 Eve ulaştı!');
         }
       });
 
       newConnection.on('LudoPlayerFinished', (data: any) => {
-        console.log('LudoPlayerFinished:', data);
         const rank = data.rank || data.Rank;
         const playerName = data.playerName || data.PlayerName;
         const remainingPlayers = data.remainingPlayers || data.RemainingPlayers;
@@ -522,7 +504,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       newConnection.on('LudoTurnChanged', (data: any) => {
-        console.log('LudoTurnChanged:', data);
         const playersData = data.players || data.Players;
         if (playersData) {
           setPlayers(normalizePlayersData(playersData));
@@ -540,7 +521,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       newConnection.on('LudoGameFinished', (data: any) => {
-        console.log('LudoGameFinished:', data);
         const normalizedRankings = normalizeRankings(data.rankings || data.Rankings);
         const winnerName = data.winnerName || data.WinnerName;
         setRankings(normalizedRankings);
@@ -565,13 +545,11 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       newConnection.on('LudoError', (data: any) => {
-        console.log('LudoError:', data);
         setError(data.message);
       });
 
       // Host odadan çıktığında oda kapandı
       newConnection.on('LudoRoomClosed', (data: any) => {
-        console.log('LudoRoomClosed:', data);
         alert(data.reason || 'Oda kapatıldı');
         // Ana sayfaya dön
         if (onBack) {
@@ -581,7 +559,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
 
       try {
         await newConnection.start();
-        console.log('SignalR connected for Ludo');
         setIsConnected(true);
         setConnection(newConnection);
         connectionRef.current = newConnection;
@@ -604,7 +581,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       const conn = connectionRef.current;
 
       if (conn && currentRoomId && currentPlayerId) {
-        console.log('[Ludo] Component unmounting, leaving room:', currentRoomId);
         conn.invoke('LeaveLudoRoom', currentRoomId, currentPlayerId).catch(err => {
           console.error('[Ludo] Error leaving room on unmount:', err);
         });
@@ -625,7 +601,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       nicknameRef.current = joinNickname;
       setGamePhase('waiting');
       setIsHost(false);
-      console.log('Auto-joining room:', joinRoomId, 'with nickname:', joinNickname, 'endUserId:', endUserId);
       connection.invoke('JoinLudoRoom', joinRoomId, playerId, joinNickname, endUserId).catch(console.error);
     }
   }, [joinRoomId, isConnected, connection, autoJoinAttempted, playerId, nickname]);
@@ -641,7 +616,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       setNickname(createNickname);
       nicknameRef.current = createNickname;
       setIsHost(true);
-      console.log('Auto-creating room:', rid, 'with nickname:', createNickname, 'endUserId:', endUserId);
       connection.invoke('CreateLudoRoom', rid, playerId, createNickname, 'global', endUserId, true).catch(console.error); // Evrensel lobby
     }
   }, [joinRoomId, isConnected, connection, autoRoomCreated, playerId, nickname, customerCode]);
@@ -685,7 +659,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
     // Sadece host ve oda varsa güncelle
     if (connection && roomId && isHost && gamePhase === 'waiting') {
       connection.invoke('SetLudoRoomVisibility', roomId, showInLobby).catch(console.error);
-      console.log('Ludo room visibility updated:', showInLobby);
     }
   }, [showInLobby, connection, roomId, isHost, gamePhase]);
 
@@ -696,7 +669,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
     setNickname(createNickname);
     nicknameRef.current = createNickname;
     roomIdRef.current = rid;
-    console.log('Creating room:', rid, 'with nickname:', createNickname, 'endUserId:', endUserId);
     await connection.invoke('CreateLudoRoom', rid, playerId, createNickname, 'global', endUserId, showInLobby); // Evrensel lobby
   };
 
@@ -708,7 +680,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
     nicknameRef.current = joinNickname;
     setRoomId(targetRoom);
     roomIdRef.current = targetRoom;
-    console.log('Joining room:', targetRoom, 'with nickname:', joinNickname, 'endUserId:', endUserId);
     await connection.invoke('JoinLudoRoom', targetRoom, playerId, joinNickname, endUserId);
   };
 
@@ -718,7 +689,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
     if (connection && roomId && playerId) {
       try {
         await connection.invoke('LeaveLudoRoom', roomId, playerId);
-        console.log('Left Ludo room:', roomId);
       } catch (err) {
         console.error('Error leaving room:', err);
       }
@@ -757,7 +727,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
 
   const startGame = async () => {
     if (!connection || !isHost || players.length < 2) return;
-    console.log('Starting game');
     await connection.invoke('StartLudoGame', roomId);
   };
 
@@ -785,19 +754,16 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
   const rollDice = async () => {
     if (!connection || !isMyTurn() || isRolling || diceValue) return;
     setIsRolling(true);
-    console.log('Rolling dice');
     await connection.invoke('LudoRollDice', roomId, playerIdRef.current);
   };
 
   const movePiece = async (pieceIndex: number) => {
     if (!connection || !validMoves.includes(pieceIndex)) return;
-    console.log('Moving piece:', pieceIndex);
     await connection.invoke('LudoMovePiece', roomId, playerIdRef.current, pieceIndex);
   };
 
   const endTurn = async () => {
     if (!connection) return;
-    console.log('Ending turn');
     await connection.invoke('LudoEndTurn', roomId, playerIdRef.current);
   };
 

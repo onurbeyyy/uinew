@@ -48,7 +48,6 @@ export default function AlienAttackGame({ onBack, playerNickname, customerCode }
               aliensKilled: aliensKilled || 0
             })
           });
-          console.log('[AlienAttack] Score submitted to API:', score);
         } catch (error) {
           console.error('[AlienAttack] Failed to submit score:', error);
         }

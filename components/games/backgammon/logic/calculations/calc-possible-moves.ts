@@ -4,7 +4,6 @@ import ThisTurn from "../models/this-turn";
 
 export function checkCantMove(game: Game, thisTurn: ThisTurn): ThisTurn {
   if (game.gameOn && !hasPossibleMove(game, thisTurn)) {
-    console.log(`Hamle yapılamıyor. Sıra rakibe geçiyor.`);
     thisTurn = changeTurn(game, thisTurn);
   }
 

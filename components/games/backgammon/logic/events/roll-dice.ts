@@ -18,11 +18,9 @@ export function rollingDice(tempTurn: ThisTurn) {
   );
 
   if (thisTurn.dices[0] === thisTurn.dices[1]) {
-    console.log(
       `${thisTurn.turnPlayer.icon} 🎲 Çift attı ${thisTurn.dices} 🎲`
     );
   } else {
-    console.log(
       `${thisTurn.turnPlayer.icon} 🎲 Zar attı ${thisTurn.dices} 🎲`
     );
   }

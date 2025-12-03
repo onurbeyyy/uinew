@@ -20,7 +20,6 @@ export function changingTurn(oldTurn: ThisTurn): ThisTurn {
   );
 
   const message = `Sıra şimdi ${thisTurn.turnPlayer.icon}`;
-  console.log(message);
 
   return thisTurn;
 }

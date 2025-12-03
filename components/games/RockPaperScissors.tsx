@@ -98,7 +98,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
     if (conn && currentRoomId && currentPlayerId) {
       try {
         await conn.invoke('LeaveRoom', currentPlayerId);
-        console.log('[RPS] Left room:', currentRoomId);
       } catch (err) {
         console.error('[RPS] Error leaving room:', err);
       }
@@ -111,7 +110,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
 
   // Handle game finished
   const handleGameFinished = useCallback((data: any) => {
-    console.log('[RPS] GameFinished:', data);
 
     // Önce bekleyen timeout'u temizle (RoundResult'tan gelen)
     if (nextRoundTimeoutRef.current) {
@@ -148,7 +146,7 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
   // SignalR Connection
   useEffect(() => {
     const setupConnection = async () => {
-      const hubUrl = 'https://game.canlimenu.com/gamehub';
+      const hubUrl = 'https://canlimenu.online/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
@@ -160,7 +158,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
 
       // Event Handlers
       newConnection.on('RoomCreated', (data: any) => {
-        console.log('[RPS] RoomCreated:', data);
         if (data.success) {
           const newRoomId = data.room?.id || data.roomId;
           setRoomId(newRoomId);
@@ -176,7 +173,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       });
 
       newConnection.on('GameJoined', (data: any) => {
-        console.log('[RPS] GameJoined:', data);
         if (data.success) {
           const newRoomId = data.room?.id || data.roomId;
           setRoomId(newRoomId);
@@ -187,14 +183,12 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       });
 
       newConnection.on('JoinedRoom', (data: any) => {
-        console.log('[RPS] JoinedRoom:', data);
         if (data.players) {
           setPlayers(data.players);
         }
       });
 
       newConnection.on('PlayerJoined', (data: any) => {
-        console.log('[RPS] PlayerJoined:', data);
         const playerList = data.players || data.room?.players;
         if (playerList) {
           setPlayers(playerList);
@@ -202,7 +196,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       });
 
       newConnection.on('PlayerLeft', (data: any) => {
-        console.log('[RPS] PlayerLeft:', data);
         const playerList = data.players || data.room?.players;
         if (playerList) {
           setPlayers(playerList);
@@ -223,7 +216,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
 
       // Oyuncu kovuldu
       newConnection.on('RPSPlayerKicked', (data: any) => {
-        console.log('[RPS] PlayerKicked:', data);
         // Ben kovuldum mu?
         if (data.kickedPlayerId === playerIdRef.current) {
           alert('Oda sahibi sizi odadan çıkardı.');
@@ -238,7 +230,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       });
 
       newConnection.on('GameStarted', (data: any) => {
-        console.log('[RPS] GameStarted:', data);
         setGamePhase('playing');
         setCurrentRound(data.room?.currentRound || 1);
         setMyChoice(null);
@@ -261,7 +252,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       });
 
       newConnection.on('RoundStarted', () => {
-        console.log('[RPS] RoundStarted');
         setGamePhase('playing');
         setMyChoice(null);
         setOpponentChose(false);
@@ -270,14 +260,12 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       });
 
       newConnection.on('PlayerMadeChoice', (data: any) => {
-        console.log('[RPS] PlayerMadeChoice:', data);
         if (data.playerId && data.playerId !== playerIdRef.current) {
           setOpponentChose(true);
         }
       });
 
       newConnection.on('RoundResult', (data: any) => {
-        console.log('[RPS] RoundResult:', data);
         const result = data.result || data;
         const playerData = data.players;
 
@@ -342,7 +330,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       newConnection.on('GameEnded', handleGameFinished);
 
       newConnection.on('GameRestarted', () => {
-        console.log('[RPS] GameRestarted');
         setGamePhase('waiting');
         setCurrentRound(1);
         setMyChoice(null);
@@ -362,7 +349,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       // Connect
       try {
         await newConnection.start();
-        console.log('[RPS] SignalR connected');
         setIsConnected(true);
         setConnectionError(null);
         setConnection(newConnection);
@@ -386,7 +372,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       const conn = connectionRef.current;
 
       if (conn && currentRoomId && currentPlayerId) {
-        console.log('[RPS] Component unmounting, leaving room:', currentRoomId);
         conn.invoke('LeaveRoom', currentPlayerId).catch(err => {
           console.error('[RPS] Error leaving room on unmount:', err);
         });
@@ -409,7 +394,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       setIsHost(true);
 
       const settings = { maxRounds: MAX_ROUNDS, maxPlayers: 2, gameType: 'RockPaperScissors' };
-      console.log('[RPS] Auto-creating room:', newRoomId, 'with nickname:', createNickname);
 
       connection.invoke('CreateRoom', newRoomId, 'global', playerId, createNickname, settings, true).catch(err => {
         console.error('[RPS] Create room error:', err);
@@ -427,7 +411,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       setNickname(joinNickname);
       nicknameRef.current = joinNickname;
       setIsHost(false);
-      console.log('[RPS] Auto-joining room:', joinRoomId, 'with nickname:', joinNickname);
       connection.invoke('JoinRoom', joinRoomId, playerId, joinNickname).catch(console.error);
     }
   }, [joinRoomId, isConnected, connection, autoJoinAttempted, playerId, nickname]);
@@ -470,7 +453,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
     if (connection && roomId) {
       try {
         await connection.invoke('SetRoomVisibility', roomId, visible);
-        console.log('[RPS] Room visibility updated:', visible);
       } catch (err) {
         console.error('[RPS] SetRoomVisibility error:', err);
       }

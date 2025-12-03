@@ -39,7 +39,7 @@ class GameSignalRService {
   private hubUrl: string;
   private eventHandlers: Map<string, Function[]> = new Map();
 
-  constructor(hubUrl: string = 'https://game.canlimenu.com/gamehub') {
+  constructor(hubUrl: string = 'https://canlimenu.online/gamehub') {
     this.hubUrl = hubUrl;
   }
 
@@ -260,7 +260,7 @@ export function getGameSignalRService(): GameSignalRService {
   if (!gameSignalRServiceInstance) {
     const hubUrl = process.env.NEXT_PUBLIC_GAME_HUB_URL
       ? `${process.env.NEXT_PUBLIC_GAME_HUB_URL}/gamehub`
-      : 'https://game.canlimenu.com/gamehub';
+      : 'https://canlimenu.online/gamehub';
 
     gameSignalRServiceInstance = new GameSignalRService(hubUrl);
   }
