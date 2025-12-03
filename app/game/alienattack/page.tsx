@@ -31,12 +31,13 @@ function AlienAttackContent() {
     scoreSubmittedRef.current = true;
 
     try {
-      // Giriş yapmış kullanıcı varsa adını al, yoksa "Misafir" kullan
+      // Giriş yapmış kullanıcı varsa adını al, yoksa rastgele isim oluştur
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const user = currentUser as any;
+      const randomId = Math.floor(1000 + Math.random() * 9000);
       const nickname = isAuthenticated && user
         ? (user?.nickName || user?.nickname || user?.firstName || 'Player')
-        : 'Misafir';
+        : `user${randomId}`;
 
       console.log('[AlienAttack] Skor gönderiliyor - Nick:', nickname, 'Score:', score, 'Aliens:', aliensKilled);
 
