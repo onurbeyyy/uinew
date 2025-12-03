@@ -96,7 +96,7 @@ export default function RootLayout({
         </LanguageProvider>
         <Script
           src="https://accounts.google.com/gsi/client"
-          strategy="lazyOnload"
+          strategy="afterInteractive"
         />
       </body>
     </html>
