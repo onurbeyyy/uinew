@@ -284,11 +284,13 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
 
     try {
       setIsLoggingIn(true);
+      setShowGooglePopup(true);
 
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: async (response: any) => {
           try {
+            setShowGooglePopup(false);
             const apiResponse = await fetch('/api/auth/google', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -316,34 +318,29 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
             setIsLoggingIn(false);
           }
         },
-        ux_mode: 'popup',
-        use_fedcm_for_prompt: false,
-        cancel_on_tap_outside: false
+        use_fedcm_for_prompt: false
       });
 
-      // One Tap UI'ı göster
-      window.google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed()) {
-          // One Tap gösterilemedi - nedeni kontrol et
-          const reason = notification.getNotDisplayedReason();
-          if (reason === 'opt_out_or_no_session') {
-            alert('Google hesabınızla giriş yapmak için tarayıcınızda Google hesabına giriş yapın.');
-          } else {
-            alert('Google One Tap şu an kullanılamıyor. Lütfen e-posta ile devam edin.');
-          }
-          setIsLoggingIn(false);
-        } else if (notification.isSkippedMoment()) {
-          // Kullanıcı kapadı veya atladı
-          setIsLoggingIn(false);
-        } else if (notification.isDismissedMoment()) {
-          setIsLoggingIn(false);
+      // Google butonunu hemen render et
+      setTimeout(() => {
+        if (googleButtonRef.current) {
+          window.google?.accounts.id.renderButton(googleButtonRef.current, {
+            theme: 'outline',
+            size: 'large',
+            width: 280,
+            text: 'continue_with',
+            shape: 'rectangular',
+            logo_alignment: 'center'
+          });
         }
-      });
+        setIsLoggingIn(false);
+      }, 100);
 
     } catch (error) {
       console.error('Google Auth hatası:', error);
       alert('Google ile giriş şu an kullanılamıyor.');
       setIsLoggingIn(false);
+      setShowGooglePopup(false);
     }
   };
 
