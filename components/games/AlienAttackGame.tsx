@@ -100,9 +100,9 @@ export default function AlienAttackGame({ onBack, playerNickname, customerCode }
           setIsFullscreen(true);
 
           // Ekranı yatay modda kilitle (destekleniyorsa)
-          if (screen.orientation && screen.orientation.lock) {
+          if (screen.orientation && (screen.orientation as any).lock) {
             try {
-              await screen.orientation.lock('landscape');
+              await (screen.orientation as any).lock('landscape');
             } catch (e) {
               // Bazı tarayıcılar desteklemiyor, devam et
             }
