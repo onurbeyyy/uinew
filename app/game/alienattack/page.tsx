@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useCallback, useRef } from 'react';
+import { Suspense, useEffect, useCallback, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/UserContext';
 
@@ -11,6 +11,8 @@ function AlienAttackContent() {
   const customerCode = searchParams.get('code') || '';
   const scoreSubmittedRef = useRef(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Müşteri menüsüne geri dön
   const goBackToMenu = useCallback(() => {
@@ -101,11 +103,84 @@ function AlienAttackContent() {
     }
   }, []);
 
+  // Tam ekran fonksiyonu
+  const requestFullscreen = useCallback(async () => {
+    if (!containerRef.current || document.fullscreenElement) return;
+
+    try {
+      await containerRef.current.requestFullscreen();
+      setIsFullscreen(true);
+
+      // Ekranı yatay modda kilitle
+      if (screen.orientation && (screen.orientation as any).lock) {
+        try {
+          await (screen.orientation as any).lock('landscape');
+        } catch (e) {
+          // Desteklenmeyebilir
+        }
+      }
+    } catch (err) {
+      console.log('Tam ekran açılamadı');
+    }
+  }, []);
+
+  // Sayfa açılınca otomatik tam ekran dene
+  useEffect(() => {
+    // Mobil cihazda otomatik tam ekran
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    if (isMobile) {
+      // Kullanıcı etkileşimi gerektiği için bir dokunuşta tam ekran aç
+      const handleFirstTouch = () => {
+        requestFullscreen();
+        document.removeEventListener('touchstart', handleFirstTouch);
+      };
+      document.addEventListener('touchstart', handleFirstTouch, { once: true });
+
+      return () => {
+        document.removeEventListener('touchstart', handleFirstTouch);
+      };
+    }
+  }, [requestFullscreen]);
+
+  // Yatay mod algılama
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      const isLandscape = window.matchMedia("(orientation: landscape)").matches;
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+      if (isLandscape && isMobile && !document.fullscreenElement) {
+        requestFullscreen();
+      }
+    };
+
+    window.addEventListener('orientationchange', handleOrientationChange);
+    const mediaQuery = window.matchMedia("(orientation: landscape)");
+    mediaQuery.addEventListener('change', handleOrientationChange);
+
+    return () => {
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      mediaQuery.removeEventListener('change', handleOrientationChange);
+    };
+  }, [requestFullscreen]);
+
+  // Fullscreen değişikliğini dinle
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   // iframe'den gelen mesajları dinle
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       // Geri mesajı
       if (event.data === 'alienattack-back') {
+        // Fullscreen'den çık
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        }
         goBackToMenu();
         return;
       }
@@ -158,15 +233,19 @@ function AlienAttackContent() {
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: '#000',
-      zIndex: 9999
-    }}>
+    <div
+      ref={containerRef}
+      onClick={requestFullscreen}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: '#000',
+        zIndex: 9999
+      }}
+    >
       <iframe
         ref={iframeRef}
         src="/games/alienattack/index.html"
@@ -178,6 +257,27 @@ function AlienAttackContent() {
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
         allowFullScreen
       />
+      {/* Tam ekran butonu - sadece tam ekran değilse göster */}
+      {!isFullscreen && (
+        <button
+          onClick={requestFullscreen}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            padding: '10px 15px',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            border: '2px solid #fff',
+            borderRadius: '8px',
+            fontSize: '14px',
+            cursor: 'pointer',
+            zIndex: 10000
+          }}
+        >
+          ⛶ Tam Ekran
+        </button>
+      )}
     </div>
   );
 }
