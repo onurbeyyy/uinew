@@ -287,7 +287,6 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: async (response: any) => {
-          setShowGooglePopup(false);
           try {
             const apiResponse = await fetch('/api/auth/google', {
               method: 'POST',
@@ -320,7 +319,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
         use_fedcm_for_prompt: false
       });
 
-      // Ortalanmış popup göster
+      // Direkt modal göster - mobilde prompt çalışmıyor
       setShowGooglePopup(true);
       setIsLoggingIn(false);
 
@@ -331,13 +330,13 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
     }
   };
 
-  // Google butonunu render et
+  // Google butonunu render et (fallback)
   useEffect(() => {
     if (showGooglePopup && googleButtonRef.current && window.google?.accounts) {
       window.google.accounts.id.renderButton(googleButtonRef.current, {
         theme: 'outline',
         size: 'large',
-        width: 280,
+        width: 300,
         text: 'continue_with',
         shape: 'rectangular',
         logo_alignment: 'center'
