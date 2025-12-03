@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import './globals.css';
 import { CartProvider } from '@/contexts/CartContext';
 import { MenuProvider } from '@/contexts/MenuContext';
@@ -79,6 +78,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="tr">
+      <head>
+        {/* Google Sign-In SDK - doğrudan head'e eklendi */}
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+      </head>
       <body>
         <LanguageProvider>
           <UserProvider>
@@ -94,10 +97,6 @@ export default function RootLayout({
             </TableProvider>
           </UserProvider>
         </LanguageProvider>
-        <Script
-          src="https://accounts.google.com/gsi/client"
-          strategy="afterInteractive"
-        />
       </body>
     </html>
   );

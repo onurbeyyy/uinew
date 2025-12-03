@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/UserContext';
 import { useTable } from '@/contexts/TableContext';
 
@@ -269,6 +269,9 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
   };
 
   // Google Sign-In - popup yöntemi
+  const [showGooglePopup, setShowGooglePopup] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+
   const handleGoogleAuth = async () => {
     const GOOGLE_CLIENT_ID = '225030149337-1s3p26g9odq3dle0s2en3eddrv2b7eut.apps.googleusercontent.com';
 
@@ -284,6 +287,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: async (response: any) => {
+          setShowGooglePopup(false);
           try {
             const apiResponse = await fetch('/api/auth/google', {
               method: 'POST',
@@ -315,13 +319,30 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
         ux_mode: 'popup'
       });
 
-      window.google.accounts.id.prompt();
+      // Ortalanmış popup göster
+      setShowGooglePopup(true);
+      setIsLoggingIn(false);
+
     } catch (error) {
       console.error('Google Auth hatası:', error);
       alert('Google ile giriş şu an kullanılamıyor.');
       setIsLoggingIn(false);
     }
   };
+
+  // Google butonunu render et
+  useEffect(() => {
+    if (showGooglePopup && googleButtonRef.current && window.google?.accounts) {
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        width: 280,
+        text: 'continue_with',
+        shape: 'rectangular',
+        logo_alignment: 'center'
+      });
+    }
+  }, [showGooglePopup]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2472,6 +2493,72 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
               >
                 Tekrar gönder
               </a>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Google Sign-In Popup - Ortada */}
+      {showGooglePopup && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0, 0, 0, 0.6)',
+            zIndex: 100001,
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowGooglePopup(false)}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '20px',
+              padding: '30px',
+              width: '90%',
+              maxWidth: '350px',
+              textAlign: 'center',
+              position: 'relative',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowGooglePopup(false)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'none',
+                border: 'none',
+                fontSize: '20px',
+                color: '#999',
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', color: '#333' }}>
+              Google ile Devam Et
+            </h3>
+
+            <div
+              ref={googleButtonRef}
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                minHeight: '44px'
+              }}
+            />
+
+            <p style={{ margin: '15px 0 0 0', fontSize: '12px', color: '#999' }}>
+              Hesabınızı seçin veya oluşturun
             </p>
           </div>
         </div>
