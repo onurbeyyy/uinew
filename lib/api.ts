@@ -25,13 +25,18 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  private async request<T>(endpoint: string, options?: RequestInit, retries = 2): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     const locale = loadLocale();
+
+    // AbortController ile timeout (10 saniye)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     try {
       const response = await fetch(url, {
         ...options,
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'Accept-Language': locale,
@@ -39,7 +44,16 @@ class ApiClient {
         },
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
+        // 5xx hatalarında retry dene
+        if (response.status >= 500 && retries > 0) {
+          console.warn(`[API] ${url} - 500 hatası, retry deneniyor... (${retries} kaldı)`);
+          await new Promise(r => setTimeout(r, 1000)); // 1 saniye bekle
+          return this.request<T>(endpoint, options, retries - 1);
+        }
+
         // HTTP status koduna göre uygun çeviri anahtarını belirle
         let translationKey = 'api.errors.general';
 
@@ -57,8 +71,17 @@ class ApiClient {
 
       return response.json();
     } catch (error) {
+      clearTimeout(timeoutId);
+
       if (error instanceof ApiError) {
         throw error;
+      }
+
+      // Timeout veya network hatası - retry dene
+      if (retries > 0) {
+        console.warn(`[API] ${url} - Network hatası, retry deneniyor... (${retries} kaldı)`);
+        await new Promise(r => setTimeout(r, 1000));
+        return this.request<T>(endpoint, options, retries - 1);
       }
 
       // Network hatası veya diğer hatalar
