@@ -634,10 +634,14 @@ export default function ProductListModal() {
                                 display: 'flex',
                                 gap: '8px',
                                 overflowX: 'auto',
+                                overflowY: 'hidden',
                                 paddingBottom: '12px',
                                 marginBottom: '12px',
                                 borderBottom: '1px solid rgba(255,255,255,0.2)',
-                              }}>
+                                WebkitOverflowScrolling: 'touch',
+                                scrollbarWidth: 'none',
+                                msOverflowStyle: 'none',
+                              } as React.CSSProperties}>
                                 {uniqueTags.map((tag) => (
                                   <button
                                     key={tag}

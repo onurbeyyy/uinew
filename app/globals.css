@@ -5749,3 +5749,9 @@ body {
   height: 100vh;
 }
 
+
+/* Product Tab Navigation - Scrollbar gizleme */
+.product-tab-nav::-webkit-scrollbar {
+  display: none;
+}
+
