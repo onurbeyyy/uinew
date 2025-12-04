@@ -1312,6 +1312,26 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
           ← Geri
         </button>
 
+        {/* Fullscreen Button - Lobby */}
+        {!isIOS && (
+          <button onClick={toggleFullscreen} style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            padding: '10px 15px',
+            fontSize: '14px',
+            fontWeight: '600',
+            border: '2px solid #fff',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            zIndex: 10000
+          }}>
+            {isFullscreen ? '✕ Kapat' : '⛶ Tam Ekran'}
+          </button>
+        )}
+
         <div style={{
           display: 'flex',
           flexDirection: 'row',
@@ -1639,25 +1659,23 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
           ← Geri
         </button>
 
-        {/* Fullscreen Toggle Button - iOS'ta gösterme */}
-        {!isIOS && (
-          <button onClick={toggleFullscreen} style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            padding: '10px 15px',
-            fontSize: '14px',
-            fontWeight: '600',
-            border: '2px solid #fff',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            backgroundColor: 'rgba(0,0,0,0.7)',
-            color: '#fff',
-            zIndex: 10000
-          }}>
-            {isFullscreen ? '✕ Kapat' : '⛶ Tam Ekran'}
-          </button>
-        )}
+        {/* Fullscreen Toggle Button */}
+        <button onClick={toggleFullscreen} style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          padding: '10px 15px',
+          fontSize: '14px',
+          fontWeight: '600',
+          border: '2px solid #fff',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          backgroundColor: 'red',
+          color: '#fff',
+          zIndex: 99999
+        }}>
+          TAM EKRAN
+        </button>
 
         {/* Sol - Kırılan Taşlar (OutBar) + Sıra/Nickname */}
         <div style={{
