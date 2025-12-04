@@ -153,7 +153,7 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
   // SignalR Connection
   useEffect(() => {
     const setupConnection = async () => {
-      const hubUrl = 'https://canlimenu.online/gamehub';
+      const hubUrl = 'https://api.menupark.com/gamehub';
 
       const conn = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {

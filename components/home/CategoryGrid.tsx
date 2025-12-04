@@ -59,8 +59,10 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
               width={300}
               height={300}
               className="card-image"
-              priority={true}
-              unoptimized
+              priority={index < 6}
+              loading={index < 6 ? 'eager' : 'lazy'}
+              quality={75}
+              placeholder="empty"
             />
             <div className="card-content">
               <h3 className="card-title" style={{ fontFamily: categoryFont, color: indexTextColor }}>

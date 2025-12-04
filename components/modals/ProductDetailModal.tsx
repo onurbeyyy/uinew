@@ -15,16 +15,16 @@ export default function ProductDetailModal() {
   const { isAuthenticated } = useAuth();
   const { showCartToast } = useToast();
   const [quantity, setQuantity] = useState(1);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Font ve renk customization
   const productFont = customerData?.customer.productFont || 'Inter, sans-serif';
-  const productTitleColor = customerData?.customer.productTitleColor || '#FFFFFF';
-  const productDescriptionColor = customerData?.customer.productDescriptionColor || 'rgba(255, 255, 255, 0.88)';
 
   // Modal her açıldığında quantity'yi sıfırla
   useEffect(() => {
     if (isProductDetailModalOpen) {
       setQuantity(1);
+      setImageLoaded(false);
     }
   }, [isProductDetailModalOpen]);
 
@@ -41,7 +41,7 @@ export default function ProductDetailModal() {
   const handleAddToCart = () => {
     if (!selectedProduct || !isTableMode || !cartKey || !menuData) return;
 
-    // 🔐 Giriş kontrolü - Sepete eklemek için giriş şart
+    // Giriş kontrolü
     if (!isAuthenticated) {
       showCartToast('Sepete eklemek için giriş yapmalısınız', '');
       closeProductDetailModal();
@@ -49,23 +49,17 @@ export default function ProductDetailModal() {
       return;
     }
 
-    // Customer code al (menuData'dan)
     const customerCode = menuData.customerTitle || 'unknown';
-
-    // Mevcut sepeti yükle (cartUtils ile - otomatik temizlik var)
     let cartItems = loadCart(cartKey, customerCode);
 
-    // Ürün zaten sepette var mı?
     const productId = selectedProduct.Id ?? selectedProduct.id;
     const existingItemIndex = cartItems.findIndex(
       (item: any) => item.productId === productId
     );
 
     if (existingItemIndex >= 0) {
-      // Varsa miktarı artır
       cartItems[existingItemIndex].quantity += quantity;
     } else {
-      // Yoksa yeni ekle
       const productName = getTitle(selectedProduct, language);
       cartItems.push({
         id: Date.now(),
@@ -78,31 +72,14 @@ export default function ProductDetailModal() {
       });
     }
 
-    // Sepeti kaydet (cartUtils ile - customerCode ve timestamp ile)
     saveCart(cartKey, cartItems, customerCode);
-
-    // Dispatch event to update cart sidebar
     window.dispatchEvent(new Event('cartUpdated'));
 
-    // Success feedback - Toast ile göster
     const productName = getTitle(selectedProduct, language);
-    const productPicture = selectedProduct.Picture ?? selectedProduct.picture;
-    let imageUrl = '';
-    if (productPicture) {
-      if (productPicture.startsWith('http')) {
-        imageUrl = productPicture.replace('http://', 'https://');
-      } else {
-        const cleanPath = productPicture.startsWith('Uploads/') ? productPicture.substring(8) : productPicture;
-        imageUrl = `https://canlimenu.online/Uploads/${cleanPath}`;
-      }
-    }
-
     showCartToast(productName, '', () => {
-      // Sepete git - cart sidebar'ı aç
       window.dispatchEvent(new CustomEvent('openCart'));
     });
 
-    // Modal'ı kapat
     closeProductDetailModal();
   };
 
@@ -118,7 +95,7 @@ export default function ProductDetailModal() {
         const cleanPath = customerLogo.startsWith('Uploads/') ? customerLogo.substring(8) : customerLogo;
         return `https://canlimenu.online/Uploads/${cleanPath}`;
       }
-      return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="600"%3E%3Crect fill="%23667eea" width="800" height="600"/%3E%3C/svg%3E';
+      return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="600"%3E%3Crect fill="%231a1a2e" width="800" height="600"/%3E%3C/svg%3E';
     }
     if (picture.startsWith('http')) {
       return picture.replace('http://', 'https://');
@@ -130,178 +107,133 @@ export default function ProductDetailModal() {
   const productImageUrl = getImageUrl(selectedProduct.Picture);
   const productTitle = getTitle(selectedProduct, language);
   const productDescription = getDescription(selectedProduct, language);
-  const productDetail = getDescription(selectedProduct, language);
+  const price = selectedProduct.Price ?? selectedProduct.price ?? 0;
+  const totalPrice = price * quantity;
+
+  // Token bilgisi
+  const productId = selectedProduct.Id ?? selectedProduct.id;
+  const sambaId = selectedProduct.SambaId ?? selectedProduct.sambaId;
+  const tokenSetting = (productId && productTokenSettings[productId]) || (sambaId && productTokenSettings[sambaId]);
+  const hasEarn = tokenSetting && tokenSetting.earnTokens > 0;
+  const hasRedeem = tokenSetting && tokenSetting.redeemTokens > 0;
 
   return (
-    <div
-      className="single-product-modal"
-      style={{
-        display: isProductDetailModalOpen ? 'flex' : 'none',
-      }}
-    >
-      <div className="modal-overlay" onClick={closeProductDetailModal} />
+    <div className="product-detail-modal-v2" onClick={closeProductDetailModal}>
+      <div className="pdm-container" onClick={(e) => e.stopPropagation()}>
 
-      <div className="modal-content">
-        <button className="modal-close" onClick={closeProductDetailModal} aria-label={t('close')}>
-          <i className="fa-solid fa-xmark"></i>
+        {/* Kapatma butonu */}
+        <button className="pdm-close" onClick={closeProductDetailModal} aria-label={t('close')}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
 
-        <div className="modal-image-container" style={{ position: 'relative' }}>
-          <AllergenWarning productAllergens={selectedProduct.Allergens ?? selectedProduct.allergens} className="allergen-on-image" />
-          <img
-            src={productImageUrl}
-            alt={productTitle}
-            className="modal-product-image"
-            loading="eager"
+        {/* Görsel Alanı */}
+        <div className="pdm-image-section">
+          <div className={`pdm-image-wrapper ${imageLoaded ? 'loaded' : ''}`}>
+            <img
+              src={productImageUrl}
+              alt={productTitle}
+              className="pdm-image"
+              onLoad={() => setImageLoaded(true)}
+            />
+            <div className="pdm-image-overlay"></div>
+          </div>
+
+          {/* Alerjen uyarısı */}
+          <AllergenWarning
+            productAllergens={selectedProduct.Allergens ?? selectedProduct.allergens}
+            className="pdm-allergen"
           />
+
+          {/* Fiyat badge */}
+          {price > 0 && (
+            <div className="pdm-price-badge">
+              <span className="pdm-price-value">{price.toFixed(2)}</span>
+              <span className="pdm-price-currency">TL</span>
+            </div>
+          )}
         </div>
 
-        <div className="modal-info-container">
-          <h1 className="modal-product-title" style={{ fontFamily: productFont, color: productTitleColor }}>
+        {/* İçerik Alanı */}
+        <div className="pdm-content">
+          {/* Başlık */}
+          <h1 className="pdm-title" style={{ fontFamily: productFont }}>
             {productTitle}
           </h1>
 
+          {/* Açıklama */}
           {productDescription && (
-            <p className="modal-product-description" style={{ fontFamily: productFont, color: productDescriptionColor }}>
+            <p className="pdm-description" style={{ fontFamily: productFont }}>
               {productDescription}
             </p>
           )}
 
-          {productDetail && (
-            <div className="modal-product-detail">
-              <p style={{ fontFamily: productFont, color: productDescriptionColor }}>
-                {productDetail}
-              </p>
+          {/* Jeton Bilgisi */}
+          {isTableMode && canUseBasket && (hasEarn || hasRedeem) && (
+            <div className="pdm-tokens">
+              {hasEarn && (
+                <div className="pdm-token pdm-token-earn">
+                  <span className="pdm-token-icon">🎁</span>
+                  <div className="pdm-token-info">
+                    <span className="pdm-token-label">Jeton Kazanın</span>
+                    <span className="pdm-token-value">+{tokenSetting.earnTokens} jeton</span>
+                  </div>
+                </div>
+              )}
+              {hasRedeem && (
+                <div className="pdm-token pdm-token-redeem">
+                  <span className="pdm-token-icon">🪙</span>
+                  <div className="pdm-token-info">
+                    <span className="pdm-token-label">Jetonla Alın</span>
+                    <span className="pdm-token-value">{tokenSetting.redeemTokens} jeton</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Jeton Bilgisi */}
-          {isTableMode && canUseBasket && (() => {
-            const productId = selectedProduct.Id ?? selectedProduct.id;
-            const sambaId = selectedProduct.SambaId ?? selectedProduct.sambaId;
-            const tokenSetting = (productId && productTokenSettings[productId]) || (sambaId && productTokenSettings[sambaId]);
-            const hasEarn = tokenSetting && tokenSetting.earnTokens > 0;
-            const hasRedeem = tokenSetting && tokenSetting.redeemTokens > 0;
-
-            if (!hasEarn && !hasRedeem) return null;
-
-            return (
-              <div style={{ marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {hasEarn && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(46, 125, 50, 0.2))',
-                    border: '2px solid rgba(76, 175, 80, 0.5)',
-                    backdropFilter: 'blur(10px)',
-                  }}>
-                    <span style={{ fontSize: '24px' }}>🎁</span>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#4caf50', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Jeton Kazanın
-                      </span>
-                      <span style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700 }}>
-                        +{tokenSetting.earnTokens} jeton kazanacaksınız
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {hasRedeem && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.25), rgba(255, 109, 0, 0.2))',
-                    border: '2px solid rgba(255, 152, 0, 0.5)',
-                    backdropFilter: 'blur(10px)',
-                  }}>
-                    <span style={{ fontSize: '24px' }}>🪙</span>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#ff9800', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Jetonla Alın
-                      </span>
-                      <span style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700 }}>
-                        {tokenSetting.redeemTokens} jetona alabilirsiniz
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          <div className="modal-product-price">
-            {(selectedProduct.Price ?? selectedProduct.price ?? 0) > 0 ? `${(selectedProduct.Price ?? selectedProduct.price ?? 0).toFixed(2)} TL` : t('noPriceInfo')}
-          </div>
-
+          {/* Sepete Ekleme Alanı */}
           {isTableMode && canUseBasket && (
-            <>
-              {/* Quantity Selector */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '15px',
-                  margin: '20px 0',
-                }}
-              >
+            <div className="pdm-cart-section">
+              {/* Miktar Seçici */}
+              <div className="pdm-quantity">
                 <button
+                  className="pdm-qty-btn pdm-qty-minus"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    border: '2px solid #ddd',
-                    background: 'white',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: '#666',
-                  }}
+                  disabled={quantity <= 1}
                 >
-                  -
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
                 </button>
-                <span
-                  style={{
-                    fontSize: '20px',
-                    fontWeight: 600,
-                    minWidth: '40px',
-                    textAlign: 'center',
-                    color: 'white',
-                  }}
-                >
-                  {quantity}
-                </span>
+                <span className="pdm-qty-value">{quantity}</span>
                 <button
+                  className="pdm-qty-btn pdm-qty-plus"
                   onClick={() => setQuantity(quantity + 1)}
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    border: '2px solid #28a745',
-                    background: '#28a745',
-                    color: 'white',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '18px',
-                    fontWeight: 600,
-                  }}
                 >
-                  +
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
                 </button>
               </div>
 
-              {/* Add to Cart Button */}
-              <button className="modal-add-to-cart-btn" onClick={handleAddToCart}>
-                <i className="fa-solid fa-cart-plus"></i>
-                <span>{t('addToCart')}</span>
+              {/* Sepete Ekle Butonu */}
+              <button className="pdm-add-btn" onClick={handleAddToCart}>
+                <span className="pdm-add-btn-text">{t('addToCart')}</span>
+                <span className="pdm-add-btn-price">{totalPrice.toFixed(2)} TL</span>
               </button>
-            </>
+            </div>
+          )}
+
+          {/* Sadece fiyat göster (sepet yoksa) */}
+          {(!isTableMode || !canUseBasket) && price > 0 && (
+            <div className="pdm-price-display">
+              <span className="pdm-price-label">Fiyat</span>
+              <span className="pdm-price-amount">{price.toFixed(2)} TL</span>
+            </div>
           )}
         </div>
       </div>

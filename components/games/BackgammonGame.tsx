@@ -243,7 +243,7 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
   useEffect(() => {
     const setupConnection = async () => {
-      const hubUrl = 'https://canlimenu.online/gamehub';
+      const hubUrl = 'https://api.menupark.com/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {

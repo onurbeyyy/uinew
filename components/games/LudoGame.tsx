@@ -235,7 +235,7 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
   // SignalR Connection - RPS pattern (empty dependency array)
   useEffect(() => {
     const setupConnection = async () => {
-      const hubUrl = 'https://canlimenu.online/gamehub';
+      const hubUrl = 'https://api.menupark.com/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {

@@ -31,7 +31,7 @@ class OkeySignalRService {
   private connection: signalR.HubConnection | null = null;
   private hubUrl: string;
 
-  constructor(hubUrl: string = 'https://canlimenu.online/okeyhub') {
+  constructor(hubUrl: string = 'https://api.menupark.com/okeyhub') {
     this.hubUrl = hubUrl;
   }
 
@@ -209,7 +209,7 @@ export function getOkeySignalRService(): OkeySignalRService {
   if (!okeyServiceInstance) {
     const hubUrl = process.env.NEXT_PUBLIC_GAME_HUB_URL
       ? `${process.env.NEXT_PUBLIC_GAME_HUB_URL}/okeyhub`
-      : 'https://canlimenu.online/okeyhub';
+      : 'https://api.menupark.com/okeyhub';
 
     okeyServiceInstance = new OkeySignalRService(hubUrl);
   }

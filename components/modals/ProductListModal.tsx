@@ -193,7 +193,7 @@ export default function ProductListModal() {
 
   const getImageUrl = (picture?: string, fallbackLogo?: string) => {
     if (!picture) {
-      return fallbackLogo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23667eea" width="300" height="300"/%3E%3C/svg%3E';
+      return fallbackLogo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23e0e0e0" width="300" height="300"/%3E%3C/svg%3E';
     }
     if (picture.startsWith('http')) {
       return picture.replace('http://', 'https://');
@@ -218,7 +218,7 @@ export default function ProductListModal() {
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
       }
-    : { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
+    : { background: '#f5f5f5' };
 
   // Font ve renk customization
   const productFont = customerData?.customer.productFont || 'Inter, sans-serif';
@@ -300,7 +300,7 @@ export default function ProductListModal() {
                     categoryImageUrl = customerLogo;
                   } else {
                     // Placeholder
-                    categoryImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23667eea" width="300" height="300"/%3E%3C/svg%3E';
+                    categoryImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23e0e0e0" width="300" height="300"/%3E%3C/svg%3E';
                   }
 
                   const isActive = cat.sambaId === activeCategory?.sambaId;

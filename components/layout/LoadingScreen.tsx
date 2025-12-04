@@ -15,7 +15,7 @@ export default function LoadingScreen({ logoUrl, backgroundUrl }: LoadingScreenP
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat'
       }
-    : { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
+    : { background: '#f5f5f5' };
 
   return (
     <div

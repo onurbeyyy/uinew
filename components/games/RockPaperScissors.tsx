@@ -146,7 +146,7 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
   // SignalR Connection
   useEffect(() => {
     const setupConnection = async () => {
-      const hubUrl = 'https://canlimenu.online/gamehub';
+      const hubUrl = 'https://api.menupark.com/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {

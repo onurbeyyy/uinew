@@ -67,15 +67,19 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
 
   // SignalR bağlantısı
   useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 3;
+
     const setupConnection = async () => {
-      const hubUrl = 'https://canlimenu.online/gamehub';
+      const hubUrl = 'https://api.menupark.com/gamehub';
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
-          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
+          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
+          withCredentials: true
         })
-        .withAutomaticReconnect()
-        .configureLogging(signalR.LogLevel.Error)
+        .withAutomaticReconnect([0, 1000, 2000, 5000, 10000])
+        .configureLogging(signalR.LogLevel.Warning)
         .build();
 
       // Event handlers
@@ -171,6 +175,7 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
         await newConnection.start();
         setIsConnected(true);
         connectionRef.current = newConnection;
+        retryCount = 0; // Başarılı bağlantıda sıfırla
 
         // Venue lobby'ye katıl - sunucu VenueLobby eventi gönderecek
         try {
@@ -180,14 +185,21 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
 
         setIsLoading(false);
       } catch (err) {
-        console.error('🏛️ Lobby: SignalR Connection Error:', err);
-        setIsLoading(false);
+        retryCount++;
+        if (retryCount < maxRetries) {
+          // Retry with exponential backoff
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          setTimeout(() => setupConnection(), delay);
+        } else {
+          setIsLoading(false);
+        }
       }
     };
 
     setupConnection();
 
     return () => {
+      retryCount = maxRetries; // Cleanup'ta retry'ı durdur
       if (connectionRef.current) {
         connectionRef.current.stop();
       }
