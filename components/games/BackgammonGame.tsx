@@ -1294,14 +1294,16 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
     };
 
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 10,
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
-      }}>
+      <div
+        ref={containerRef}
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 10,
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
+        }}>
         <button onClick={handleBack} style={{
           position: 'absolute', top: 10, left: 10,
           padding: '8px 16px',
