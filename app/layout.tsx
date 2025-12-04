@@ -81,6 +81,11 @@ export default function RootLayout({
       <head>
         {/* Google Sign-In SDK - doğrudan head'e eklendi */}
         <script src="https://accounts.google.com/gsi/client" async defer></script>
+        {/* PWA - iOS için tam ekran desteği */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Canlı Menü" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body>
         <LanguageProvider>

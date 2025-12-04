@@ -1,12 +1,12 @@
 {
-  "name": "Self-Servis QR Sistemi",
-  "short_name": "Self-Servis",
-  "description": "Restoran self-servis QR kod ekranı",
-  "start_url": "/self-service",
-  "display": "fullscreen",
-  "orientation": "landscape",
-  "background_color": "#f5f7fa",
-  "theme_color": "#667eea",
+  "name": "Canlı Menü",
+  "short_name": "Canlı Menü",
+  "description": "QR Menü ve Sipariş Sistemi",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#ff6b00",
   "icons": [
     {
       "src": "/icon-192.png",
