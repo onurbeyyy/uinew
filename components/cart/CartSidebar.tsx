@@ -552,14 +552,26 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         : 0;
 
       // Sipariş verisini hazırla
+      // Delivery modunda isSelfService false olmalı (cookie'den true kalmasını önle)
+      const actualIsSelfService = isDelivery ? false : isSelfService;
+
+      // 🔍 DEBUG: Sipariş tipi kontrolü
+      console.log('🔍 Sipariş Debug:', {
+        isDelivery,
+        isSelfService,
+        actualIsSelfService,
+        deliveryInfo: !!deliveryInfo,
+        orderType: isDelivery ? 'Delivery' : (actualIsSelfService ? 'SelfService' : 'Table')
+      });
+
       const orderData: any = {
         customerCode: customerCode,
         tableName: orderTableName,
         endUserId: endUserId, // Logged in user ID (for token deduction)
         Source: 'UI',
-        isSelfService: isSelfService,
+        isSelfService: actualIsSelfService,
         isDelivery: isDelivery,
-        orderType: isDelivery ? 'Delivery' : (isSelfService ? 'SelfService' : 'Table'), // Sipariş tipi
+        orderType: isDelivery ? 'Delivery' : (actualIsSelfService ? 'SelfService' : 'Table'), // Sipariş tipi
         items: items.map(item => {
           const tokenSettings = productTokenSettings?.[item.sambaId || item.productId];
           const tokenQty = item.tokenQuantity || 0;
@@ -608,6 +620,10 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         orderData.customerNote = `📍 Adres: ${fullAddress}${addr.directions ? `\n🗺️ Tarif: ${addr.directions}` : ''}${userPhone ? `\n📞 Tel: ${userPhone}` : ''}\n💳 Ödeme: Kapıda ${paymentMethodText}${customerNote ? `\n📝 Not: ${customerNote}` : ''}`;
         orderData.notificationMessage = `📍 Paket Servis - ${addr.district}/${addr.city}${userPhone ? ` - Tel: ${userPhone}` : ''}\n💳 Ödeme: Kapıda ${paymentMethodText}`;
       }
+
+      // 🔍 DEBUG: API'ye gönderilen veri
+      console.log('📤 API Request Body:', JSON.stringify(orderData, null, 2));
+      console.log('📦 Delivery bilgileri:', { isDelivery: orderData.isDelivery, orderType: orderData.orderType, isSelfService: orderData.isSelfService });
 
       const response = await fetch('/api/order', {
         method: 'POST',
@@ -851,9 +867,9 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
             </div>
           ) : (
             <>
-            {items.map((item) => (
+            {items.map((item, index) => (
               <div
-                key={item.productId}
+                key={item.id || `${item.productId}-${item.portionName || ''}-${index}`}
                 className="cart-item"
                 style={{
                   background: 'white',

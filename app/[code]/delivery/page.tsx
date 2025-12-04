@@ -21,6 +21,18 @@ interface LocalCartItem {
   image?: string;
   note?: string;
   sambaId?: number;
+  portionName?: string;
+  sambaPortionId?: number;
+}
+
+// Porsiyon tipi
+interface ProductPortion {
+  id: number;
+  name: string;
+  nameEnglish?: string;
+  nameEn?: string;
+  price: number;
+  sambaPortionId?: number;
 }
 
 // Delivery Address Type
@@ -89,6 +101,10 @@ export default function DeliveryPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Porsiyon seçimi için state
+  const [portionModalProduct, setPortionModalProduct] = useState<Product | null>(null);
+  const [selectedPortion, setSelectedPortion] = useState<ProductPortion | null>(null);
 
   // Address state
   const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress>({
@@ -336,12 +352,11 @@ export default function DeliveryPage() {
     return getTotalPrice() >= deliverySettings.minOrderAmount;
   };
 
-  // Sepette ürün miktarını bul
+  // Sepette ürün miktarını bul (tüm porsiyonlar dahil)
   const getItemQuantityInCart = (productSambaId: number): number => {
-    const cartItem = cartItems.find(item =>
-      item.sambaId === productSambaId || item.productId === productSambaId
-    );
-    return cartItem ? cartItem.quantity : 0;
+    return cartItems
+      .filter(item => item.sambaId === productSambaId || item.productId === productSambaId)
+      .reduce((sum, item) => sum + item.quantity, 0);
   };
 
   // Sepette ürün index'ini bul
@@ -351,17 +366,53 @@ export default function DeliveryPage() {
     );
   };
 
+  // Sepetteki ürünün porsiyonlarını getir
+  const getProductPortionsInCart = (productSambaId: number): LocalCartItem[] => {
+    return cartItems.filter(item =>
+      item.sambaId === productSambaId || item.productId === productSambaId
+    );
+  };
+
+  // Porsiyon bazlı miktar güncelle
+  const handleUpdatePortionQuantity = (cartItemId: number, newQuantity: number) => {
+    const index = cartItems.findIndex(item => item.id === cartItemId);
+    if (index === -1) return;
+
+    if (newQuantity <= 0) {
+      const newItems = cartItems.filter((_, i) => i !== index);
+      saveCart(newItems);
+    } else {
+      const newItems = [...cartItems];
+      newItems[index].quantity = newQuantity;
+      saveCart(newItems);
+    }
+  };
+
   // Sepete ekle - Giriş yapmış olmalı
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: Product, portion?: ProductPortion) => {
     if (!currentUser) {
       // Giriş yapmamış - profil sidebar'ı aç
       openProfile();
       return;
     }
 
-    const productId = product.sambaId || product.SambaId || product.id || 0;
+    // Porsiyonlu ürün kontrolü
+    const portions = (product as any).Portions || (product as any).portions || [];
+    if (portions.length > 1 && !portion) {
+      // Porsiyon seçimi gerekli - modal aç
+      setPortionModalProduct(product);
+      setSelectedPortion(portions[0]);
+      return;
+    }
+
+    const productId = portion?.id ?? (product.sambaId || product.SambaId || product.id || 0);
+    const portionName = portion?.name || '';
+    const itemPrice = portion?.price ?? product.price ?? (product as any).Price ?? 0;
+
+    // Aynı ürün + aynı porsiyon kombinasyonunu bul
     const existingIndex = cartItems.findIndex(item =>
-      item.sambaId === productId || item.productId === productId
+      (item.sambaId === (product.sambaId || product.SambaId) || item.productId === productId) &&
+      item.portionName === portionName
     );
 
     if (existingIndex !== -1) {
@@ -371,12 +422,17 @@ export default function DeliveryPage() {
       saveCart(newItems);
     } else {
       // Yoksa yeni ekle
+      const productName = product.title || (product as any).Title || '';
+      const displayName = portionName ? `${productName} (${portionName})` : productName;
+
       const newItem: LocalCartItem = {
         id: Date.now(),
-        productId: product.id || product.Id || productId,
-        sambaId: productId,
-        name: product.title || product.Title || '',
-        price: product.price || product.Price || 0,
+        productId: product.id || (product as any).Id || productId,
+        sambaId: product.sambaId || product.SambaId || 0,
+        sambaPortionId: portion?.sambaPortionId,
+        portionName: portionName,
+        name: displayName,
+        price: itemPrice,
         quantity: 1,
         image: getProductImageUrl(product),
       };
@@ -898,7 +954,6 @@ export default function DeliveryPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {category.products.map((product, productIndex) => {
-                const quantity = getItemQuantityInCart(product.sambaId || product.SambaId || 0);
                 const imageUrl = getProductImageUrl(product);
                 const productTitle = product.title || product.Title || '';
                 const productDetail = product.detail || product.Detail || product.description || '';
@@ -913,10 +968,12 @@ export default function DeliveryPage() {
                       borderRadius: '8px',
                       overflow: 'hidden',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                      display: 'flex',
-                      alignItems: 'stretch',
                     }}
                   >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'stretch',
+                    }}>
                     {/* Product Image */}
                     {imageUrl && (
                       <div style={{
@@ -948,171 +1005,146 @@ export default function DeliveryPage() {
                       flexDirection: 'column',
                       justifyContent: 'space-between',
                     }}>
-                      <div>
-                        <h3 style={{
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          color: '#333',
-                          margin: '0 0 2px 0',
-                        }}>
-                          {productTitle}
-                        </h3>
-                        {productDetail && (
-                          <p style={{
-                            fontSize: '10px',
-                            color: '#999',
-                            margin: 0,
-                            lineHeight: 1.3,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 1,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                          }}>
-                            {productDetail}
-                          </p>
-                        )}
-                      </div>
+                      {(() => {
+                        const portions = (product as any).Portions || (product as any).portions || [];
 
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginTop: '4px',
-                      }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <span style={{
-                            fontSize: '14px',
-                            fontWeight: 700,
-                            color: '#ff6b00',
-                          }}>
-                            {productPrice.toFixed(2)} ₺
-                          </span>
-                          {/* Jeton bilgileri */}
-                          {(productTokenSettings?.[productId]?.redeemTokens > 0 || productTokenSettings?.[productId]?.earnTokens > 0) && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
-                              {/* Jeton ile alınabilir */}
-                              {productTokenSettings?.[productId]?.redeemTokens > 0 && (
-                                <span style={{
-                                  fontSize: '9px',
-                                  color: '#fff',
-                                  fontWeight: 700,
-                                  background: 'linear-gradient(135deg, #ff9800, #ff6d00)',
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  boxShadow: '0 1px 3px rgba(255,152,0,0.3)',
+                        return (
+                          <>
+                            <div>
+                              <h3 style={{
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                color: '#333',
+                                margin: '0 0 2px 0',
+                              }}>
+                                {productTitle}
+                              </h3>
+                              {productDetail && portions.length <= 1 && (
+                                <p style={{
+                                  fontSize: '10px',
+                                  color: '#999',
+                                  margin: 0,
+                                  lineHeight: 1.3,
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 1,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
                                 }}>
-                                  🪙 {productTokenSettings[productId].redeemTokens} jetona al
-                                </span>
-                              )}
-                              {/* Jeton kazanımı */}
-                              {productTokenSettings?.[productId]?.earnTokens > 0 && (
-                                <span style={{
-                                  fontSize: '9px',
-                                  color: '#fff',
-                                  fontWeight: 700,
-                                  background: 'linear-gradient(135deg, #4caf50, #2e7d32)',
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  boxShadow: '0 1px 3px rgba(76,175,80,0.3)',
-                                }}>
-                                  +{productTokenSettings[productId].earnTokens} jeton kazan
-                                </span>
+                                  {productDetail}
+                                </p>
                               )}
                             </div>
-                          )}
-                        </div>
 
-                        {/* Add to Cart Button */}
-                        {isStoreClosed ? (
-                          <button
-                            disabled
-                            style={{
-                              background: '#ccc',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '5px 10px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'not-allowed',
-                              opacity: 0.6,
-                            }}
-                          >
-                            🚫 Kapalı
-                          </button>
-                        ) : quantity === 0 ? (
-                          <button
-                            onClick={() => handleAddToCart(product)}
-                            style={{
-                              background: '#ff6b00',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '5px 10px',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            + Ekle
-                          </button>
-                        ) : (
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            background: '#fff5f0',
-                            borderRadius: '6px',
-                            padding: '2px',
-                          }}>
-                            <button
-                              onClick={() => handleUpdateQuantity(product.sambaId || product.SambaId || 0, quantity - 1)}
-                              style={{
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '4px',
-                                border: 'none',
-                                background: '#ff6b00',
-                                color: 'white',
-                                fontSize: '14px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              −
-                            </button>
-                            <span style={{
-                              fontSize: '13px',
-                              fontWeight: 600,
-                              color: '#333',
-                              minWidth: '18px',
-                              textAlign: 'center',
+                            {/* Porsiyonlu ürün - porsiyonları listele */}
+                            {portions.length > 1 && (
+                              <div style={{ marginTop: '6px', marginBottom: '6px' }}>
+                                {portions.map((portion: ProductPortion, idx: number) => (
+                                  <div
+                                    key={portion.id}
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      fontSize: '13px',
+                                      color: '#444',
+                                      padding: '3px 0',
+                                    }}
+                                  >
+                                    <span style={{ fontWeight: 500 }}>{portion.name}</span>
+                                    <span style={{ fontWeight: 700, color: '#ff6b00' }}>
+                                      {portion.price.toFixed(2)} ₺
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Fiyat ve Buton */}
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              marginTop: portions.length > 1 ? '0' : '4px',
                             }}>
-                              {quantity}
-                            </span>
-                            <button
-                              onClick={() => handleUpdateQuantity(product.sambaId || product.SambaId || 0, quantity + 1)}
-                              style={{
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '4px',
-                                border: 'none',
-                                background: '#ff6b00',
-                                color: 'white',
-                                fontSize: '14px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              +
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                {/* Porsiyonsuz ürün fiyatı */}
+                                {portions.length <= 1 && (
+                                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#ff6b00' }}>
+                                    {productPrice.toFixed(2)} ₺
+                                  </span>
+                                )}
+                                {/* Jeton bilgileri */}
+                                {(productTokenSettings?.[productId]?.redeemTokens > 0 || productTokenSettings?.[productId]?.earnTokens > 0) && (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                                    {productTokenSettings?.[productId]?.redeemTokens > 0 && (
+                                      <span style={{
+                                        fontSize: '9px',
+                                        color: '#fff',
+                                        fontWeight: 700,
+                                        background: 'linear-gradient(135deg, #ff9800, #ff6d00)',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        boxShadow: '0 1px 3px rgba(255,152,0,0.3)',
+                                      }}>
+                                        🪙 {productTokenSettings[productId].redeemTokens} jetona al
+                                      </span>
+                                    )}
+                                    {productTokenSettings?.[productId]?.earnTokens > 0 && (
+                                      <span style={{
+                                        fontSize: '9px',
+                                        color: '#fff',
+                                        fontWeight: 700,
+                                        background: 'linear-gradient(135deg, #4caf50, #2e7d32)',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        boxShadow: '0 1px 3px rgba(76,175,80,0.3)',
+                                      }}>
+                                        +{productTokenSettings[productId].earnTokens} jeton kazan
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {isStoreClosed ? (
+                                <button
+                                  disabled
+                                  style={{
+                                    background: '#ccc',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '5px 10px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'not-allowed',
+                                    opacity: 0.6,
+                                  }}
+                                >
+                                  🚫 Kapalı
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleAddToCart(product)}
+                                  style={{
+                                    background: '#ff6b00',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '5px 10px',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  + Ekle
+                                </button>
+                              )}
+                            </div>
+
+                          </>
+                        );
+                      })()}
+                    </div>
                     </div>
                   </div>
                 );
@@ -1530,6 +1562,124 @@ export default function DeliveryPage() {
                   </button>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Porsiyon Seçim Modalı */}
+      {portionModalProduct && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          zIndex: 3000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+        }}
+        onClick={() => setPortionModalProduct(null)}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '400px',
+              maxHeight: '80vh',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: '20px',
+              borderBottom: '1px solid #eee',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>
+                Porsiyon Seçin
+              </h3>
+              <button
+                onClick={() => setPortionModalProduct(null)}
+                style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#999' }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Ürün Bilgisi */}
+            <div style={{ padding: '15px 20px', borderBottom: '1px solid #eee' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {getProductImageUrl(portionModalProduct) && (
+                  <img
+                    src={getProductImageUrl(portionModalProduct)}
+                    alt=""
+                    style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover' }}
+                  />
+                )}
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '16px' }}>
+                    {portionModalProduct.title || (portionModalProduct as any).Title}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Porsiyon Listesi */}
+            <div style={{ padding: '15px 20px', maxHeight: '300px', overflowY: 'auto' }}>
+              {((portionModalProduct as any).Portions || (portionModalProduct as any).portions || []).map((portion: ProductPortion) => (
+                <div
+                  key={portion.id}
+                  onClick={() => setSelectedPortion(portion)}
+                  style={{
+                    padding: '12px 15px',
+                    marginBottom: '10px',
+                    border: selectedPortion?.id === portion.id ? '2px solid #ff6b00' : '1px solid #eee',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    background: selectedPortion?.id === portion.id ? '#fff8f5' : 'white',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span style={{ fontWeight: 500 }}>{portion.name}</span>
+                  <span style={{ fontWeight: 700, color: '#ff6b00' }}>{portion.price.toFixed(2)} ₺</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Ekle Butonu */}
+            <div style={{ padding: '15px 20px', borderTop: '1px solid #eee' }}>
+              <button
+                onClick={() => {
+                  if (selectedPortion) {
+                    handleAddToCart(portionModalProduct, selectedPortion);
+                    setPortionModalProduct(null);
+                  }
+                }}
+                disabled={!selectedPortion}
+                style={{
+                  width: '100%',
+                  background: selectedPortion ? '#ff6b00' : '#ccc',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '15px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  cursor: selectedPortion ? 'pointer' : 'not-allowed',
+                }}
+              >
+                Sepete Ekle - {selectedPortion?.price.toFixed(2) || '0.00'} ₺
+              </button>
             </div>
           </div>
         </div>
