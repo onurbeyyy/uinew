@@ -7,6 +7,7 @@ import { TableProvider } from '@/contexts/TableContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ToastProvider } from '@/components/ui/Toast';
 import CookieConsent from '@/components/common/CookieConsent';
+import InstallPWA from '@/components/common/InstallPWA';
 
 export const metadata: Metadata = {
   title: '15 Gün ÜCRETSİZ QR Menü Sistemi | 500+ Restoran Kullanıyor | Canlı Menü 2025',
@@ -96,6 +97,7 @@ export default function RootLayout({
                   <ToastProvider>
                     {children}
                     <CookieConsent />
+                    <InstallPWA />
                   </ToastProvider>
                 </CartProvider>
               </MenuProvider>
