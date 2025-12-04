@@ -655,14 +655,14 @@ export default function ProductListModal() {
                                     className={`product-tab-btn ${currentActiveTab === tag ? 'active' : ''}`}
                                     onClick={() => setActiveSubTab(tag)}
                                     style={{
-                                      padding: '8px 16px',
-                                      borderRadius: '20px',
+                                      padding: '6px 12px',
+                                      borderRadius: '16px',
                                       border: 'none',
                                       background: currentActiveTab === tag
                                         ? 'linear-gradient(135deg, #f39c12, #e67e22)'
                                         : 'rgba(255,255,255,0.15)',
                                       color: 'white',
-                                      fontSize: '13px',
+                                      fontSize: '12px',
                                       fontWeight: 600,
                                       cursor: 'pointer',
                                       whiteSpace: 'nowrap',
@@ -677,14 +677,14 @@ export default function ProductListModal() {
                                     className={`product-tab-btn ${currentActiveTab === 'ungrouped' ? 'active' : ''}`}
                                     onClick={() => setActiveSubTab('ungrouped')}
                                     style={{
-                                      padding: '8px 16px',
-                                      borderRadius: '20px',
+                                      padding: '6px 12px',
+                                      borderRadius: '16px',
                                       border: 'none',
                                       background: currentActiveTab === 'ungrouped'
                                         ? 'linear-gradient(135deg, #f39c12, #e67e22)'
                                         : 'rgba(255,255,255,0.15)',
                                       color: 'white',
-                                      fontSize: '13px',
+                                      fontSize: '12px',
                                       fontWeight: 600,
                                       cursor: 'pointer',
                                       whiteSpace: 'nowrap',
