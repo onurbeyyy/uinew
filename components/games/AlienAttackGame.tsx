@@ -58,20 +58,41 @@ export default function AlienAttackGame({ onBack, playerNickname, customerCode }
     return () => window.removeEventListener('message', handleMessage);
   }, [playerNickname, customerCode]);
 
-  // Tam ekran toggle
+  // Tam ekran toggle - iOS için CSS tabanlı fallback
   const toggleFullscreen = async () => {
     if (!containerRef.current) return;
 
-    try {
-      if (!document.fullscreenElement) {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isFullscreen) {
+      // Tam ekrandan çık
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitFullscreenElement) {
+          await (document as any).webkitExitFullscreen();
+        }
+      } catch (err) {
+        // iOS'ta API çalışmaz, sadece state değiştir
       }
-    } catch (err) {
-      console.error('Tam ekran hatası:', err);
+      setIsFullscreen(false);
+    } else {
+      // Tam ekrana geç
+      try {
+        if (containerRef.current.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+          setIsFullscreen(true);
+        } else if ((containerRef.current as any).webkitRequestFullscreen) {
+          await (containerRef.current as any).webkitRequestFullscreen();
+          setIsFullscreen(true);
+        } else {
+          // iOS Safari - CSS ile simüle et
+          setIsFullscreen(true);
+        }
+      } catch (err) {
+        // Fullscreen API başarısız - CSS ile simüle et
+        setIsFullscreen(true);
+      }
     }
   };
 
