@@ -111,7 +111,10 @@ export default function Game2048({ onGameOver, onGameWon, playerNickname: initia
   const [showLeaderboard, setShowLeaderboard] = useState(true);
   const [scoreIncrement, setScoreIncrement] = useState(0);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
   const tileIdCounter = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Load best score and leaderboard
   useEffect(() => {
@@ -297,6 +300,56 @@ export default function Game2048({ onGameOver, onGameWon, playerNickname: initia
       next: next
     };
   };
+
+  // Fullscreen toggle
+  const toggleFullscreen = async () => {
+    if (isFullscreen) {
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitFullscreenElement) {
+          await (document as any).webkitExitFullscreen();
+        }
+      } catch (err) {
+        console.error('[2048] Exit fullscreen error:', err);
+      }
+      setIsFullscreen(false);
+    } else {
+      try {
+        if (containerRef.current) {
+          if (containerRef.current.requestFullscreen) {
+            await containerRef.current.requestFullscreen();
+            setIsFullscreen(true);
+          } else if ((containerRef.current as any).webkitRequestFullscreen) {
+            await (containerRef.current as any).webkitRequestFullscreen();
+            setIsFullscreen(true);
+          }
+        }
+      } catch (err) {
+        console.error('[2048] Enter fullscreen error:', err);
+      }
+    }
+  };
+
+  // iOS kontrolü ve Fullscreen değişikliğini dinle
+  useEffect(() => {
+    // iOS kontrolü
+    const iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setIsIOS(iOS);
+
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      setIsFullscreen(isCurrentlyFullscreen);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const move = (direction: number) => {
     if (gameOver || gameWon) return;
@@ -619,7 +672,29 @@ export default function Game2048({ onGameOver, onGameWon, playerNickname: initia
   };
 
   return (
-    <div className="game-2048-container">
+    <div ref={containerRef} className="game-2048-container">
+      {/* Fullscreen Button - iOS'ta gösterme */}
+      {!isIOS && (
+        <button
+          onClick={toggleFullscreen}
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            padding: '8px 12px',
+            background: isFullscreen ? 'rgba(39, 174, 96, 0.9)' : 'rgba(255,255,255,0.2)',
+            color: 'white',
+            border: 'none',
+            borderRadius: 8,
+            cursor: 'pointer',
+            fontSize: 14,
+            zIndex: 10
+          }}
+        >
+          ⛶
+        </button>
+      )}
+
       {/* Header */}
       <div className="game-2048-header">
         <h1 className="game-2048-title">2048</h1>

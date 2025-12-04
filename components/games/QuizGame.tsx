@@ -72,8 +72,13 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
   const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
   const [resultSubmitted, setResultSubmitted] = useState(false);
 
+  // Fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
   // Refs for closures
   const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const playerIdRef = useRef('');
   const roomIdRef = useRef(joinRoomId || '');
   const nicknameRef = useRef(initialNickname);
@@ -106,6 +111,56 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       console.error('Link kopyalanamadı:', err);
     }
   };
+
+  // Fullscreen toggle
+  const toggleFullscreen = async () => {
+    if (isFullscreen) {
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitFullscreenElement) {
+          await (document as any).webkitExitFullscreen();
+        }
+      } catch (err) {
+        console.error('[Quiz] Exit fullscreen error:', err);
+      }
+      setIsFullscreen(false);
+    } else {
+      try {
+        if (containerRef.current) {
+          if (containerRef.current.requestFullscreen) {
+            await containerRef.current.requestFullscreen();
+            setIsFullscreen(true);
+          } else if ((containerRef.current as any).webkitRequestFullscreen) {
+            await (containerRef.current as any).webkitRequestFullscreen();
+            setIsFullscreen(true);
+          }
+        }
+      } catch (err) {
+        console.error('[Quiz] Enter fullscreen error:', err);
+      }
+    }
+  };
+
+  // iOS kontrolü ve Fullscreen değişikliğini dinle
+  useEffect(() => {
+    // iOS kontrolü
+    const iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setIsIOS(iOS);
+
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      setIsFullscreen(isCurrentlyFullscreen);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // Normalize player data
   const normalizePlayer = useCallback((p: any): QuizPlayer => ({
@@ -429,6 +484,32 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       conn.on('Error', (data: any) => {
         console.error('Quiz Error:', data);
         setError(data.message || data.Message || 'Bir hata oluştu');
+      });
+
+      // Reconnection handlers - telefon geldiğinde tekrar bağlanabilmek için
+      conn.onreconnected(async () => {
+        console.log('[Quiz] SignalR reconnected, rejoining room...');
+        setIsConnected(true);
+
+        // Oda varsa tekrar katıl
+        if (roomIdRef.current && playerIdRef.current) {
+          try {
+            await conn.invoke('JoinQuiz', roomIdRef.current, playerIdRef.current, nicknameRef.current);
+            console.log('[Quiz] Rejoined room after reconnect');
+          } catch (err) {
+            console.error('[Quiz] Failed to rejoin room:', err);
+          }
+        }
+      });
+
+      conn.onreconnecting(() => {
+        console.log('[Quiz] SignalR reconnecting...');
+        setIsConnected(false);
+      });
+
+      conn.onclose(() => {
+        console.log('[Quiz] SignalR connection closed');
+        setIsConnected(false);
       });
 
       // Host odadan çıktığında oda kapandı
@@ -857,16 +938,28 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
   // PLAYING
   if (gamePhase === 'playing' && currentQuestion) {
     return (
-      <div style={{
-        minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: 16,
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
-      }}>
+      <div
+        ref={containerRef}
+        style={{
+          minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: 16,
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
+        }}
+      >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <button onClick={handleBack} style={{
-            padding: '6px 12px', background: 'rgba(255,255,255,0.1)', color: 'white',
-            border: 'none', borderRadius: 8, fontSize: 12, cursor: 'pointer'
-          }}>← Çık</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={handleBack} style={{
+              padding: '6px 12px', background: 'rgba(255,255,255,0.1)', color: 'white',
+              border: 'none', borderRadius: 8, fontSize: 12, cursor: 'pointer'
+            }}>← Çık</button>
+            {!isIOS && (
+              <button onClick={toggleFullscreen} style={{
+                padding: '6px 12px',
+                background: isFullscreen ? 'rgba(39, 174, 96, 0.9)' : 'rgba(255,255,255,0.1)',
+                color: 'white', border: 'none', borderRadius: 8, fontSize: 12, cursor: 'pointer'
+              }}>⛶</button>
+            )}
+          </div>
           <span style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>
             Soru {questionNumber}/{totalQuestions}
           </span>

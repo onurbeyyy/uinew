@@ -153,10 +153,13 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
   const [linkCopied, setLinkCopied] = useState(false);
   const [showInLobby, setShowInLobby] = useState(true); // Lobby'de göster
   const [kickTargetPlayer, setKickTargetPlayer] = useState<{id: string, name: string} | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
   const initialShowInLobbyRef = useRef(true); // İlk render'da sunucuya çağrı yapma
 
   // Refs for closures
   const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const playerIdRef = useRef('');
   const roomIdRef = useRef(joinRoomId || '');
   const gameStartTimeRef = useRef<Date | null>(null);
@@ -520,6 +523,50 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
         if (current) setGameMessage(`${current.name || current.Name} oynuyor`);
       });
 
+      // Reconnect sonrası oyun durumunu almak için
+      newConnection.on('LudoGameState', (data: any) => {
+        console.log('[Ludo] Game state received:', data);
+        const room = data.room || data.Room || data;
+
+        // Oyuncu listesi
+        const playersData = room.players || room.Players;
+        if (playersData) {
+          setPlayers(normalizePlayersData(playersData));
+        }
+
+        // Sıra bilgisi
+        const playerIndex = room.currentPlayerIndex ?? room.CurrentPlayerIndex;
+        if (playerIndex !== undefined) {
+          setCurrentPlayerIndex(playerIndex);
+        }
+
+        // Zar bilgisi
+        const lastDice = room.lastDiceValue ?? room.LastDiceValue ?? room.diceValue ?? room.DiceValue;
+        if (lastDice) {
+          setDiceValue(lastDice);
+        }
+
+        // Valid moves
+        const moves = room.validMoves || room.ValidMoves;
+        if (moves) {
+          setValidMoves(moves);
+        }
+
+        // Rankings
+        const rankings = room.rankings || room.Rankings;
+        if (rankings) {
+          setRankings(normalizeRankings(rankings));
+        }
+
+        // Game phase
+        const stateStr = room.state || room.State;
+        if (stateStr === 'Playing' || stateStr === 1) {
+          setGamePhase('playing');
+        } else if (stateStr === 'Finished' || stateStr === 2) {
+          setGamePhase('finished');
+        }
+      });
+
       newConnection.on('LudoGameFinished', (data: any) => {
         const normalizedRankings = normalizeRankings(data.rankings || data.Rankings);
         const winnerName = data.winnerName || data.WinnerName;
@@ -555,6 +602,43 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
         if (onBack) {
           onBack();
         }
+      });
+
+      // Reconnect olduğunda odaya tekrar katıl
+      newConnection.onreconnected(async () => {
+        console.log('[Ludo] SignalR reconnected, rejoining room...');
+        setIsConnected(true);
+
+        // Oda varsa tekrar katıl
+        if (roomIdRef.current && playerIdRef.current) {
+          try {
+            await newConnection.invoke('JoinLudoRoom', roomIdRef.current, playerIdRef.current, nicknameRef.current, endUserId);
+            console.log('[Ludo] Rejoined room after reconnect');
+
+            // Oyun state'ini yeniden al (sıra, zar vs.)
+            setTimeout(async () => {
+              try {
+                await newConnection.invoke('GetLudoGameState', roomIdRef.current, playerIdRef.current);
+              } catch (e) {
+                // Backend bu metodu desteklemeyebilir, sessizce geç
+                console.log('[Ludo] GetLudoGameState not supported or failed');
+              }
+            }, 500);
+          } catch (err) {
+            console.error('[Ludo] Failed to rejoin room:', err);
+          }
+        }
+      });
+
+      newConnection.onreconnecting(() => {
+        console.log('[Ludo] SignalR reconnecting...');
+        setIsConnected(false);
+        setGameMessage('Bağlantı koptu, yeniden bağlanılıyor...');
+      });
+
+      newConnection.onclose(() => {
+        console.log('[Ludo] SignalR connection closed');
+        setIsConnected(false);
       });
 
       try {
@@ -698,6 +782,56 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       onBack();
     }
   }, [connection, roomId, playerId, onBack]);
+
+  // Fullscreen toggle
+  const toggleFullscreen = async () => {
+    if (isFullscreen) {
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitFullscreenElement) {
+          await (document as any).webkitExitFullscreen();
+        }
+      } catch (err) {
+        console.error('[Ludo] Exit fullscreen error:', err);
+      }
+      setIsFullscreen(false);
+    } else {
+      try {
+        if (containerRef.current) {
+          if (containerRef.current.requestFullscreen) {
+            await containerRef.current.requestFullscreen();
+            setIsFullscreen(true);
+          } else if ((containerRef.current as any).webkitRequestFullscreen) {
+            await (containerRef.current as any).webkitRequestFullscreen();
+            setIsFullscreen(true);
+          }
+        }
+      } catch (err) {
+        console.error('[Ludo] Enter fullscreen error:', err);
+      }
+    }
+  };
+
+  // iOS kontrolü ve Fullscreen değişikliğini dinle
+  useEffect(() => {
+    // iOS kontrolü
+    const iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setIsIOS(iOS);
+
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      setIsFullscreen(isCurrentlyFullscreen);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const copyRoomLink = async () => {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -1617,13 +1751,16 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
 
   // Oyun ekranı - Mobil uyumlu layout
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex', flexDirection: 'column',
-      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-      padding: 5,
-      overflow: 'hidden'
-    }}>
+    <div
+      ref={containerRef}
+      style={{
+        minHeight: '100vh',
+        display: 'flex', flexDirection: 'column',
+        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+        padding: 5,
+        overflow: 'hidden'
+      }}
+    >
       {/* Geri butonu - Sol üst köşe */}
       {onBack && (
         <button onClick={handleBack} style={{
@@ -1634,6 +1771,19 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
           cursor: 'pointer', fontSize: 11, zIndex: 10
         }}>
           ← Çık
+        </button>
+      )}
+
+      {/* Fullscreen butonu - iOS'ta gösterme */}
+      {!isIOS && (
+        <button onClick={toggleFullscreen} style={{
+          position: 'absolute', top: 10, left: 55,
+          padding: '6px 12px',
+          background: isFullscreen ? 'rgba(39, 174, 96, 0.9)' : 'rgba(255,255,255,0.2)',
+          color: 'white', border: 'none', borderRadius: 12,
+          cursor: 'pointer', fontSize: 11, zIndex: 10
+        }}>
+          ⛶
         </button>
       )}
 

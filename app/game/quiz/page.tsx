@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/UserContext';
 import QuizGame from '@/components/games/QuizGame';
+import InstallPWA from '@/components/common/InstallPWA';
 
 function QuizContent() {
   const router = useRouter();
@@ -113,6 +114,7 @@ function QuizContent() {
         onBack={goBackToMenu}
         currentUser={currentUser}
       />
+      <InstallPWA />
     </div>
   );
 }

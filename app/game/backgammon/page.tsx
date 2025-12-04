@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import BackgammonGame from '@/components/games/BackgammonGame';
+import InstallPWA from '@/components/common/InstallPWA';
 
 function BackgammonContent() {
   const router = useRouter();
@@ -42,6 +43,7 @@ function BackgammonContent() {
         joinRoomId={roomId}
         onBack={goBackToMenu}
       />
+      <InstallPWA />
     </div>
   );
 }

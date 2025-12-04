@@ -147,8 +147,13 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
   // Portrait mode
   const [isPortrait, setIsPortrait] = useState(false);
 
+  // Fullscreen mode
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
   // Refs
   const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const playerIdRef = useRef('');
   const roomIdRef = useRef(joinRoomId || '');
   const nicknameRef = useRef(initialNickname);
@@ -295,6 +300,15 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
             setDiceValues(data.room.diceValues);
             setDiceRolled(data.room.diceRolled);
             setAvailableDice(data.room.availableDice || []);
+
+            // Ek state bilgileri (reconnect için önemli)
+            if (data.room.validMoves) setValidMoves(data.room.validMoves);
+            if (data.room.isOpeningRoll !== undefined) setIsOpeningRoll(data.room.isOpeningRoll);
+            if (data.room.whiteOpeningDice !== undefined) setWhiteOpeningDice(data.room.whiteOpeningDice);
+            if (data.room.blackOpeningDice !== undefined) setBlackOpeningDice(data.room.blackOpeningDice);
+            if (data.room.whiteScore !== undefined) setWhiteScore(data.room.whiteScore);
+            if (data.room.blackScore !== undefined) setBlackScore(data.room.blackScore);
+            if (data.room.currentRound !== undefined) setCurrentRound(data.room.currentRound);
           } else {
             setGamePhase('waiting');
           }
@@ -305,7 +319,8 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
               name: p.name,
               color: p.color,
               outBar: p.outBar || [],
-              endBar: p.endBar || []
+              endBar: p.endBar || [],
+              inTheEnd: p.inTheEnd
             })));
           }
         } else {
@@ -644,9 +659,89 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
         setShowInLobby(data.isPublic);
       });
 
+      // Reconnect sonrası oyun durumunu almak için
+      newConnection.on('BackgammonGameState', (data: any) => {
+        console.log('[Backgammon] Game state received:', data);
+        const room = data.room || data.Room || data;
+
+        // Board
+        if (room.board) setBoard(room.board);
+
+        // Sıra bilgisi
+        if (room.currentPlayerIndex !== undefined) setCurrentPlayerIndex(room.currentPlayerIndex);
+
+        // Zar bilgileri
+        if (room.diceValues) setDiceValues(room.diceValues);
+        if (room.diceRolled !== undefined) setDiceRolled(room.diceRolled);
+        if (room.availableDice) setAvailableDice(room.availableDice);
+
+        // Valid moves
+        if (room.validMoves) setValidMoves(room.validMoves);
+
+        // Skor bilgileri
+        if (room.whiteScore !== undefined) setWhiteScore(room.whiteScore);
+        if (room.blackScore !== undefined) setBlackScore(room.blackScore);
+        if (room.currentRound !== undefined) setCurrentRound(room.currentRound);
+
+        // Açılış zarı
+        if (room.isOpeningRoll !== undefined) setIsOpeningRoll(room.isOpeningRoll);
+        if (room.whiteOpeningDice !== undefined) setWhiteOpeningDice(room.whiteOpeningDice);
+        if (room.blackOpeningDice !== undefined) setBlackOpeningDice(room.blackOpeningDice);
+
+        // Oyuncular
+        if (room.players) {
+          setPlayers(room.players.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            color: p.color,
+            outBar: p.outBar || [],
+            endBar: p.endBar || [],
+            inTheEnd: p.inTheEnd
+          })));
+        }
+      });
+
       newConnection.on('Error', (error: string) => {
         console.error('[Backgammon] Server error:', error);
         setConnectionError(error);
+      });
+
+      // Reconnection handlers - telefon geldiğinde tekrar bağlanabilmek için
+      newConnection.onreconnected(async () => {
+        console.log('[Backgammon] SignalR reconnected, rejoining room...');
+        setIsConnected(true);
+
+        // Oda varsa tekrar katıl
+        if (roomIdRef.current && playerIdRef.current) {
+          try {
+            const endUserId = currentUser?.id || currentUser?.userId || null;
+            await newConnection.invoke('JoinBackgammonRoom', roomIdRef.current, playerIdRef.current, nicknameRef.current, endUserId);
+            console.log('[Backgammon] Rejoined room after reconnect');
+
+            // Sıra bizdeyse ve zar atılmışsa valid moves iste
+            // (BackgammonRoomJoined event'i ile state güncellenecek, sonra validMoves alınacak)
+            setTimeout(async () => {
+              try {
+                await newConnection.invoke('GetBackgammonValidMoves', roomIdRef.current, playerIdRef.current);
+              } catch (e) {
+                // Backend bu metodu desteklemeyebilir, sessizce geç
+                console.log('[Backgammon] GetBackgammonValidMoves not supported or failed');
+              }
+            }, 500);
+          } catch (err) {
+            console.error('[Backgammon] Failed to rejoin room:', err);
+          }
+        }
+      });
+
+      newConnection.onreconnecting(() => {
+        console.log('[Backgammon] SignalR reconnecting...');
+        setIsConnected(false);
+      });
+
+      newConnection.onclose(() => {
+        console.log('[Backgammon] SignalR connection closed');
+        setIsConnected(false);
       });
 
       // Start connection
@@ -1041,6 +1136,61 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
     return thisMove;
   }, [selectedPosition, validMoves]);
+
+  // ===============================
+  // FULLSCREEN TOGGLE
+  // ===============================
+
+  const toggleFullscreen = async () => {
+    if (isFullscreen) {
+      // Fullscreen'den çık
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitFullscreenElement) {
+          await (document as any).webkitExitFullscreen();
+        }
+      } catch (err) {
+        console.error('[Backgammon] Exit fullscreen error:', err);
+      }
+      setIsFullscreen(false);
+    } else {
+      // Fullscreen'e gir
+      try {
+        if (containerRef.current) {
+          if (containerRef.current.requestFullscreen) {
+            await containerRef.current.requestFullscreen();
+            setIsFullscreen(true);
+          } else if ((containerRef.current as any).webkitRequestFullscreen) {
+            await (containerRef.current as any).webkitRequestFullscreen();
+            setIsFullscreen(true);
+          }
+        }
+      } catch (err) {
+        console.error('[Backgammon] Enter fullscreen error:', err);
+      }
+    }
+  };
+
+  // iOS kontrolü ve Fullscreen değişikliğini dinle
+  useEffect(() => {
+    // iOS kontrolü
+    const iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setIsIOS(iOS);
+
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      setIsFullscreen(isCurrentlyFullscreen);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // ===============================
   // RENDER - PORTRAIT WARNING
@@ -1458,17 +1608,20 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
     const canSelectBlackOutBar = frontendThisMove.canSelectOutBar && myColor === 'Black' && blackOutBar.length > 0;
 
     return (
-      <div style={{
-        width: '100vw',
-        height: '100vh',
-        background: '#5d4e37',
-        display: 'flex',
-        flexDirection: 'row',
-        overflow: 'hidden',
-        position: 'fixed',
-        top: 0,
-        left: 0
-      }}>
+      <div
+        ref={containerRef}
+        style={{
+          width: '100vw',
+          height: '100vh',
+          background: '#5d4e37',
+          display: 'flex',
+          flexDirection: 'row',
+          overflow: 'hidden',
+          position: 'fixed',
+          top: 0,
+          left: 0
+        }}
+      >
         <button onClick={handleBack} style={{
           position: 'absolute',
           top: '5px',
@@ -1485,6 +1638,26 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
         }}>
           ← Geri
         </button>
+
+        {/* Fullscreen Toggle Button - iOS'ta gösterme */}
+        {!isIOS && (
+          <button onClick={toggleFullscreen} style={{
+            position: 'absolute',
+            top: '5px',
+            left: '55px',
+            padding: '5px 10px',
+            fontSize: '10px',
+            fontWeight: '600',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            background: isFullscreen ? 'rgba(39, 174, 96, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+            color: isFullscreen ? 'white' : '#333',
+            zIndex: 1000
+          }}>
+            ⛶
+          </button>
+        )}
 
         {/* Sol - Kırılan Taşlar (OutBar) + Sıra/Nickname */}
         <div style={{

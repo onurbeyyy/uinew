@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RockPaperScissors from '@/components/games/RockPaperScissors';
+import InstallPWA from '@/components/common/InstallPWA';
 
 function RPSContent() {
   const router = useRouter();
@@ -42,6 +43,7 @@ function RPSContent() {
         joinRoomId={roomId}
         onBack={goBackToMenu}
       />
+      <InstallPWA />
     </div>
   );
 }

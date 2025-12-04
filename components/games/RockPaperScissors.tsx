@@ -78,8 +78,13 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
   const [winner, setWinner] = useState<Player | null>(null);
   const [gameOverMessage, setGameOverMessage] = useState('');
 
+  // Fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
   // Refs for cleanup
   const connectionRef = useRef<signalR.HubConnection | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const playerIdRef = useRef('');
   const roomIdRef = useRef(joinRoomId || '');
   const nicknameRef = useRef(initialNickname);
@@ -108,6 +113,56 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       onBack();
     }
   }, [onBack]);
+
+  // Fullscreen toggle
+  const toggleFullscreen = async () => {
+    if (isFullscreen) {
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitFullscreenElement) {
+          await (document as any).webkitExitFullscreen();
+        }
+      } catch (err) {
+        console.error('[RPS] Exit fullscreen error:', err);
+      }
+      setIsFullscreen(false);
+    } else {
+      try {
+        if (containerRef.current) {
+          if (containerRef.current.requestFullscreen) {
+            await containerRef.current.requestFullscreen();
+            setIsFullscreen(true);
+          } else if ((containerRef.current as any).webkitRequestFullscreen) {
+            await (containerRef.current as any).webkitRequestFullscreen();
+            setIsFullscreen(true);
+          }
+        }
+      } catch (err) {
+        console.error('[RPS] Enter fullscreen error:', err);
+      }
+    }
+  };
+
+  // iOS kontrolü ve Fullscreen değişikliğini dinle
+  useEffect(() => {
+    // iOS kontrolü
+    const iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setIsIOS(iOS);
+
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      setIsFullscreen(isCurrentlyFullscreen);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // Handle game finished
   const handleGameFinished = useCallback(async (data: any) => {
@@ -365,6 +420,32 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
       newConnection.on('Error', (data: any) => {
         console.error('[RPS] Error:', data);
         alert(data.message || 'Bir hata oluştu');
+      });
+
+      // Reconnection handlers - telefon geldiğinde tekrar bağlanabilmek için
+      newConnection.onreconnected(async () => {
+        console.log('[RPS] SignalR reconnected, rejoining room...');
+        setIsConnected(true);
+
+        // Oda varsa tekrar katıl
+        if (roomIdRef.current && playerIdRef.current) {
+          try {
+            await newConnection.invoke('JoinRoom', roomIdRef.current, playerIdRef.current, nicknameRef.current);
+            console.log('[RPS] Rejoined room after reconnect');
+          } catch (err) {
+            console.error('[RPS] Failed to rejoin room:', err);
+          }
+        }
+      });
+
+      newConnection.onreconnecting(() => {
+        console.log('[RPS] SignalR reconnecting...');
+        setIsConnected(false);
+      });
+
+      newConnection.onclose(() => {
+        console.log('[RPS] SignalR connection closed');
+        setIsConnected(false);
       });
 
       // Connect
@@ -727,8 +808,15 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
   // Playing or Result
   if (gamePhase === 'playing' || gamePhase === 'result') {
     return (
-      <div style={styles.container}>
+      <div ref={containerRef} style={styles.container}>
         <button onClick={handleBack} style={styles.topBackButton}>← Çık</button>
+        {!isIOS && (
+          <button onClick={toggleFullscreen} style={{
+            ...styles.topBackButton,
+            left: 80,
+            background: isFullscreen ? 'rgba(39, 174, 96, 0.9)' : 'rgba(255,255,255,0.2)'
+          }}>⛶</button>
+        )}
 
         {/* Round info */}
         <div style={styles.roundInfo}>

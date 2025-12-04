@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useCallback, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/UserContext';
+import InstallPWA from '@/components/common/InstallPWA';
 
 function AlienAttackContent() {
   const router = useRouter();
@@ -13,6 +14,13 @@ function AlienAttackContent() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  // iOS kontrolü
+  useEffect(() => {
+    const iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setIsIOS(iOS);
+  }, []);
 
   // Müşteri menüsüne geri dön
   const goBackToMenu = useCallback(() => {
@@ -258,8 +266,8 @@ function AlienAttackContent() {
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
         allowFullScreen
       />
-      {/* Tam ekran butonu - sadece tam ekran değilse göster */}
-      {!isFullscreen && (
+      {/* Tam ekran butonu - sadece tam ekran değilse ve iOS değilse göster */}
+      {!isFullscreen && !isIOS && (
         <button
           onClick={requestFullscreen}
           style={{
@@ -279,6 +287,7 @@ function AlienAttackContent() {
           ⛶ Tam Ekran
         </button>
       )}
+      <InstallPWA />
     </div>
   );
 }

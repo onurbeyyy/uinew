@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/UserContext';
 import LudoGame from '@/components/games/LudoGame';
+import InstallPWA from '@/components/common/InstallPWA';
 
 function LudoContent() {
   const router = useRouter();
@@ -112,6 +113,7 @@ function LudoContent() {
         joinRoomId={roomId}
         onBack={goBackToMenu}
       />
+      <InstallPWA />
     </div>
   );
 }

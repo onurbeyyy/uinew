@@ -13,10 +13,17 @@ export default function AlienAttackGame({ onBack, playerNickname, customerCode }
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [isIOS, setIsIOS] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const gameStartTimeRef = useRef<number>(0);
   const scoreSubmittedRef = useRef(false);
+
+  // iOS kontrolü
+  useEffect(() => {
+    const iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setIsIOS(iOS);
+  }, []);
 
   // Oyun yüklendiğinde loading'i kapat ve başlangıç zamanını kaydet
   const handleIframeLoad = () => {
@@ -209,13 +216,15 @@ export default function AlienAttackGame({ onBack, playerNickname, customerCode }
             <span>Uzaylı Saldırısı</span>
           </div>
 
-          <button
-            onClick={toggleFullscreen}
-            className="alien-attack-btn fullscreen-btn"
-          >
-            <span>{isFullscreen ? '⛶' : '⛶'}</span>
-            <span>{isFullscreen ? 'Küçült' : 'Tam Ekran'}</span>
-          </button>
+          {!isIOS && (
+            <button
+              onClick={toggleFullscreen}
+              className="alien-attack-btn fullscreen-btn"
+            >
+              <span>{isFullscreen ? '⛶' : '⛶'}</span>
+              <span>{isFullscreen ? 'Küçült' : 'Tam Ekran'}</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
