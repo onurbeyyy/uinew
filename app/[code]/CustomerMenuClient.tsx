@@ -71,8 +71,23 @@ export default function CustomerMenuClient({
     basketDisabledMessage
   } = useMenu();
 
+  // Banner URL'sini hemen hesapla ve preload et
+  const bannerUrlEarly = initialCustomerData?.customer.showBanner && initialCustomerData?.customer.banner
+    ? initialCustomerData.customer.banner.startsWith('http')
+      ? initialCustomerData.customer.banner.replace('http://', 'https://')
+      : `https://canlimenu.online/Uploads/${initialCustomerData.customer.banner.replace('Uploads/', '')}`
+    : null;
+
+  // Banner görselini en başta preload et
+  useEffect(() => {
+    if (bannerUrlEarly) {
+      const img = new Image();
+      img.src = bannerUrlEarly;
+    }
+  }, [bannerUrlEarly]);
+
   // SSR'dan gelen initial data kullan
-  const [showBanner, setShowBanner] = useState(false);
+  const [showBanner, setShowBanner] = useState(!!bannerUrlEarly);
   const [menuDataLocal, setMenuDataLocal] = useState<MenuDto | null>(initialMenuData);
   const [customerData, setCustomerData] = useState<CustomerInfoResponse | null>(initialCustomerData);
   const [categoriesData, setCategoriesData] = useState<CategoryDto[]>(initialCategoriesData || []);
@@ -257,13 +272,6 @@ export default function CustomerMenuClient({
 
     loadAdditionalData();
   }, [code, tableParam, customerData?.customer.id, setProductTokenSettings, setPopularProductIds]);
-
-  // Banner göster
-  useEffect(() => {
-    if (customerData?.customer.showBanner && customerData?.customer.banner) {
-      setShowBanner(true);
-    }
-  }, [customerData]);
 
   // joinRoom parametresi kontrolü
   useEffect(() => {
