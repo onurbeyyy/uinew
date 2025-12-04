@@ -637,10 +637,18 @@ export default function ProductListModal() {
                                 overflowY: 'hidden',
                                 paddingBottom: '12px',
                                 marginBottom: '12px',
+                                marginTop: '-10px',
                                 borderBottom: '1px solid rgba(255,255,255,0.2)',
                                 WebkitOverflowScrolling: 'touch',
                                 scrollbarWidth: 'none',
                                 msOverflowStyle: 'none',
+                                position: 'sticky',
+                                top: '0',
+                                zIndex: 10,
+                                backgroundColor: 'rgba(0,0,0,0.5)',
+                                backdropFilter: 'blur(10px)',
+                                padding: '10px 0 12px 0',
+                                borderRadius: '8px',
                               } as React.CSSProperties}>
                                 {uniqueTags.map((tag) => (
                                   <button
