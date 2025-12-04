@@ -23,8 +23,9 @@ function VerifyEmailContent() {
       }
 
       try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online';
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/EndUser/verify-email?token=${encodeURIComponent(token)}`,
+          `${apiUrl}/api/EndUser/verify-email?token=${encodeURIComponent(token)}`,
           { method: 'GET' }
         );
 
