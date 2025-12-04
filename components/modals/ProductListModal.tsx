@@ -31,6 +31,7 @@ export default function ProductListModal() {
 
   const [activeCategory, setActiveCategory] = useState(selectedCategory);
   const [cartItems, setCartItems] = useState<any[]>([]);
+  const [activeSubTab, setActiveSubTab] = useState<string>(''); // SubCategoryTag için aktif tab
   const sliderRef = useRef<HTMLDivElement>(null);
   const productListRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number>(0);
@@ -125,6 +126,14 @@ export default function ProductListModal() {
   useEffect(() => {
     if (selectedCategory) {
       setActiveCategory(selectedCategory);
+      // Kategori değişince subTab'ı sıfırla
+      const products = selectedCategory.products || [];
+      const tags = [...new Set(products.map((p: any) => p.subCategoryTag || p.SubCategoryTag || '').filter((t: string) => t))].sort();
+      if (tags.length > 0) {
+        setActiveSubTab(tags[0] as string);
+      } else {
+        setActiveSubTab('');
+      }
     }
   }, [selectedCategory]);
 
@@ -352,10 +361,30 @@ export default function ProductListModal() {
                       <div style={{ padding: '50px', textAlign: 'center', color: 'white' }}>
                         {t('noProductsInCategory')}
                       </div>
-                    ) : (
-                      <div className="product-list-container">
-                        <div className="products-no-tabs-wrapper">
-                          {products.map((product) => {
+                    ) : (() => {
+                      // SubCategoryTag'e göre grupla
+                      const groupedProducts: { [key: string]: any[] } = {};
+                      const ungroupedProducts: any[] = [];
+
+                      products.forEach((product: any) => {
+                        const tag = product.subCategoryTag || product.SubCategoryTag || '';
+                        if (tag) {
+                          if (!groupedProducts[tag]) {
+                            groupedProducts[tag] = [];
+                          }
+                          groupedProducts[tag].push(product);
+                        } else {
+                          ungroupedProducts.push(product);
+                        }
+                      });
+
+                      const uniqueTags = Object.keys(groupedProducts).sort();
+                      const hasTags = uniqueTags.length > 0;
+                      const hasUngrouped = ungroupedProducts.length > 0;
+                      const currentActiveTab = activeSubTab || (hasTags ? uniqueTags[0] : 'ungrouped');
+
+                      // Ürün kartı render fonksiyonu
+                      const renderProductCard = (product: any) => {
                     const productImageUrl = getImageUrl(product.picture, customerLogo);
                     const productTitle = getTitle(product, language);
                     const productDetail = getDescription(product, language);
@@ -593,10 +622,92 @@ export default function ProductListModal() {
                         </div>
                       </div>
                           );
-                        })}
+                      };
+
+                      // Tab yapısı veya düz liste
+                      if (hasTags) {
+                        return (
+                          <div className="product-list-container">
+                            <div className="product-tabs-container">
+                              {/* Tab Navigation */}
+                              <div className="product-tab-nav" style={{
+                                display: 'flex',
+                                gap: '8px',
+                                overflowX: 'auto',
+                                paddingBottom: '12px',
+                                marginBottom: '12px',
+                                borderBottom: '1px solid rgba(255,255,255,0.2)',
+                              }}>
+                                {uniqueTags.map((tag) => (
+                                  <button
+                                    key={tag}
+                                    className={`product-tab-btn ${currentActiveTab === tag ? 'active' : ''}`}
+                                    onClick={() => setActiveSubTab(tag)}
+                                    style={{
+                                      padding: '8px 16px',
+                                      borderRadius: '20px',
+                                      border: 'none',
+                                      background: currentActiveTab === tag
+                                        ? 'linear-gradient(135deg, #f39c12, #e67e22)'
+                                        : 'rgba(255,255,255,0.15)',
+                                      color: 'white',
+                                      fontSize: '13px',
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      whiteSpace: 'nowrap',
+                                      transition: 'all 0.2s ease',
+                                    }}
+                                  >
+                                    {tag}
+                                  </button>
+                                ))}
+                                {hasUngrouped && (
+                                  <button
+                                    className={`product-tab-btn ${currentActiveTab === 'ungrouped' ? 'active' : ''}`}
+                                    onClick={() => setActiveSubTab('ungrouped')}
+                                    style={{
+                                      padding: '8px 16px',
+                                      borderRadius: '20px',
+                                      border: 'none',
+                                      background: currentActiveTab === 'ungrouped'
+                                        ? 'linear-gradient(135deg, #f39c12, #e67e22)'
+                                        : 'rgba(255,255,255,0.15)',
+                                      color: 'white',
+                                      fontSize: '13px',
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      whiteSpace: 'nowrap',
+                                      transition: 'all 0.2s ease',
+                                    }}
+                                  >
+                                    Diğer
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Tab Contents */}
+                              <div className="product-tabs-content">
+                                <div className="products-no-tabs-wrapper">
+                                  {uniqueTags.map((tag) => (
+                                    currentActiveTab === tag && groupedProducts[tag].map(renderProductCard)
+                                  ))}
+                                  {hasUngrouped && currentActiveTab === 'ungrouped' && ungroupedProducts.map(renderProductCard)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Hiç tag yoksa düz liste
+                      return (
+                        <div className="product-list-container">
+                          <div className="products-no-tabs-wrapper">
+                            {ungroupedProducts.map(renderProductCard)}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 );
               })}
