@@ -468,41 +468,87 @@ export default function ProductListModal() {
                             </div>
                           </div>
                           <div className="product-info">
-                            {product.price > 0 && (
-                              <div className="price-container moved">
-                                <div className="product-price price">
-                                  <span className="kdv-label"><span>KDV</span><span>Dahil</span></span>
-                                  <span className="price-value" style={{fontFamily: productFont}}>
-                                    {product.price.toFixed(2)} ₺
-                                    {/* Token Redeem Badge - Fiyatın yanında */}
-                                    {isTableMode && canUseBasket && (() => {
-                                      const tokenSetting = productTokenSettings[product.id] || productTokenSettings[product.sambaId];
-                                      if (!tokenSetting || !tokenSetting.redeemTokens || tokenSetting.redeemTokens <= 0) return null;
+                            {/* Porsiyon listesi veya tek fiyat */}
+                            {(() => {
+                              const portions = product.Portions || product.portions || [];
+                              const hasManyPortions = portions.length > 1;
 
-                                      return (
+                              if (hasManyPortions) {
+                                // Birden fazla porsiyon var - liste olarak göster
+                                return (
+                                  <div className="portions-price-list" style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '6px',
+                                  }}>
+                                    {portions.map((portion: any) => (
+                                      <div key={portion.id} style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        padding: '6px 10px',
+                                        background: 'rgba(255,255,255,0.1)',
+                                        borderRadius: '8px',
+                                      }}>
                                         <span style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '4px',
-                                          marginLeft: '8px',
-                                          padding: '4px 10px',
-                                          background: 'linear-gradient(135deg, #ff9800, #ff6d00)',
-                                          color: 'white',
-                                          borderRadius: '12px',
-                                          fontSize: '11px',
-                                          fontWeight: 700,
-                                          boxShadow: '0 2px 6px rgba(255, 152, 0, 0.4)',
-                                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                                          fontSize: '15px',
+                                          color: productDescriptionColor,
+                                          fontFamily: productFont,
                                         }}>
-                                          🪙 {tokenSetting.redeemTokens} jetona al
+                                          {language === 'en' ? (portion.nameEnglish || portion.name) : portion.name}
                                         </span>
-                                      );
-                                    })()}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                            {productDetail && (
+                                        <span style={{
+                                          fontSize: '16px',
+                                          fontWeight: 700,
+                                          color: '#FFFFFF',
+                                          fontFamily: productFont,
+                                        }}>
+                                          {portion.price.toFixed(2)} ₺
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              } else {
+                                // Tek porsiyon veya porsiyon yok - normal fiyat göster
+                                return product.price > 0 ? (
+                                  <div className="price-container moved">
+                                    <div className="product-price price">
+                                      <span className="kdv-label"><span>KDV</span><span>Dahil</span></span>
+                                      <span className="price-value" style={{fontFamily: productFont}}>
+                                        {product.price.toFixed(2)} ₺
+                                        {/* Token Redeem Badge - Fiyatın yanında */}
+                                        {isTableMode && canUseBasket && (() => {
+                                          const tokenSetting = productTokenSettings[product.id] || productTokenSettings[product.sambaId];
+                                          if (!tokenSetting || !tokenSetting.redeemTokens || tokenSetting.redeemTokens <= 0) return null;
+
+                                          return (
+                                            <span style={{
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '4px',
+                                              marginLeft: '8px',
+                                              padding: '4px 10px',
+                                              background: 'linear-gradient(135deg, #ff9800, #ff6d00)',
+                                              color: 'white',
+                                              borderRadius: '12px',
+                                              fontSize: '11px',
+                                              fontWeight: 700,
+                                              boxShadow: '0 2px 6px rgba(255, 152, 0, 0.4)',
+                                              border: '1px solid rgba(255, 255, 255, 0.3)',
+                                            }}>
+                                              🪙 {tokenSetting.redeemTokens} jetona al
+                                            </span>
+                                          );
+                                        })()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : null;
+                              }
+                            })()}
+                            {/* Porsiyon yoksa detail göster (porsiyonlu ürünlerde description zaten porsiyon adı) */}
+                            {productDetail && !((product.Portions || product.portions || []).length > 1) && (
                               <p className="product-detail" data-detail-tr={product.detail} data-detail-en={product.detailEn || product.DetailEn || product.detail} style={descriptionStyle}>
                                 {productDetail}
                               </p>
@@ -511,7 +557,17 @@ export default function ProductListModal() {
                               <button
                                 type="button"
                                 className="add-to-cart-btn"
-                                onClick={(e) => handleAddToCart(product, e)}
+                                onClick={(e) => {
+                                  const portions = product.Portions || product.portions || [];
+                                  if (portions.length > 1) {
+                                    // Porsiyonlu ürün - detay modalını aç
+                                    e.stopPropagation();
+                                    openProductDetailModal(product);
+                                  } else {
+                                    // Tek porsiyon - direkt sepete ekle
+                                    handleAddToCart(product, e);
+                                  }
+                                }}
                                 style={{
                                   width: '100%',
                                   padding: '10px',

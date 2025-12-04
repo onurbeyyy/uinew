@@ -9,6 +9,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '@/contexts/UserContext';
+import { submitScore } from '@/lib/gameApi';
 
 // Tavla frontend components
 import BoardTop from './backgammon/frontend/BoardTop';
@@ -511,7 +512,7 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       });
 
       // Maç sonu (3 el kazanan)
-      newConnection.on('BackgammonMatchFinished', (data: any) => {
+      newConnection.on('BackgammonMatchFinished', async (data: any) => {
         setWhiteScore(data.whiteScore);
         setBlackScore(data.blackScore);
         setIsMatchOver(true);
@@ -524,6 +525,25 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
         }
 
         setGamePhase('finished');
+
+        // Leaderboard'a kaydet (kazanan için)
+        if (data.matchWinnerId === playerIdRef.current) {
+          try {
+            await submitScore({
+              GameType: 'Backgammon',
+              PlayerNickname: nicknameRef.current || 'Anonim',
+              Score: Math.max(data.whiteScore, data.blackScore),
+              GameData: JSON.stringify({
+                whiteScore: data.whiteScore,
+                blackScore: data.blackScore,
+                isWinner: true
+              }),
+              VenueCode: customerCode || 'global'
+            });
+          } catch (err) {
+            console.error('❌ Backgammon skor kayıt hatası:', err);
+          }
+        }
       });
 
       // Yeni el başladı

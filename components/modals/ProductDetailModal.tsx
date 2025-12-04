@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useMenu } from '@/contexts/MenuContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/UserContext';
@@ -8,25 +8,86 @@ import { getTitle, getDescription } from '@/utils/language';
 import { saveCart, loadCart } from '@/utils/cartUtils';
 import AllergenWarning from '@/components/common/AllergenWarning';
 import { useToast } from '@/components/ui/Toast';
+import type { ProductPortion, Product } from '@/types/api';
 
 export default function ProductDetailModal() {
-  const { menuData, customerData, selectedProduct, isProductDetailModalOpen, closeProductDetailModal, isTableMode, canUseBasket, cartKey, productTokenSettings, openProfile } = useMenu();
+  const { menuData, customerData, selectedProduct, selectedCategory, isProductDetailModalOpen, closeProductDetailModal, openProductDetailModal, isTableMode, canUseBasket, cartKey, productTokenSettings, openProfile } = useMenu();
   const { language, t } = useLanguage();
   const { isAuthenticated } = useAuth();
   const { showCartToast } = useToast();
   const [quantity, setQuantity] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [selectedPortion, setSelectedPortion] = useState<ProductPortion | null>(null);
+
+  // Swipe navigation için
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
 
   // Font ve renk customization
   const productFont = customerData?.customer.productFont || 'Inter, sans-serif';
 
-  // Modal her açıldığında quantity'yi sıfırla
+  // Mevcut kategorideki ürünler
+  const currentProducts: Product[] = selectedCategory?.products || [];
+  const currentProductIndex = currentProducts.findIndex(
+    (p) => (p.id ?? p.Id) === (selectedProduct?.id ?? selectedProduct?.Id)
+  );
+
+  // Porsiyonları al (API'den gelen Portions veya portions)
+  const portions: ProductPortion[] = selectedProduct?.Portions ?? selectedProduct?.portions ?? [];
+  const hasPortions = portions.length > 1;
+
+  // Önceki/sonraki ürüne geçiş
+  const goToPrevProduct = () => {
+    if (currentProductIndex > 0) {
+      openProductDetailModal(currentProducts[currentProductIndex - 1]);
+    }
+  };
+
+  const goToNextProduct = () => {
+    if (currentProductIndex < currentProducts.length - 1) {
+      openProductDetailModal(currentProducts[currentProductIndex + 1]);
+    }
+  };
+
+  // Swipe handler
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.changedTouches[0].screenX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    touchEndX.current = e.changedTouches[0].screenX;
+    handleSwipe();
+  };
+
+  const handleSwipe = () => {
+    const swipeThreshold = 50;
+    const diff = touchStartX.current - touchEndX.current;
+
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        // Sola kaydır - sonraki ürün
+        goToNextProduct();
+      } else {
+        // Sağa kaydır - önceki ürün
+        goToPrevProduct();
+      }
+    }
+  };
+
+  // Modal her açıldığında quantity'yi ve porsiyon seçimini sıfırla
   useEffect(() => {
-    if (isProductDetailModalOpen) {
+    if (isProductDetailModalOpen && selectedProduct) {
       setQuantity(1);
       setImageLoaded(false);
+      // İlk porsiyonu varsayılan olarak seç
+      const productPortions = selectedProduct.Portions ?? selectedProduct.portions ?? [];
+      if (productPortions.length > 0) {
+        setSelectedPortion(productPortions[0]);
+      } else {
+        setSelectedPortion(null);
+      }
     }
-  }, [isProductDetailModalOpen]);
+  }, [isProductDetailModalOpen, selectedProduct]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -52,21 +113,30 @@ export default function ProductDetailModal() {
     const customerCode = menuData.customerTitle || 'unknown';
     let cartItems = loadCart(cartKey, customerCode);
 
-    const productId = selectedProduct.Id ?? selectedProduct.id;
+    // Porsiyon varsa porsiyon ID'sini, yoksa ürün ID'sini kullan
+    const productId = selectedPortion?.id ?? selectedProduct.Id ?? selectedProduct.id;
+    const portionName = selectedPortion?.name || '';
+
+    // Aynı ürün + aynı porsiyon kombinasyonunu bul
     const existingItemIndex = cartItems.findIndex(
-      (item: any) => item.productId === productId
+      (item: any) => item.productId === productId && item.portionName === portionName
     );
 
     if (existingItemIndex >= 0) {
       cartItems[existingItemIndex].quantity += quantity;
     } else {
       const productName = getTitle(selectedProduct, language);
+      const displayName = portionName ? `${productName} (${portionName})` : productName;
+      const itemPrice = selectedPortion?.price ?? selectedProduct.Price ?? selectedProduct.price ?? 0;
+
       cartItems.push({
         id: Date.now(),
         productId: productId,
         sambaId: selectedProduct.SambaId ?? selectedProduct.sambaId,
-        name: productName,
-        price: selectedProduct.Price ?? selectedProduct.price ?? 0,
+        sambaPortionId: selectedPortion?.sambaPortionId,
+        portionName: portionName,
+        name: displayName,
+        price: itemPrice,
         quantity: quantity,
         image: selectedProduct.Picture ?? selectedProduct.picture,
       });
@@ -76,7 +146,8 @@ export default function ProductDetailModal() {
     window.dispatchEvent(new Event('cartUpdated'));
 
     const productName = getTitle(selectedProduct, language);
-    showCartToast(productName, '', () => {
+    const displayName = portionName ? `${productName} (${portionName})` : productName;
+    showCartToast(displayName, '', () => {
       window.dispatchEvent(new CustomEvent('openCart'));
     });
 
@@ -86,9 +157,10 @@ export default function ProductDetailModal() {
   if (!isProductDetailModalOpen || !selectedProduct) return null;
 
   const getImageUrl = (picture?: string) => {
-    if (!picture) {
+    // Boş string veya undefined ise logo kullan
+    if (!picture || picture.trim() === '') {
       const customerLogo = menuData?.customerLogo;
-      if (customerLogo) {
+      if (customerLogo && customerLogo.trim() !== '') {
         if (customerLogo.startsWith('http')) {
           return customerLogo.replace('http://', 'https://');
         }
@@ -104,10 +176,12 @@ export default function ProductDetailModal() {
     return `https://canlimenu.online/Uploads/${cleanPath}`;
   };
 
-  const productImageUrl = getImageUrl(selectedProduct.Picture);
+  const productImageUrl = getImageUrl(selectedProduct.Picture ?? selectedProduct.picture);
   const productTitle = getTitle(selectedProduct, language);
   const productDescription = getDescription(selectedProduct, language);
-  const price = selectedProduct.Price ?? selectedProduct.price ?? 0;
+
+  // Fiyat: Seçili porsiyon varsa onu, yoksa ürün fiyatını kullan
+  const price = selectedPortion?.price ?? selectedProduct.Price ?? selectedProduct.price ?? 0;
   const totalPrice = price * quantity;
 
   // Token bilgisi
@@ -119,7 +193,39 @@ export default function ProductDetailModal() {
 
   return (
     <div className="product-detail-modal-v2" onClick={closeProductDetailModal}>
-      <div className="pdm-container" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="pdm-container"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Navigasyon okları */}
+        {currentProducts.length > 1 && (
+          <>
+            {currentProductIndex > 0 && (
+              <button
+                className="pdm-nav-btn pdm-nav-prev"
+                onClick={(e) => { e.stopPropagation(); goToPrevProduct(); }}
+                aria-label="Önceki ürün"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+            )}
+            {currentProductIndex < currentProducts.length - 1 && (
+              <button
+                className="pdm-nav-btn pdm-nav-next"
+                onClick={(e) => { e.stopPropagation(); goToNextProduct(); }}
+                aria-label="Sonraki ürün"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            )}
+          </>
+        )}
 
         {/* Kapatma butonu */}
         <button className="pdm-close" onClick={closeProductDetailModal} aria-label={t('close')}>
@@ -155,11 +261,32 @@ export default function ProductDetailModal() {
             {productTitle}
           </h1>
 
-          {/* Açıklama */}
-          {productDescription && (
+          {/* Açıklama - porsiyon yoksa göster (porsiyon varsa description zaten porsiyon adı) */}
+          {productDescription && !hasPortions && (
             <p className="pdm-description" style={{ fontFamily: productFont }}>
               {productDescription}
             </p>
+          )}
+
+          {/* Porsiyon Seçimi */}
+          {hasPortions && (
+            <div className="pdm-portions">
+              <div className="pdm-portions-label">Porsiyon Seçin</div>
+              <div className="pdm-portions-list">
+                {portions.map((portion) => (
+                  <button
+                    key={portion.id}
+                    className={`pdm-portion-btn ${selectedPortion?.id === portion.id ? 'active' : ''}`}
+                    onClick={() => setSelectedPortion(portion)}
+                  >
+                    <span className="pdm-portion-name">
+                      {language === 'en' ? (portion.nameEnglish || portion.nameEn || portion.name) : portion.name}
+                    </span>
+                    <span className="pdm-portion-price">{portion.price.toFixed(2)} TL</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Jeton Bilgisi */}

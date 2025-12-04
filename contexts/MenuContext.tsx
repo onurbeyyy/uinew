@@ -113,14 +113,12 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   };
 
   const openProductDetailModal = (product: Product) => {
-    // Diğer modalları kapat
-    setIsProductListModalOpen(false);
+    // ProductListModal açık kalsın, sadece game ve profile kapat
     setIsGameModalOpen(false);
     setIsProfileOpen(false);
-    setSelectedCategory(null);
     setSelectedGame(null);
 
-    // Bu modalı aç
+    // Bu modalı aç (liste modalı arkada kalacak)
     setSelectedProduct(product);
     setIsProductDetailModalOpen(true);
     document.body.style.overflow = 'hidden';

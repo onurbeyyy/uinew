@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '@/contexts/UserContext';
+import { submitScore } from '@/lib/gameApi';
 
 // Types
 interface Player {
@@ -109,7 +110,7 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
   }, [onBack]);
 
   // Handle game finished
-  const handleGameFinished = useCallback((data: any) => {
+  const handleGameFinished = useCallback(async (data: any) => {
 
     // Önce bekleyen timeout'u temizle (RoundResult'tan gelen)
     if (nextRoundTimeoutRef.current) {
@@ -136,7 +137,27 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
     }
 
     setGamePhase('finished');
-  }, []);
+
+    // Leaderboard'a kaydet - sadece kazanan veya en yüksek skorlu
+    try {
+      const myPlayer = finalScores?.find((p: any) => p.id === playerIdRef.current);
+      if (myPlayer && myPlayer.score > 0) {
+        await submitScore({
+          GameType: 'RockPaperScissors',
+          PlayerNickname: nicknameRef.current || 'Anonim',
+          Score: myPlayer.score,
+          GameData: JSON.stringify({
+            totalRounds: MAX_ROUNDS,
+            isWinner: winnerData?.id === playerIdRef.current
+          }),
+          VenueCode: customerCode || 'global'
+        });
+        console.log('✅ RPS skoru kaydedildi:', myPlayer.score);
+      }
+    } catch (err) {
+      console.error('❌ RPS skor kayıt hatası:', err);
+    }
+  }, [customerCode]);
 
   // Keep onBackRef updated
   useEffect(() => {

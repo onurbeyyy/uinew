@@ -93,6 +93,7 @@ export interface Product {
   categoryId: number;
   orderNo: number;
   portions?: ProductPortion[];
+  Portions?: ProductPortion[]; // Capital case (API uyumluluğu)
   properties?: ProductProperty[];
   subCategoryTag?: string;
   allergens?: string; // Alerjenler (virgülle ayrılmış veya JSON array)
@@ -114,10 +115,11 @@ export interface Product {
 
 export interface ProductPortion {
   id: number;
+  sambaPortionId: number;
   name: string;
   nameEn?: string;
+  nameEnglish?: string; // API uyumluluğu
   price: number;
-  multiplier: number;
 }
 
 export interface ProductProperty {
