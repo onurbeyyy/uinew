@@ -17,6 +17,8 @@ interface CartItem {
   note?: string;
   sambaId?: number;
   tokenQuantity?: number; // Kaç adet jeton ile alınacak
+  portionName?: string;
+  sambaPortionId?: number;
 }
 
 interface DeliveryInfo {
