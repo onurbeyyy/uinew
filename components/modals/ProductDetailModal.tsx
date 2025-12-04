@@ -146,14 +146,6 @@ export default function ProductDetailModal() {
             productAllergens={selectedProduct.Allergens ?? selectedProduct.allergens}
             className="pdm-allergen"
           />
-
-          {/* Fiyat badge */}
-          {price > 0 && (
-            <div className="pdm-price-badge">
-              <span className="pdm-price-value">{price.toFixed(2)}</span>
-              <span className="pdm-price-currency">TL</span>
-            </div>
-          )}
         </div>
 
         {/* İçerik Alanı */}
