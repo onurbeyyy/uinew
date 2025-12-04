@@ -616,8 +616,28 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
   // Waiting for opponent
   if (gamePhase === 'waiting') {
     return (
-      <div style={styles.container}>
+      <div ref={containerRef} style={{...styles.container, position: 'relative'}}>
         <button onClick={handleBack} style={styles.topBackButton}>← Geri</button>
+
+        {/* Fullscreen Button - Lobby */}
+        {!isIOS && !isFullscreen && (
+          <button onClick={toggleFullscreen} style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            padding: '10px 15px',
+            fontSize: '14px',
+            fontWeight: '600',
+            border: '2px solid #fff',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            zIndex: 10000
+          }}>
+            ⛶ Tam Ekran
+          </button>
+        )}
 
         <div style={styles.centerContent}>
           <div style={styles.gameIcon}>✊✋✌️</div>

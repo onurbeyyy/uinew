@@ -1371,13 +1371,16 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
   // Bekleme odası - Yatay düzen: Sol QR | Sağ Oyuncular
   if (gamePhase === 'waiting') {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center', justifyContent: 'center',
-        padding: 10,
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-      }}>
+      <div
+        ref={containerRef}
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          padding: 10,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          position: 'relative'
+        }}>
         {onBack && (
           <button onClick={handleBack} style={{
             position: 'absolute', top: 10, left: 10,
@@ -1387,6 +1390,26 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
             cursor: 'pointer', fontSize: 13
           }}>
             ← Geri
+          </button>
+        )}
+
+        {/* Fullscreen Button - Lobby */}
+        {!isIOS && !isFullscreen && (
+          <button onClick={toggleFullscreen} style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            padding: '10px 15px',
+            fontSize: '14px',
+            fontWeight: '600',
+            border: '2px solid #fff',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            zIndex: 10000
+          }}>
+            ⛶ Tam Ekran
           </button>
         )}
 

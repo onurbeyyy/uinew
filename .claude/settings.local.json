@@ -43,7 +43,9 @@
       "WebFetch(domain:dnschecker.org)",
       "Bash(host:*)",
       "Bash(timeout 10 bash:*)",
-      "Bash(dotnet publish:*)"
+      "Bash(dotnet publish:*)",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"dotnet build\")",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"dotnet publish -c Release -o ./publish\")"
     ],
     "deny": [],
     "ask": []

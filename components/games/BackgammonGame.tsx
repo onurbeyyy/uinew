@@ -1314,8 +1314,8 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
           ← Geri
         </button>
 
-        {/* Fullscreen Button - Lobby */}
-        {!isIOS && (
+        {/* Fullscreen Button - Lobby - sadece tam ekran değilken göster */}
+        {!isIOS && !isFullscreen && (
           <button onClick={toggleFullscreen} style={{
             position: 'absolute',
             top: '10px',
@@ -1330,7 +1330,7 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
             color: '#fff',
             zIndex: 10000
           }}>
-            {isFullscreen ? '✕ Kapat' : '⛶ Tam Ekran'}
+            ⛶ Tam Ekran
           </button>
         )}
 
@@ -1661,23 +1661,25 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
           ← Geri
         </button>
 
-        {/* Fullscreen Toggle Button */}
-        <button onClick={toggleFullscreen} style={{
-          position: 'absolute',
-          top: '10px',
-          right: '10px',
-          padding: '10px 15px',
-          fontSize: '14px',
-          fontWeight: '600',
-          border: '2px solid #fff',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          backgroundColor: 'red',
-          color: '#fff',
-          zIndex: 99999
-        }}>
-          TAM EKRAN
-        </button>
+        {/* Fullscreen Toggle Button - sadece tam ekran değilken göster */}
+        {!isIOS && !isFullscreen && (
+          <button onClick={toggleFullscreen} style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            padding: '10px 15px',
+            fontSize: '14px',
+            fontWeight: '600',
+            border: '2px solid #fff',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            zIndex: 10000
+          }}>
+            ⛶ Tam Ekran
+          </button>
+        )}
 
         {/* Sol - Kırılan Taşlar (OutBar) + Sıra/Nickname */}
         <div style={{

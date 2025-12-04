@@ -734,17 +734,40 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
   // WAITING (Lobby) - Dikey düzen: Üst Oyuncular | Alt QR
   if (gamePhase === 'waiting') {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex', flexDirection: 'column',
-        padding: 10,
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-      }}>
+      <div
+        ref={containerRef}
+        style={{
+          minHeight: '100vh',
+          display: 'flex', flexDirection: 'column',
+          padding: 10,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          position: 'relative'
+        }}>
         {onBack && (
           <button onClick={handleBack} style={{
             position: 'absolute', top: 8, left: 8, padding: '6px 12px',
             background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 11
           }}>← Geri</button>
+        )}
+
+        {/* Fullscreen Button - Lobby */}
+        {!isIOS && !isFullscreen && (
+          <button onClick={toggleFullscreen} style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            padding: '10px 15px',
+            fontSize: '14px',
+            fontWeight: '600',
+            border: '2px solid #fff',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            zIndex: 10000
+          }}>
+            ⛶ Tam Ekran
+          </button>
         )}
 
         {/* Başlık */}
