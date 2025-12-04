@@ -630,20 +630,25 @@ export default function ProductListModal() {
                           <div className="product-list-container">
                             <div className="product-tabs-container">
                               {/* Tab Navigation */}
-                              <div className="product-tab-nav" style={{
-                                display: 'flex',
-                                gap: '8px',
-                                overflowX: 'scroll',
-                                overflowY: 'hidden',
-                                paddingBottom: '12px',
-                                marginBottom: '12px',
-                                marginTop: '-10px',
-                                borderBottom: '1px solid rgba(255,255,255,0.2)',
-                                WebkitOverflowScrolling: 'touch',
-                                scrollbarWidth: 'none',
-                                msOverflowStyle: 'none',
-                                touchAction: 'pan-x',
-                              } as React.CSSProperties}>
+                              <div
+                                className="product-tab-nav"
+                                style={{
+                                  display: 'flex',
+                                  gap: '8px',
+                                  overflowX: 'scroll',
+                                  overflowY: 'hidden',
+                                  paddingBottom: '12px',
+                                  marginBottom: '12px',
+                                  marginTop: '-10px',
+                                  borderBottom: '1px solid rgba(255,255,255,0.2)',
+                                  WebkitOverflowScrolling: 'touch',
+                                  scrollbarWidth: 'none',
+                                  msOverflowStyle: 'none',
+                                  touchAction: 'pan-x',
+                                } as React.CSSProperties}
+                                onTouchStart={(e) => e.stopPropagation()}
+                                onTouchEnd={(e) => e.stopPropagation()}
+                              >
                                 {uniqueTags.map((tag) => (
                                   <button
                                     key={tag}
