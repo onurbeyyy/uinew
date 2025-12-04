@@ -1640,22 +1640,22 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
         </button>
 
         {/* Fullscreen Toggle Button - iOS'ta gösterme */}
-        {!isIOS && (
+        {!isFullscreen && !isIOS && (
           <button onClick={toggleFullscreen} style={{
             position: 'absolute',
-            top: '5px',
-            left: '55px',
-            padding: '5px 10px',
-            fontSize: '10px',
+            top: '10px',
+            right: '10px',
+            padding: '10px 15px',
+            fontSize: '14px',
             fontWeight: '600',
-            border: 'none',
-            borderRadius: '4px',
+            border: '2px solid #fff',
+            borderRadius: '8px',
             cursor: 'pointer',
-            background: isFullscreen ? 'rgba(39, 174, 96, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-            color: isFullscreen ? 'white' : '#333',
-            zIndex: 1000
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            zIndex: 10000
           }}>
-            ⛶
+            ⛶ Tam Ekran
           </button>
         )}
 
