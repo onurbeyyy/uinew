@@ -998,14 +998,53 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
                                 </div>
                               </div>
                               <div style={{
-                                background: order.status === 'Processed' ? '#d4edda' : '#fff3cd',
-                                color: order.status === 'Processed' ? '#155724' : '#856404',
+                                background: (() => {
+                                  switch (order.status) {
+                                    case 'Processed':
+                                    case 'Delivered':
+                                    case 'Confirmed':
+                                      return '#d4edda'; // Yeşil
+                                    case 'Rejected':
+                                    case 'Cancelled':
+                                      return '#f8d7da'; // Kırmızı
+                                    case 'Preparing':
+                                      return '#cce5ff'; // Mavi
+                                    default:
+                                      return '#fff3cd'; // Sarı (Pending vs.)
+                                  }
+                                })(),
+                                color: (() => {
+                                  switch (order.status) {
+                                    case 'Processed':
+                                    case 'Delivered':
+                                    case 'Confirmed':
+                                      return '#155724'; // Yeşil
+                                    case 'Rejected':
+                                    case 'Cancelled':
+                                      return '#721c24'; // Kırmızı
+                                    case 'Preparing':
+                                      return '#004085'; // Mavi
+                                    default:
+                                      return '#856404'; // Sarı
+                                  }
+                                })(),
                                 padding: '4px 10px',
                                 borderRadius: '12px',
                                 fontSize: '11px',
                                 fontWeight: 600
                               }}>
-                                {order.status === 'Processed' ? '✓ Tamamlandı' : order.status}
+                                {(() => {
+                                  switch (order.status) {
+                                    case 'Pending': return '⏳ Beklemede';
+                                    case 'Confirmed': return '✓ Onaylandı';
+                                    case 'Preparing': return '👨‍🍳 Hazırlanıyor';
+                                    case 'Processed': return '✓ Tamamlandı';
+                                    case 'Delivered': return '✓ Teslim Edildi';
+                                    case 'Rejected': return '✗ Reddedildi';
+                                    case 'Cancelled': return '✗ İptal Edildi';
+                                    default: return order.status || 'Bilinmiyor';
+                                  }
+                                })()}
                               </div>
                             </div>
 
@@ -1075,10 +1114,6 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
                     </div>
                   ) : (
                     <div>
-                      <div style={{ background: 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)', padding: '20px', borderRadius: '10px', marginBottom: '15px', textAlign: 'center', color: 'white' }}>
-                        <div style={{ fontSize: '14px', marginBottom: '5px' }}>Toplam Jeton</div>
-                        <div style={{ fontSize: '32px', fontWeight: 'bold' }}>🪙 {tokens.summary?.totalTokens || 0}</div>
-                      </div>
                       {tokens.restaurants.map((restaurant: any, idx: number) => {
                         // Handle logo URL
                         let logoUrl = '';
@@ -1145,7 +1180,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
                 </div>
               )}
               {activeTab === 'allergies' && (
-                <div style={{ padding: '15px' }}>
+                <div style={{ padding: '15px', paddingBottom: '100px' }}>
                   <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#333' }}>Alerji Bilgilerim</h4>
 
                   {/* Warning Info Box */}

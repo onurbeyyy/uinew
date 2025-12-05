@@ -50,9 +50,7 @@ export default function KVKKPage() {
             <p>
               <strong>Unvan:</strong> Canlı Menü Dijital Çözümler<br />
               <strong>Adres:</strong> İstanbul, Türkiye<br />
-              <strong>E-posta:</strong> info@canlimenu.online<br />
-              <strong>Telefon:</strong> 0542 674 32 69<br />
-              <strong>VKN/TCKN:</strong> [Şirket Vergi Numarası]
+              <strong>E-posta:</strong> info@canlimenu.online
             </p>
           </div>
 

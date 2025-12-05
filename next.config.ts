@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    // unoptimized: true, // Vercel'de Image Optimization çalışır
+    unoptimized: true, // Vercel Image Optimization kapatıldı (ücretsiz limit aşımı önlendi)
     remotePatterns: [
       {
         protocol: 'https',
