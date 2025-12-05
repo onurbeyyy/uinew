@@ -37,9 +37,11 @@ export interface CustomerEntity {
   // Feature Access (Süperadmin tarafından verilir)
   hasBasketAccess?: boolean;      // Sipariş sistemi erişim hakkı
   hasDeliveryAccess?: boolean;    // Paket servis erişim hakkı
+  hasSelfServiceAccess?: boolean; // Self-servis erişim hakkı
   // Feature Settings (Müşteri tarafından açılır/kapatılır)
   basketSystemEnabled?: boolean;  // Sipariş sistemi aktif mi
   isDeliveryEnabled?: boolean;    // Paket servis aktif mi
+  isSelfServiceEnabled?: boolean; // Self-servis aktif mi
   // Delivery Settings
   minimumOrderAmount?: number;
   deliveryFee?: number;
@@ -225,6 +227,7 @@ export interface OrderRequest {
 export interface ProductTokenSetting {
   productId: number;
   sambaProductId: number;
+  sambaPortionId?: number; // Porsiyon bazlı jeton desteği
   earnTokens: number;
   redeemTokens: number;
 }

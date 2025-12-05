@@ -43,11 +43,14 @@ interface CartSidebarProps {
   tableId?: string;
   customerCode?: string;
   deliveryInfo?: DeliveryInfo;
+  isSelfService?: boolean; // Delivery sayfasından gelen selfservice modu
 }
 
-export default function CartSidebar({ isOpen, onClose, tableId, customerCode, deliveryInfo }: CartSidebarProps) {
-  const { customerData, productTokenSettings, cartKey: menuCartKey, isSelfService, sessionId, openProfile } = useMenu();
-  const isDelivery = !!deliveryInfo;
+export default function CartSidebar({ isOpen, onClose, tableId, customerCode, deliveryInfo, isSelfService: isSelfServiceProp }: CartSidebarProps) {
+  const { customerData, productTokenSettings, portionTokenSettings, getTokenSettingsForItem, cartKey: menuCartKey, isSelfService: isSelfServiceContext, sessionId, openProfile } = useMenu();
+  // Prop değeri varsa onu kullan (delivery sayfasından gelen), yoksa context'ten al
+  const isSelfService = isSelfServiceProp ?? isSelfServiceContext;
+  const isDelivery = !!deliveryInfo && !isSelfService; // Self-service modunda delivery gibi davranma
   const { isAuthenticated, currentUser, refreshUserProfile } = useAuth();
   const { clearTableInfo } = useTable();
   const [items, setItems] = useState<CartItem[]>([]);
@@ -252,8 +255,8 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
     const item = items.find(i => i.productId === productId);
     if (!item) return;
 
-    // Get token settings for this product
-    const tokenSettings = productTokenSettings?.[item.sambaId || item.productId];
+    // Get token settings for this product/portion (porsiyon bazlı öncelikli)
+    const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
     if (!tokenSettings || tokenSettings.redeemTokens <= 0) return;
 
     const currentTokenQty = item.tokenQuantity || 0;
@@ -308,9 +311,9 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         <div id="orderConfirmationModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100000;">
           <div style="background: white; border-radius: 15px; padding: 25px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
             <div style="text-align: center; margin-bottom: 20px;">
-              <h3 style="color: ${isDelivery ? '#ff6b00' : '#2c5530'}; margin: 0; font-size: 22px;">
-                <i class="fas ${isDelivery ? 'fa-motorcycle' : 'fa-receipt'}" style="margin-right: 8px;"></i>
-                ${isDelivery ? 'Paket Sipariş Özeti' : 'Sipariş Özeti'}
+              <h3 style="color: ${isDelivery ? '#ff6b00' : isSelfService ? '#9c27b0' : '#2c5530'}; margin: 0; font-size: 22px;">
+                <i class="fas ${isDelivery ? 'fa-motorcycle' : isSelfService ? 'fa-utensils' : 'fa-receipt'}" style="margin-right: 8px;"></i>
+                ${isDelivery ? 'Paket Sipariş Özeti' : isSelfService ? 'Self Servis Sipariş' : 'Sipariş Özeti'}
               </h3>
             </div>
 
@@ -368,7 +371,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
               <div id="orderItemsList">
                 ${items.map(item => {
                   const tokenQty = item.tokenQuantity || 0;
-                  const tokenSettings = productTokenSettings?.[item.sambaId || item.productId];
+                  const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
 
                   let tokenInfo = '';
                   let priceInfo = `${item.quantity} x ${item.price.toFixed(2)} ₺`;
@@ -575,17 +578,18 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         isDelivery: isDelivery,
         orderType: isDelivery ? 'Delivery' : (actualIsSelfService ? 'SelfService' : 'Table'), // Sipariş tipi
         items: items.map(item => {
-          const tokenSettings = productTokenSettings?.[item.sambaId || item.productId];
+          const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
           const tokenQty = item.tokenQuantity || 0;
           return {
             productId: item.sambaId || item.productId, // SambaProductId (SambaPOS için)
             actualProductId: item.productId, // Gerçek ID
+            portionId: item.sambaPortionId, // Porsiyon ID (jeton için)
             productName: item.name,
             quantity: item.quantity,
             price: item.price,
             orderTag: item.note || '',
             tokenQuantity: tokenQty, // Jeton ile alınan miktar
-            tokensPerItem: tokenSettings?.redeemTokens || 0 // Her bir ürün için gereken jeton
+            tokensPerItem: tokenSettings?.redeemTokens || 0 // Her bir ürün/porsiyon için gereken jeton
           };
         }),
         notificationMessage: customerNote ? `📝 Müşteri Notu: ${customerNote}` : '',
@@ -673,6 +677,10 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
           alert(`🎉 Paket siparişiniz başarıyla alındı!\n\nSipariş No: #${result.orderNumber || 'N/A'}\n\nSiparişiniz en kısa sürede hazırlanıp adresinize teslim edilecektir.`);
           // Delivery'de ana sayfaya yönlendir (yeni sipariş için tekrar gelebilir)
           window.location.href = `/${customerCode}/delivery`;
+        } else if (isSelfService) {
+          alert(`🍽️ Self servis siparişiniz alındı!\n\nSipariş No: #${result.orderNumber || 'N/A'}\n\nSiparişiniz hazırlandığında size getirilecektir.`);
+          // Self-service'de ana sayfaya yönlendir
+          window.location.href = `/${customerCode}`;
         } else {
           alert(`Siparişiniz başarıyla alındı! Sipariş No: #${result.orderNumber || 'N/A'}\n\nYeni sipariş için QR kodu tekrar okutun.`);
           // Sayfayı yenile - temiz başlangıç için
@@ -704,7 +712,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
     }
   };
 
-  // Calculate total with token discount
+  // Calculate total with token discount (porsiyon bazlı destekli)
   const calculateTotal = () => {
     let totalPrice = 0;
     let totalTokensUsed = 0;
@@ -716,9 +724,9 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
       // Cash portion
       totalPrice += cashQuantity * item.price;
 
-      // Token portion
+      // Token portion (porsiyon bazlı kontrol)
       if (tokenQty > 0) {
-        const tokenSettings = productTokenSettings?.[item.sambaId || item.productId];
+        const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
         if (tokenSettings) {
           totalTokensUsed += tokenQty * tokenSettings.redeemTokens;
         }
@@ -938,7 +946,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
                     <div style={{ fontSize: '13px', marginBottom: '8px' }}>
                       {(() => {
                         const tokenQty = item.tokenQuantity || 0;
-                        const tokenSettings = productTokenSettings?.[item.sambaId || item.productId];
+                        const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
 
                         if (tokenQty > 0 && tokenSettings) {
                           const cashQuantity = item.quantity - tokenQty;
@@ -976,7 +984,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
                       {/* Earn tokens info (only if not using tokens) */}
                       {(() => {
                         const tokenQty = item.tokenQuantity || 0;
-                        const tokenSettings = productTokenSettings?.[item.sambaId || item.productId];
+                        const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
 
                         if (tokenSettings && tokenSettings.earnTokens > 0 && tokenQty === 0) {
                           return (
@@ -1008,7 +1016,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
 
                     {/* Token Button */}
                     {(() => {
-                      const tokenSettings = productTokenSettings?.[item.sambaId || item.productId];
+                      const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
                       if (!tokenSettings || tokenSettings.redeemTokens <= 0) return null;
 
                       const tokenQty = item.tokenQuantity || 0;

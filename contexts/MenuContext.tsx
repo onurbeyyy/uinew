@@ -40,8 +40,11 @@ interface MenuContextType {
   openProfile: () => void;
   closeProfile: () => void;
   // Token system
-  productTokenSettings: Record<number, ProductTokenSetting>;
+  productTokenSettings: Record<number, ProductTokenSetting>; // sambaProductId -> setting (porsiyon belirtilmemiş olanlar)
+  portionTokenSettings: Record<number, ProductTokenSetting>; // sambaPortionId -> setting (porsiyon bazlı olanlar)
   setProductTokenSettings: (settings: Record<number, ProductTokenSetting>) => void;
+  setPortionTokenSettings: (settings: Record<number, ProductTokenSetting>) => void;
+  getTokenSettingsForItem: (sambaProductId: number, sambaPortionId?: number) => ProductTokenSetting | undefined;
   userTokenBalance: number;
   setUserTokenBalance: (balance: number) => void;
   // Popular products (from advertisements)
@@ -54,8 +57,10 @@ interface MenuContextType {
   cartKey: string; // tableId or sessionId for cart storage
   // Feature access (computed from customerData)
   canUseBasket: boolean; // hasBasketAccess && basketSystemEnabled && hasValidSubscription
+  canUseSelfService: boolean; // hasSelfServiceAccess && isSelfServiceEnabled && hasValidSubscription
   hasValidSubscription: boolean;
   basketDisabledMessage: string | null; // Sepet neden kapalı?
+  selfServiceDisabledMessage: string | null; // Self-servis neden kapalı?
 }
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
@@ -79,8 +84,19 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const [pendingJoinRoomId, setPendingJoinRoomId] = useState<string | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [productTokenSettings, setProductTokenSettings] = useState<Record<number, ProductTokenSetting>>({});
+  const [portionTokenSettings, setPortionTokenSettings] = useState<Record<number, ProductTokenSetting>>({});
   const [userTokenBalance, setUserTokenBalance] = useState(0);
   const [popularProductIds, setPopularProductIds] = useState<Set<number>>(new Set());
+
+  // Helper: Porsiyon veya ürün için token ayarlarını getir
+  const getTokenSettingsForItem = (sambaProductId: number, sambaPortionId?: number): ProductTokenSetting | undefined => {
+    // Önce porsiyon bazlı kontrol et
+    if (sambaPortionId && portionTokenSettings[sambaPortionId]) {
+      return portionTokenSettings[sambaPortionId];
+    }
+    // Porsiyon yoksa veya porsiyon için ayar yoksa, ürün bazlı kontrol et
+    return productTokenSettings[sambaProductId];
+  };
 
   // Cart key: use tableId if available, otherwise sessionId
   const cartKey = tableId || tableSessionId || tableContextTableId || '';
@@ -205,7 +221,10 @@ export function MenuProvider({ children }: { children: ReactNode }) {
         openProfile,
         closeProfile,
         productTokenSettings,
+        portionTokenSettings,
         setProductTokenSettings,
+        setPortionTokenSettings,
+        getTokenSettingsForItem,
         userTokenBalance,
         setUserTokenBalance,
         popularProductIds,
@@ -225,6 +244,19 @@ export function MenuProvider({ children }: { children: ReactNode }) {
           if (!customerData.hasValidSubscription) return 'Abonelik süresi dolmuş';
           if (!customerData.customer?.basketSystemEnabled) return 'Sipariş sistemi şu an kapalı';
           if (!customerData.customer?.hasBasketAccess) return 'Sipariş sistemi bu restoran için aktif değil';
+          return null;
+        })(),
+        // Self-servis kontrolü: Varsayılan olarak KAPALI - sadece açıkça true ise izin ver
+        canUseSelfService: (customerData?.hasValidSubscription ?? true) &&
+                          // hasSelfServiceAccess açıkça true olmalı
+                          (customerData?.customer?.hasSelfServiceAccess === true) &&
+                          // isSelfServiceEnabled açıkça true olmalı
+                          (customerData?.customer?.isSelfServiceEnabled === true),
+        selfServiceDisabledMessage: (() => {
+          if (!customerData) return null;
+          if (!customerData.hasValidSubscription) return 'Abonelik süresi dolmuş';
+          if (!customerData.customer?.hasSelfServiceAccess) return 'Self-servis bu restoran için aktif değil';
+          if (!customerData.customer?.isSelfServiceEnabled) return 'Self-servis şu an kapalı';
           return null;
         })(),
       }}

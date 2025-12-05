@@ -91,6 +91,43 @@ export default function CustomerMenu() {
     isRegistered: false,
   });
 
+  // 📊 Ziyaret kaydı fonksiyonu (30 dk içinde tekrar sayma)
+  const trackVisit = (customerId: number) => {
+    try {
+      const storageKey = `menuVisit_${customerId}`;
+      const lastVisit = localStorage.getItem(storageKey);
+      const now = Date.now();
+
+      // Son 30 dakika içinde ziyaret varsa tekrar sayma
+      if (lastVisit) {
+        const lastTime = parseInt(lastVisit, 10);
+        const diffMinutes = (now - lastTime) / (1000 * 60);
+        if (diffMinutes < 30) {
+          return; // 30 dk geçmemiş, sayma
+        }
+      }
+
+      // Session ID oluştur veya mevcut olanı kullan
+      let sessionId = localStorage.getItem('menuSessionId');
+      if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        localStorage.setItem('menuSessionId', sessionId);
+      }
+
+      // Arka planda API'ye gönder (beklemeden)
+      fetch(`/api/visit?customerId=${customerId}&sessionId=${sessionId}`)
+        .then(() => {
+          // Başarılı olursa son ziyaret zamanını kaydet
+          localStorage.setItem(storageKey, now.toString());
+        })
+        .catch(() => {
+          // Hata olursa sessizce devam et
+        });
+    } catch {
+      // localStorage hatası olursa sessizce devam et
+    }
+  };
+
   // Dinamik sayfa başlığı
   useEffect(() => {
     if (customerData?.customer?.name) {
@@ -145,15 +182,11 @@ export default function CustomerMenu() {
     }
 
     if (sessionParam) {
-      setTimeout(() => {
-        const url = new URL(window.location.href);
-        if (url.searchParams.has('session')) {
-          url.searchParams.delete('session');
-          window.history.replaceState({}, '', url.toString());
-        }
-      }, 100);
+      // Self-service session varsa self sayfasına yönlendir
+      window.location.href = `/${code}/self?session=${sessionParam}`;
+      return;
     }
-  }, [tableParam, sessionParam, setTableId]);
+  }, [tableParam, sessionParam, setTableId, code]);
 
   // Toast'tan sepete git
   useEffect(() => {
@@ -175,6 +208,11 @@ export default function CustomerMenu() {
         setCustomerData(customerInfo);
         setCustomerDataContext(customerInfo);
         setInitialLoading(false);
+
+        // 📊 Ziyaret kaydı - arka planda gönder (30 dk içinde tekrar sayma)
+        if (customerInfo.customer?.id) {
+          trackVisit(customerInfo.customer.id);
+        }
 
         // Table doğrulama
         if (tableParam && customerInfo.customer.id) {

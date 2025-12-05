@@ -457,7 +457,7 @@ export default function DeliveryPage() {
     }
   };
 
-  // Sepeti aç - adres kontrolü ile
+  // Sepeti aç - adres kontrolü ile (selfservice modunda adres gerekmez)
   const handleOpenCart = () => {
     if (!currentUser) {
       openProfile();
@@ -812,30 +812,30 @@ export default function DeliveryPage() {
 
         {/* Address Section */}
         <div
-          onClick={() => setShowAddressModal(true)}
-          style={{
-            background: 'rgba(255,255,255,0.15)',
-            borderRadius: '10px',
-            padding: '10px 15px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>📍</span>
-            <div>
-              <div style={{ fontSize: '12px', opacity: 0.9 }}>Teslimat Adresi</div>
-              <div style={{ fontSize: '14px', fontWeight: 500 }}>
-                {deliveryAddress.street
-                  ? `${deliveryAddress.street} No:${deliveryAddress.buildingNo}`
-                  : 'Adres ekleyin'}
+            onClick={() => setShowAddressModal(true)}
+            style={{
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: '10px',
+              padding: '10px 15px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '20px' }}>📍</span>
+              <div>
+                <div style={{ fontSize: '12px', opacity: 0.9 }}>Teslimat Adresi</div>
+                <div style={{ fontSize: '14px', fontWeight: 500 }}>
+                  {deliveryAddress.street
+                    ? `${deliveryAddress.street} No:${deliveryAddress.buildingNo}`
+                    : 'Adres ekleyin'}
+                </div>
               </div>
             </div>
+            <span style={{ fontSize: '18px' }}>›</span>
           </div>
-          <span style={{ fontSize: '18px' }}>›</span>
-        </div>
       </div>
 
       {/* Kapalı Banner */}
@@ -1685,7 +1685,7 @@ export default function DeliveryPage() {
         </div>
       )}
 
-      {/* Cart Sidebar - Mevcut yapı */}
+      {/* Cart Sidebar */}
       <CartSidebar
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}

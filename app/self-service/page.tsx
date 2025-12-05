@@ -31,10 +31,10 @@ export default function SelfServicePage() {
 
   const CONFIG = {
     signalRBaseUrl: process.env.NEXT_PUBLIC_SIGNALR_URL || 'https://canlimenu.online',
-    uiBaseUrl: process.env.NEXT_PUBLIC_UI_URL || 'https://canlimenu.com',
-    expirySeconds: 90,
+    uiBaseUrl: process.env.NEXT_PUBLIC_UI_URL || 'http://localhost:3001',
+    expirySeconds: 300, // 5 dakika
     qrSize: 240,
-    maxChecks: 100
+    maxChecks: 200 // 5 dakika için yeterli kontrol
   };
 
   // URL'den code parametresini al
@@ -136,7 +136,7 @@ export default function SelfServicePage() {
         const sessionId = data.sessionId;
         setCurrentSessionId(sessionId);
 
-        // QR URL oluştur - anasayfaya yönlendir
+        // QR URL oluştur - kısa URL (ana sayfa session ile yönlendirecek)
         const url = `${CONFIG.uiBaseUrl}/${code.toLowerCase()}?session=${sessionId}`;
         setQrUrl(url);
 
