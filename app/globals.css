@@ -578,7 +578,8 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 15px;
   flex: 1;
-  padding: 10px 15px 120px 15px;
+  padding: 5px 15px 120px 15px;
+  margin-top: -20px;
   align-items: start;
   grid-auto-rows: max-content;
   max-width: 100%;
