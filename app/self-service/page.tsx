@@ -388,67 +388,246 @@ export default function SelfServicePage() {
   // Cihaz aktive değilse aktivasyon ekranı göster
   if (!isDeviceActivated && !error) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div
+        className="activation-wrapper"
+        style={{
+          fontFamily: "'Poppins', sans-serif",
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          position: 'relative'
+        }}
+      >
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Floating orbs */}
+          <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+
+          {/* Grid pattern */}
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+              backgroundSize: '50px 50px'
+            }}
+          />
+        </div>
+
+        {/* Main Card */}
         <div
-          className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4"
-          style={{ fontFamily: "'Poppins', sans-serif" }}
+          className="relative z-10 animate-fadeIn"
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '32px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '50px 40px',
+            maxWidth: '480px',
+            width: '90%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255,255,255,0.1)'
+          }}
         >
+          {/* Lock Icon with Glow */}
           <div className="text-center mb-8">
-            <div className="text-6xl mb-4">🔒</div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Cihaz Aktivasyonu</h1>
-            <p className="text-gray-600 text-sm">
-              Bu cihazı self-servis olarak kullanmak için admin panelden aldığınız 6 haneli aktivasyon kodunu girin.
+            <div
+              className="inline-flex items-center justify-center w-24 h-24 rounded-full mb-6 animate-bounce-slow"
+              style={{
+                background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                boxShadow: '0 0 60px rgba(59, 130, 246, 0.5)'
+              }}
+            >
+              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+
+            <h1
+              className="text-3xl font-bold mb-3"
+              style={{
+                background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}
+            >
+              Cihaz Aktivasyonu
+            </h1>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Self-servis ekranını kullanmak için<br />
+              <span className="text-blue-400 font-medium">6 haneli aktivasyon kodunu</span> girin
             </p>
           </div>
 
-          <div className="mb-6">
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="000000"
-              value={activationCode}
-              onChange={handleActivationCodeChange}
-              onKeyDown={(e) => e.key === 'Enter' && handleActivateDevice()}
-              className="w-full text-center text-4xl font-mono tracking-[0.5em] py-4 px-6 border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:outline-none transition-colors"
-              style={{ letterSpacing: '0.5em' }}
-              maxLength={6}
-              disabled={isActivating}
-              autoFocus
-            />
+          {/* PIN Input Boxes */}
+          <div className="flex justify-center gap-3 mb-8">
+            {[0, 1, 2, 3, 4, 5].map((index) => (
+              <div
+                key={index}
+                className="relative"
+                style={{
+                  width: '52px',
+                  height: '68px'
+                }}
+              >
+                <div
+                  className={`w-full h-full rounded-xl flex items-center justify-center text-3xl font-bold transition-all duration-300 ${
+                    activationCode[index]
+                      ? 'bg-gradient-to-b from-blue-500/30 to-purple-500/30 border-blue-400/50 text-white scale-105'
+                      : 'bg-white/5 border-white/10 text-gray-500'
+                  }`}
+                  style={{
+                    border: '2px solid',
+                    borderColor: activationCode[index] ? 'rgba(96, 165, 250, 0.5)' : 'rgba(255,255,255,0.1)',
+                    boxShadow: activationCode[index] ? '0 0 20px rgba(59, 130, 246, 0.3)' : 'none'
+                  }}
+                >
+                  {activationCode[index] || ''}
+                </div>
+                {!activationCode[index] && index === activationCode.length && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-0.5 h-8 bg-blue-400 animate-blink" />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
+          {/* Hidden Input */}
+          <input
+            type="text"
+            inputMode="numeric"
+            value={activationCode}
+            onChange={handleActivationCodeChange}
+            onKeyDown={(e) => e.key === 'Enter' && handleActivateDevice()}
+            className="absolute opacity-0 pointer-events-none"
+            style={{ position: 'absolute', left: '-9999px' }}
+            maxLength={6}
+            disabled={isActivating}
+            autoFocus
+            id="activation-input"
+          />
+
+          {/* Clickable area to focus input */}
+          <div
+            className="absolute inset-0 cursor-text"
+            onClick={() => document.getElementById('activation-input')?.focus()}
+            style={{ zIndex: 5 }}
+          />
+
+          {/* Error Message */}
           {activationError && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-red-600 text-sm text-center">{activationError}</p>
+            <div
+              className="mb-6 p-4 rounded-xl animate-shake relative z-10"
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)'
+              }}
+            >
+              <p className="text-red-400 text-sm text-center flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {activationError}
+              </p>
             </div>
           )}
 
+          {/* Activate Button */}
           <button
             onClick={handleActivateDevice}
             disabled={isActivating || activationCode.length !== 6}
-            className={`w-full py-4 px-6 rounded-2xl font-semibold text-white transition-all ${
-              isActivating || activationCode.length !== 6
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg hover:shadow-xl'
-            }`}
+            className="relative z-10 w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-300"
+            style={{
+              background: isActivating || activationCode.length !== 6
+                ? 'rgba(255,255,255,0.1)'
+                : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+              boxShadow: isActivating || activationCode.length !== 6
+                ? 'none'
+                : '0 10px 40px rgba(59, 130, 246, 0.4)',
+              cursor: isActivating || activationCode.length !== 6 ? 'not-allowed' : 'pointer',
+              opacity: isActivating || activationCode.length !== 6 ? 0.5 : 1,
+              transform: isActivating || activationCode.length !== 6 ? 'none' : 'translateY(0)'
+            }}
+            onMouseEnter={(e) => {
+              if (activationCode.length === 6 && !isActivating) {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 15px 50px rgba(59, 130, 246, 0.5)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 10px 40px rgba(59, 130, 246, 0.4)';
+            }}
           >
             {isActivating ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin">⏳</span>
+              <span className="flex items-center justify-center gap-3">
+                <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
                 Aktive Ediliyor...
               </span>
             ) : (
-              'Cihazı Aktive Et'
+              <span className="flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                </svg>
+                Cihazı Aktive Et
+              </span>
             )}
           </button>
 
-          <div className="mt-8 pt-6 border-t border-gray-100">
-            <p className="text-xs text-gray-400 text-center">
-              Aktivasyon kodu 5 dakika geçerlidir. <br />
-              Yeni kod almak için admin paneli kullanın.
+          {/* Info Text */}
+          <div className="mt-8 pt-6 border-t border-white/10 relative z-10">
+            <p className="text-xs text-gray-500 text-center leading-relaxed">
+              Aktivasyon kodu <span className="text-blue-400">5 dakika</span> geçerlidir<br />
+              Yeni kod için admin paneli kullanın
             </p>
           </div>
         </div>
+
+        <style jsx>{`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+
+          @keyframes bounce-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+          }
+
+          @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+          }
+
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+          }
+
+          .animate-fadeIn {
+            animation: fadeIn 0.6s ease-out;
+          }
+
+          .animate-bounce-slow {
+            animation: bounce-slow 3s ease-in-out infinite;
+          }
+
+          .animate-blink {
+            animation: blink 1s ease-in-out infinite;
+          }
+
+          .animate-shake {
+            animation: shake 0.3s ease-in-out;
+          }
+        `}</style>
       </div>
     );
   }
