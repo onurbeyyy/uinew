@@ -66,7 +66,14 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
             />
             <div className="card-content">
               <h3 className="card-title" style={{ fontFamily: categoryFont, color: indexTextColor }}>
-                {displayName}
+                {displayName.includes('/')
+                  ? displayName.split('/').map((part, i, arr) => (
+                      <span key={i}>
+                        {part.trim()}
+                        {i < arr.length - 1 && <br />}
+                      </span>
+                    ))
+                  : displayName}
               </h3>
             </div>
           </a>

@@ -9,6 +9,17 @@ import AllergenWarning from '@/components/common/AllergenWarning';
 import { useToast } from '@/components/ui/Toast';
 import { saveCart as saveCartToStorage, loadCart as loadCartFromStorage } from '@/utils/cartUtils';
 
+// Kategori ismini "/" ile alt alta göster
+const formatCategoryName = (name: string) => {
+  if (!name || !name.includes('/')) return name;
+  return name.split('/').map((part, i, arr) => (
+    <span key={i}>
+      {part.trim()}
+      {i < arr.length - 1 && <br />}
+    </span>
+  ));
+};
+
 export default function ProductListModal() {
   const {
     menuData,
@@ -331,7 +342,7 @@ export default function ProductListModal() {
                       <div className="image-box">
                         <img src={categoryImageUrl} alt={categoryName} loading="eager" />
                       </div>
-                      <div className="category-title">{categoryName}</div>
+                      <div className="category-title">{formatCategoryName(categoryName)}</div>
                     </a>
                   );
                 })}
