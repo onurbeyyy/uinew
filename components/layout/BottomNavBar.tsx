@@ -206,18 +206,70 @@ export default function BottomNavBar({
           />
         )}
 
-        {/* Oyun Butonu */}
+        {/* Oyun Butonu - Dikkat Çekici Animasyonlu */}
         {showGame && (
-          <NavButton
-            icon={
-              <svg style={{ width: '18px', height: '18px', fill: 'white' }} viewBox="0 0 24 24">
+          <div
+            className="game-button-container"
+            onClick={onGameClick}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '12px',
+              position: 'relative',
+            }}
+          >
+            {/* Parlayan Halka Efekti */}
+            <div className="game-glow-ring" />
+
+            {/* Ana İkon Container */}
+            <div
+              className="game-icon-container"
+              style={{
+                width: '38px',
+                height: '38px',
+                background: 'linear-gradient(135deg, #ff6b6b 0%, #9c27b0 50%, #667eea 100%)',
+                backgroundSize: '200% 200%',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '4px',
+                position: 'relative',
+                boxShadow: '0 4px 15px rgba(156, 39, 176, 0.4)',
+              }}
+            >
+              {/* Gamepad İkonu */}
+              <svg style={{ width: '20px', height: '20px', fill: 'white' }} viewBox="0 0 24 24">
                 <path d="M7.97,16L5,19C4.67,19.3 4.23,19.5 3.75,19.5A1.75,1.75 0 0,1 2,17.75V17.5L3,10.12C3.21,7.81 5.14,6 7.5,6H16.5C18.86,6 20.79,7.81 21,10.12L22,17.5V17.75A1.75,1.75 0 0,1 20.25,19.5C19.77,19.5 19.33,19.3 19,19L16.03,16H7.97M7.5,8A0.5,0.5 0 0,0 7,8.5A0.5,0.5 0 0,0 7.5,9A0.5,0.5 0 0,0 8,8.5A0.5,0.5 0 0,0 7.5,8M16.5,8A0.5,0.5 0 0,0 16,8.5A0.5,0.5 0 0,0 16.5,9A0.5,0.5 0 0,0 17,8.5A0.5,0.5 0 0,0 16.5,8M8.5,11A1.5,1.5 0 0,0 7,12.5A1.5,1.5 0 0,0 8.5,14A1.5,1.5 0 0,0 10,12.5A1.5,1.5 0 0,0 8.5,11M15.5,11A1.5,1.5 0 0,0 14,12.5A1.5,1.5 0 0,0 15.5,14A1.5,1.5 0 0,0 17,12.5A1.5,1.5 0 0,0 15.5,11M12,13C12.27,13 12.5,13.14 12.65,13.35L15,16H9L11.35,13.35C11.5,13.14 11.73,13 12,13Z" />
               </svg>
-            }
-            label={t('games')}
-            onClick={onGameClick}
-            gradient="linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)"
-          />
+
+              {/* Parlama Efekti */}
+              <div className="game-shine" />
+            </div>
+
+            {/* Label */}
+            <span
+              className="game-label"
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                background: 'linear-gradient(135deg, #9c27b0, #667eea)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {t('games')}
+            </span>
+
+            {/* Sparkle Particles */}
+            <div className="sparkle sparkle-1">✨</div>
+            <div className="sparkle sparkle-2">⭐</div>
+            <div className="sparkle sparkle-3">✨</div>
+          </div>
         )}
 
         {/* Adresler Butonu - Sadece Delivery'de */}
@@ -458,6 +510,165 @@ export default function BottomNavBar({
             transform: translateY(0);
             opacity: 1;
           }
+        }
+
+        /* Game Button Animations */
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
+        }
+
+        @keyframes glow {
+          0%, 100% {
+            box-shadow: 0 0 5px rgba(156, 39, 176, 0.5),
+                        0 0 10px rgba(156, 39, 176, 0.3),
+                        0 0 15px rgba(102, 126, 234, 0.2);
+          }
+          50% {
+            box-shadow: 0 0 10px rgba(156, 39, 176, 0.8),
+                        0 0 20px rgba(156, 39, 176, 0.5),
+                        0 0 30px rgba(102, 126, 234, 0.3);
+          }
+        }
+
+        @keyframes ringPulse {
+          0% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.8;
+          }
+          50% {
+            transform: translate(-50%, -50%) scale(1.3);
+            opacity: 0;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.8;
+          }
+        }
+
+        @keyframes shine {
+          0% { transform: translateX(-100%) rotate(45deg); }
+          50%, 100% { transform: translateX(100%) rotate(45deg); }
+        }
+
+        @keyframes sparkleFloat1 {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+            opacity: 0;
+          }
+          10% { opacity: 1; }
+          50% {
+            transform: translate(-15px, -20px) scale(0.8);
+            opacity: 1;
+          }
+          90% { opacity: 0; }
+        }
+
+        @keyframes sparkleFloat2 {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+            opacity: 0;
+          }
+          20% { opacity: 1; }
+          60% {
+            transform: translate(15px, -25px) scale(0.6);
+            opacity: 1;
+          }
+          90% { opacity: 0; }
+        }
+
+        @keyframes sparkleFloat3 {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+            opacity: 0;
+          }
+          30% { opacity: 1; }
+          70% {
+            transform: translate(5px, -30px) scale(0.7);
+            opacity: 1;
+          }
+          90% { opacity: 0; }
+        }
+
+        .game-button-container {
+          animation: pulse 2s ease-in-out infinite;
+        }
+
+        .game-button-container:hover {
+          transform: scale(1.1);
+        }
+
+        .game-button-container:active {
+          transform: scale(0.95);
+        }
+
+        .game-icon-container {
+          animation: gradientShift 3s ease infinite, glow 2s ease-in-out infinite;
+        }
+
+        .game-glow-ring {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 50px;
+          height: 50px;
+          border: 2px solid rgba(156, 39, 176, 0.4);
+          border-radius: 50%;
+          animation: ringPulse 2s ease-out infinite;
+          pointer-events: none;
+        }
+
+        .game-shine {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.5) 50%,
+            transparent 70%
+          );
+          border-radius: 50%;
+          animation: shine 3s ease-in-out infinite;
+          overflow: hidden;
+        }
+
+        .sparkle {
+          position: absolute;
+          font-size: 10px;
+          pointer-events: none;
+        }
+
+        .sparkle-1 {
+          top: 0;
+          left: 5px;
+          animation: sparkleFloat1 2.5s ease-in-out infinite;
+        }
+
+        .sparkle-2 {
+          top: 5px;
+          right: 5px;
+          animation: sparkleFloat2 3s ease-in-out infinite;
+          animation-delay: 0.5s;
+        }
+
+        .sparkle-3 {
+          top: -5px;
+          left: 50%;
+          animation: sparkleFloat3 2.8s ease-in-out infinite;
+          animation-delay: 1s;
+        }
+
+        .game-label {
+          animation: pulse 2s ease-in-out infinite;
         }
       `}</style>
     </>
