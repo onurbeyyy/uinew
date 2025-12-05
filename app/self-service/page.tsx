@@ -36,13 +36,51 @@ export default function SelfServicePage() {
   const sessionCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const checkCountRef = useRef<number>(0);
 
+  // QR URL için current origin kullan (localhost'ta localhost, production'da production URL)
+  const [uiBaseUrl, setUiBaseUrl] = useState('https://www.canlimenu.com');
+
+  useEffect(() => {
+    // Client-side'da window.location.origin kullan
+    if (typeof window !== 'undefined') {
+      setUiBaseUrl(window.location.origin);
+    }
+  }, []);
+
   const CONFIG = {
     signalRBaseUrl: process.env.NEXT_PUBLIC_SIGNALR_URL || 'https://canlimenu.online',
-    uiBaseUrl: process.env.NEXT_PUBLIC_UI_URL || 'http://localhost:3001',
+    uiBaseUrl: uiBaseUrl,
     expirySeconds: 300, // 5 dakika
     qrSize: 240,
     maxChecks: 200 // 5 dakika için yeterli kontrol
   };
+
+  // Body stillerini override et - telefon simülasyonunu kapat
+  useEffect(() => {
+    // Body ve HTML stillerini zorla override et
+    document.documentElement.style.cssText = `
+      background: #1a1a1a !important;
+      width: 100% !important;
+      height: 100% !important;
+      overflow: hidden !important;
+    `;
+    document.body.style.cssText = `
+      width: 100vw !important;
+      max-width: 100vw !important;
+      min-width: 100vw !important;
+      height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      box-shadow: none !important;
+      background: transparent !important;
+    `;
+
+    return () => {
+      // Cleanup - sayfa değiştiğinde varsayılana dön
+      document.documentElement.style.cssText = '';
+      document.body.style.cssText = '';
+    };
+  }, []);
 
   // URL'den code parametresini al ve cihaz doğrulaması yap
   useEffect(() => {
@@ -636,22 +674,47 @@ export default function SelfServicePage() {
       style={{
         fontFamily: "'Poppins', sans-serif",
         background: backgroundImage
-          ? `url(${backgroundImage}) no-repeat center center`
+          ? 'transparent'
           : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        backgroundSize: 'cover',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        position: 'relative'
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden'
       }}
     >
+      {/* High Quality Background Image */}
+      {backgroundImage && (
+        <img
+          src={backgroundImage}
+          alt="Background"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center center',
+            zIndex: 0,
+            imageRendering: 'auto',
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden'
+          }}
+        />
+      )}
+
       {/* Animated Background Particles */}
       <Particles />
 
-      {/* Main Container */}
+      {/* Centering Container */}
       <div
         style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -659,8 +722,7 @@ export default function SelfServicePage() {
           gap: '20px',
           maxWidth: '900px',
           width: '90%',
-          zIndex: 1,
-          position: 'relative'
+          zIndex: 1
         }}
       >
         {/* Logo Section - Top */}
@@ -794,6 +856,34 @@ export default function SelfServicePage() {
         </div>
       </div>
 
+      <style jsx global>{`
+        html {
+          background: #1a1a1a !important;
+          display: block !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
+        body {
+          width: 100vw !important;
+          max-width: 100vw !important;
+          min-width: 100vw !important;
+          height: 100vh !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+          box-shadow: none !important;
+          position: relative !important;
+        }
+        @media (min-width: 1024px) {
+          body {
+            width: 100vw !important;
+            max-width: 100vw !important;
+            min-width: 100vw !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
       <style jsx>{`
         @keyframes fadeInDown {
           from {

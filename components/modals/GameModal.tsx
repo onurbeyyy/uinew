@@ -121,7 +121,7 @@ export default function GameModal() {
   };
 
   // Lobby'den oyuna katılma (tüm lobby oyunları multiplayer, giriş gerekli)
-  const handleJoinFromLobby = (roomId: string, gameType: string) => {
+  const handleJoinFromLobby = (roomId: string, gameType: string, hostName?: string) => {
     // Lobby'den katılım için giriş gerekli
     if (!isAuthenticated) {
       alert('Oyuna katılmak için giriş yapmanız gerekmektedir.');
@@ -150,9 +150,18 @@ export default function GameModal() {
     // RPS için yeni sayfaya yönlendir
     if (gameType === 'RockPaperScissors' || gameType === 'rockpaperscissors' || gameType === 'rps') {
       closeGameModal();
-      let url = `/game/rps?room=${roomId}`;
-      if (customerCode) url += `&code=${customerCode}`;
-      router.push(url);
+      // Bot odası mı kontrol et
+      if (roomId === 'bot-rps-room') {
+        // Lobby'den bot ismini al (fake room'daki host ismi)
+        let url = `/game/rps?bot=true`;
+        if (hostName) url += `&botName=${encodeURIComponent(hostName)}`;
+        if (customerCode) url += `&code=${customerCode}`;
+        router.push(url);
+      } else {
+        let url = `/game/rps?room=${roomId}`;
+        if (customerCode) url += `&code=${customerCode}`;
+        router.push(url);
+      }
       return;
     }
 
@@ -255,7 +264,7 @@ export default function GameModal() {
                 >
                   {!isAuthenticated && <div style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.7)', borderRadius: '50%', width: 12, height: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 6 }}>🔒</div>}
                   <i className="game-icon" style={{ fontSize: '20px' }}>📚</i>
-                  <h3 style={{ fontSize: '9px', margin: '3px 0 1px' }}>Quiz</h3>
+                  <h3 style={{ fontSize: '8px', margin: '3px 0 1px' }}>Bilgi Yarışması</h3>
                   <p className="player-count" style={{ fontSize: '7px', margin: 0 }}>(2-8 kişi)</p>
                 </button>
 

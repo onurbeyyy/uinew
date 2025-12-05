@@ -38,16 +38,27 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     const params = new URLSearchParams(window.location.search);
     const tableParam = params.get('table');
     const sessionParam = params.get('session');
+    const pathname = window.location.pathname;
 
     const selfServiceCookie = getCookie('isSelfService');
     const savedSessionId = getCookie('selfServiceSessionId');
     const savedTableId = getCookie('tableId'); // 🔧 Table ID'yi cookie'den al
 
+    // Self-service cookie'leri sadece /selfservice sayfasında geçerli
+    const isSelfServicePage = pathname.includes('/selfservice');
+
+    // Selfservice sayfası değilse, self-service cookie'lerini temizle
+    if (!isSelfServicePage && selfServiceCookie) {
+      console.log('🧹 Normal sayfa - self-service cookie\'leri temizlendi');
+      deleteCookie('isSelfService');
+      deleteCookie('selfServiceSessionId');
+    }
+
     if (sessionParam) {
       // URL'de session var - validate et ve kaydet
       validateSession(sessionParam);
-    } else if (savedSessionId && selfServiceCookie) {
-      // 🔧 URL'de session yok ama cookie'de var - geri yükle (login sonrası)
+    } else if (savedSessionId && selfServiceCookie && isSelfServicePage) {
+      // 🔧 URL'de session yok ama cookie'de var VE selfservice sayfasındayız - geri yükle (login sonrası)
       console.log('🔄 Session ID cookie\'den yüklendi:', savedSessionId);
       setSelfServiceMode(savedSessionId);
     } else if (tableParam) {
@@ -157,7 +168,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     setTableName(name);
     setIsSelfService(false);
     setSessionId(null);
-    setCookie('tableId', table, 0.25); // 15 dakika (QR geçerlilik süresi)
+    setCookie('tableId', table, 15 / (24 * 60)); // 15 dakika (QR geçerlilik süresi)
     console.log('✅ Table mode aktif, table kaydedildi:', table);
   };
 
@@ -169,7 +180,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     setTableName(tableName);
     setIsSelfService(false);
     setSessionId(null);
-    setCookie('tableId', tableId, 0.25); // 15 dakika
+    setCookie('tableId', tableId, 15 / (24 * 60)); // 15 dakika
   }, []);
 
   /**
@@ -180,8 +191,8 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     setSessionId(session);
     setTableName('Self-Servis');
     setTableId(null);
-    setCookie('isSelfService', 'true', 0.25); // 15 dakika (QR geçerlilik süresi)
-    setCookie('selfServiceSessionId', session, 0.25); // 15 dakika
+    setCookie('isSelfService', 'true', 15 / (24 * 60)); // 15 dakika (QR geçerlilik süresi)
+    setCookie('selfServiceSessionId', session, 15 / (24 * 60)); // 15 dakika
     console.log('✅ Self-service mode aktif, session kaydedildi:', session);
   }, []);
 

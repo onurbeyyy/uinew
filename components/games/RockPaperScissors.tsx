@@ -21,6 +21,8 @@ interface RockPaperScissorsProps {
   onBack?: () => void;
   joinRoomId?: string;
   customerCode: string;
+  playWithBot?: boolean;
+  botName?: string;
 }
 
 // Constants
@@ -41,8 +43,32 @@ const generatePlayerId = () => 'rps_' + Math.random().toString(36).substr(2, 9);
 const generateRoomId = () => Math.floor(1000 + Math.random() * 9000).toString();
 const generateRandomNickname = () => `Oyuncu#${Math.floor(1000 + Math.random() * 9000)}`;
 
-export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: RockPaperScissorsProps) {
+// Bot isimleri havuzu
+const BOT_NAMES = [
+  'Onur', 'Selin', 'Urass', 'Atahan', 'Nurr16', 'Esranurr',
+  'Beste.16', 'Floyd', 'İremozkn', 'Suat', 'Ceren16', 'Özgeylmz',
+  'Ramço', 'Didem', 'aksu88', 'Zeynep96', 'Elif00'
+];
+
+// Kazananı belirle
+const determineWinner = (choice1: Choice, choice2: Choice): 'player1' | 'player2' | 'draw' => {
+  if (choice1 === choice2) return 'draw';
+  if (
+    (choice1 === 'rock' && choice2 === 'scissors') ||
+    (choice1 === 'paper' && choice2 === 'rock') ||
+    (choice1 === 'scissors' && choice2 === 'paper')
+  ) {
+    return 'player1';
+  }
+  return 'player2';
+};
+
+export default function RockPaperScissors({ onBack, joinRoomId, customerCode, playWithBot = false, botName: propBotName }: RockPaperScissorsProps) {
   const { currentUser } = useAuth();
+
+  // Bot modu için isim - prop'tan geliyorsa onu kullan, yoksa rastgele seç
+  const [randomBotName] = useState(() => BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)]);
+  const botName = propBotName || randomBotName;
 
   // Nickname from user session or random
   const initialNickname = currentUser?.nickName || currentUser?.nickname || '';
@@ -91,9 +117,13 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
   const nextRoundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const onBackRef = useRef(onBack);
 
-  // Get my player and opponent
-  const me = players.find(p => p.id === playerId);
-  const opponent = players.find(p => p.id !== playerId);
+  // Get my player and opponent - Bot modunda id yerine 'bot_' prefix'ine göre ayır
+  const me = playWithBot
+    ? players.find(p => !p.id.startsWith('bot_'))
+    : players.find(p => p.id === playerId);
+  const opponent = playWithBot
+    ? players.find(p => p.id.startsWith('bot_'))
+    : players.find(p => p.id !== playerId);
 
   // Handle back - leave room and go back
   const handleBack = useCallback(async () => {
@@ -517,9 +547,132 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
     }
   }, [joinRoomId, isConnected, connection, autoJoinAttempted, playerId, nickname]);
 
+  // 🤖 Bot modu - hemen oyunu başlat
+  useEffect(() => {
+    if (playWithBot && !autoRoomCreated) {
+      setAutoRoomCreated(true);
+      const playerNickname = nickname || currentUser?.nickName || currentUser?.nickname || generateRandomNickname();
+      const botPlayerId = 'bot_' + Math.random().toString(36).substr(2, 9);
+      const myId = generatePlayerId();
+
+      setPlayerId(myId);
+      playerIdRef.current = myId;
+      botPlayerIdRef.current = botPlayerId; // Bot ID'sini ref'e kaydet
+      setNickname(playerNickname);
+      nicknameRef.current = playerNickname;
+      setRoomId('bot-game');
+      roomIdRef.current = 'bot-game';
+
+      // Bot ve oyuncu ekle
+      setPlayers([
+        { id: myId, name: playerNickname, score: 0 },
+        { id: botPlayerId, name: botName, score: 0 }
+      ]);
+
+      // Oyunu başlat
+      setGamePhase('playing');
+      setIsConnected(true);
+      setCurrentRound(1);
+    }
+  }, [playWithBot, autoRoomCreated, nickname, currentUser, botName]);
+
+  // Bot ismi değişince players'ı güncelle
+  useEffect(() => {
+    if (playWithBot && autoRoomCreated && botName) {
+      setPlayers(prev => prev.map(p =>
+        p.id.startsWith('bot_') ? { ...p, name: botName } : p
+      ));
+    }
+  }, [playWithBot, autoRoomCreated, botName]);
+
+  // Bot oyuncu ref'i
+  const botPlayerIdRef = useRef<string>('');
+
   // Make choice
   const handleMakeChoice = async (choice: Choice) => {
-    if (myChoice || !connection || !roomId || !playerId) return;
+    // 🤖 Bot modu
+    if (playWithBot) {
+      if (myChoice) return;
+
+      const currentPlayerId = playerIdRef.current;
+      const currentBotId = botPlayerIdRef.current || players.find(p => p.id !== currentPlayerId)?.id || '';
+
+      setMyChoice(choice);
+      setOpponentChose(true);
+
+      // Bot 1-2 saniye sonra seçim yapsın
+      setTimeout(() => {
+        const choices: Choice[] = ['rock', 'paper', 'scissors'];
+        const botChoice = choices[Math.floor(Math.random() * 3)];
+
+        setPlayerChoices({
+          [currentPlayerId]: choice,
+          [currentBotId]: botChoice
+        });
+
+        // Kazananı belirle
+        const result = determineWinner(choice, botChoice);
+
+        if (result === 'draw') {
+          setRoundResult('draw');
+        } else if (result === 'player1') {
+          setRoundResult('win');
+          setPlayers(prev => prev.map(p =>
+            p.id === currentPlayerId ? { ...p, score: p.score + 1 } : p
+          ));
+        } else {
+          setRoundResult('lose');
+          setPlayers(prev => prev.map(p =>
+            p.id === currentBotId ? { ...p, score: p.score + 1 } : p
+          ));
+        }
+
+        setGamePhase('result');
+
+        // 2 saniye sonra sonraki round veya oyun sonu
+        setTimeout(() => {
+          setCurrentRound(prevRound => {
+            const nextRound = prevRound + 1;
+
+            if (nextRound > MAX_ROUNDS) {
+              // Oyun bitti - güncel skorları al
+              setPlayers(currentPlayers => {
+                const myPlayer = currentPlayers.find(p => !p.id.startsWith('bot_'));
+                const botPlayer = currentPlayers.find(p => p.id.startsWith('bot_'));
+
+                if (myPlayer && botPlayer) {
+                  if (myPlayer.score > botPlayer.score) {
+                    setWinner(myPlayer);
+                    setGameOverMessage('🎊 Tebrikler! Oyunu Kazandınız! 🎊');
+                  } else if (botPlayer.score > myPlayer.score) {
+                    setWinner(botPlayer);
+                    setGameOverMessage(`😢 ${botPlayer.name} Oyunu Kazandı!`);
+                  } else {
+                    setGameOverMessage('🤝 Oyun Berabere Bitti!');
+                  }
+                }
+                setGamePhase('finished');
+                return currentPlayers;
+              });
+              return prevRound; // Oyun bitti, round'u artırma
+            } else {
+              // Sonraki round
+              setGamePhase('playing');
+              setMyChoice(null);
+              setOpponentChose(false);
+              setPlayerChoices({});
+              setRoundResult(null);
+              return nextRound; // Round'u artır
+            }
+          });
+        }, 2000);
+      }, 1000 + Math.random() * 1000); // 1-2 saniye
+
+      return;
+    }
+
+    // Normal multiplayer mod
+    if (!connection || !roomId || !playerId) return;
 
     setMyChoice(choice);
     try {
@@ -531,6 +684,20 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode }: 
 
   // Play again
   const handlePlayAgain = async () => {
+    // 🤖 Bot modu
+    if (playWithBot) {
+      setCurrentRound(1);
+      setMyChoice(null);
+      setOpponentChose(false);
+      setPlayerChoices({});
+      setRoundResult(null);
+      setWinner(null);
+      setGameOverMessage('');
+      setPlayers(prev => prev.map(p => ({ ...p, score: 0 })));
+      setGamePhase('playing');
+      return;
+    }
+
     if (!connection || !roomId) return;
 
     try {

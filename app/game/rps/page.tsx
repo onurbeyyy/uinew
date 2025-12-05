@@ -10,6 +10,8 @@ function RPSContent() {
   const searchParams = useSearchParams();
   const customerCode = searchParams.get('code') || 'global';
   const roomId = searchParams.get('roomId') || searchParams.get('room') || undefined;
+  const playWithBot = searchParams.get('bot') === 'true';
+  const botName = searchParams.get('botName') || undefined;
 
   // Menüye geri dön
   const goBackToMenu = useCallback(() => {
@@ -42,6 +44,8 @@ function RPSContent() {
         customerCode={customerCode}
         joinRoomId={roomId}
         onBack={goBackToMenu}
+        playWithBot={playWithBot}
+        botName={botName}
       />
       <InstallPWA />
     </div>
