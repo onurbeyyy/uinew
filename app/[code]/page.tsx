@@ -135,6 +135,21 @@ export default function CustomerMenu() {
     }
   }, [customerData?.customer?.name]);
 
+  // 🧹 Normal menüye girildiğinde self-service session'ını temizle
+  useEffect(() => {
+    if (typeof window !== 'undefined' && code) {
+      const STORAGE_KEY = `selfservice_session_${code}`;
+      const TIMESTAMP_KEY = `selfservice_session_time_${code}`;
+
+      const hadSession = localStorage.getItem(STORAGE_KEY);
+      if (hadSession) {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(TIMESTAMP_KEY);
+        console.log('🧹 Normal menüye girildi - self-service session temizlendi');
+      }
+    }
+  }, [code]);
+
   // 🔗 SignalR: Token balance güncelleme callback'i
   const handleTokenBalanceUpdated = useCallback((data: { userId: number; currentTokens: number; message: string }) => {
     const userData = localStorage.getItem('userData');

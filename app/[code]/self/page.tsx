@@ -44,6 +44,7 @@ export default function SelfServicePage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionValidated, setSessionValidated] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sessionCheckDone, setSessionCheckDone] = useState(false); // Session kontrolü tamamlandı mı?
 
   // Session süresi (dakika)
   const SESSION_DURATION_MINUTES = 15;
@@ -54,6 +55,9 @@ export default function SelfServicePage() {
   const [showTimeWarning, setShowTimeWarning] = useState(false);
 
   useEffect(() => {
+    // Session zaten doğrulandıysa tekrar kontrol etme (URL'den silindikten sonra)
+    if (sessionValidated) return;
+
     const urlSession = searchParams.get('session');
     const STORAGE_KEY = `selfservice_session_${code}`;
     const TIMESTAMP_KEY = `selfservice_session_time_${code}`;
@@ -83,6 +87,7 @@ export default function SelfServicePage() {
     if (!session) {
       // Session yoksa erişim engelle
       setSessionError('Bu sayfaya erişmek için QR kodu okutmanız gerekiyor.');
+      setSessionCheckDone(true);
       setLoading(false);
       return;
     }
@@ -101,6 +106,7 @@ export default function SelfServicePage() {
           if (data.success) {
             setSessionId(session);
             setSessionValidated(true);
+            setSessionCheckDone(true);
 
             // Session'ı localStorage'a kaydet (sayfa yenilendiğinde kullanılacak)
             localStorage.setItem(STORAGE_KEY, session);
@@ -139,12 +145,14 @@ export default function SelfServicePage() {
             // Geçersiz session'ı localStorage'dan sil
             localStorage.removeItem(STORAGE_KEY);
             localStorage.removeItem(TIMESTAMP_KEY);
+            setSessionCheckDone(true);
             setLoading(false);
           }
         } else {
           // localStorage'dan gelen session - doğrudan kullan (zaten doğrulanmış)
           setSessionId(session);
           setSessionValidated(true);
+          setSessionCheckDone(true);
 
           // Kalan süreyi logla
           if (storedTimestamp) {
@@ -157,6 +165,7 @@ export default function SelfServicePage() {
       } catch (err) {
         console.error('Session validation error:', err);
         setSessionError('Bağlantı hatası. Lütfen tekrar deneyin.');
+        setSessionCheckDone(true);
         setLoading(false);
       }
     };
@@ -521,6 +530,19 @@ export default function SelfServicePage() {
     }
   };
 
+
+  // Session kontrolü henüz tamamlanmadıysa loading göster
+  if (!sessionCheckDone) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f5f5f5' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '50px', height: '50px', border: '4px solid #e0e0e0', borderTopColor: '#9c27b0', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 15px' }} />
+          <p style={{ color: '#666' }}>Doğrulanıyor...</p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   // Session hatası
   if (sessionError) {
