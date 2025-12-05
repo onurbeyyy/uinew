@@ -25,6 +25,13 @@ export default function SelfServicePage() {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Device Activation States
+  const [isDeviceActivated, setIsDeviceActivated] = useState<boolean>(false);
+  const [activationCode, setActivationCode] = useState<string>('');
+  const [activationError, setActivationError] = useState<string>('');
+  const [isActivating, setIsActivating] = useState<boolean>(false);
+  const [checkingDevice, setCheckingDevice] = useState<boolean>(true);
+
   const hubConnectionRef = useRef<signalR.HubConnection | null>(null);
   const sessionCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const checkCountRef = useRef<number>(0);
@@ -37,7 +44,7 @@ export default function SelfServicePage() {
     maxChecks: 200 // 5 dakika için yeterli kontrol
   };
 
-  // URL'den code parametresini al
+  // URL'den code parametresini al ve cihaz doğrulaması yap
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
@@ -45,12 +52,111 @@ export default function SelfServicePage() {
     if (!code) {
       setError('Müşteri kodu belirtilmedi');
       setLoading(false);
+      setCheckingDevice(false);
       return;
     }
 
     setCustomerCode(code);
-    fetchCustomerData(code);
+
+    // Cihaz token kontrolü
+    checkDeviceActivation(code);
   }, []);
+
+  // Cihaz aktivasyon kontrolü
+  const checkDeviceActivation = async (code: string) => {
+    try {
+      const deviceToken = localStorage.getItem(`selfServiceDevice_${code}`);
+
+      if (!deviceToken) {
+        // Cihaz aktive edilmemiş, aktivasyon ekranı göster
+        setCheckingDevice(false);
+        setIsDeviceActivated(false);
+        setLoading(false);
+        return;
+      }
+
+      // Cihaz token'ını doğrula
+      const response = await fetch(`/api/self-service/device/validate?deviceToken=${deviceToken}`);
+      const data = await response.json();
+
+      if (data.success) {
+        // Cihaz geçerli
+        setIsDeviceActivated(true);
+        setCheckingDevice(false);
+        fetchCustomerData(code);
+      } else {
+        // Cihaz geçersiz veya iptal edilmiş, token'ı temizle
+        localStorage.removeItem(`selfServiceDevice_${code}`);
+        setIsDeviceActivated(false);
+        setCheckingDevice(false);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Device validation error:', err);
+      // Hata durumunda aktivasyon ekranı göster
+      setIsDeviceActivated(false);
+      setCheckingDevice(false);
+      setLoading(false);
+    }
+  };
+
+  // Cihazı aktive et
+  const handleActivateDevice = async () => {
+    if (!activationCode || activationCode.length !== 6) {
+      setActivationError('Lütfen 6 haneli aktivasyon kodunu girin');
+      return;
+    }
+
+    setIsActivating(true);
+    setActivationError('');
+
+    try {
+      const response = await fetch('/api/self-service/device/activate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: activationCode,
+          deviceName: 'Self-Service Kiosk',
+          userAgent: navigator.userAgent
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Cihaz token'ını kaydet
+        localStorage.setItem(`selfServiceDevice_${customerCode}`, data.deviceToken);
+
+        // Başarılı aktivasyon
+        setIsDeviceActivated(true);
+        setActivationCode('');
+        setLoading(true);
+        fetchCustomerData(customerCode);
+      } else {
+        // Hata
+        if (data.error === 'expired') {
+          setActivationError('Aktivasyon kodunun süresi dolmuş. Lütfen yeni kod alın.');
+        } else if (data.error === 'invalid_code') {
+          setActivationError('Geçersiz aktivasyon kodu. Lütfen kontrol edin.');
+        } else {
+          setActivationError(data.message || 'Aktivasyon başarısız');
+        }
+      }
+    } catch (err: any) {
+      setActivationError('Bağlantı hatası. Lütfen tekrar deneyin.');
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
+  // Aktivasyon kodu input handler
+  const handleActivationCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setActivationCode(value);
+    setActivationError('');
+  };
 
   // Müşteri bilgilerini getir
   const fetchCustomerData = async (code: string) => {
@@ -266,6 +372,86 @@ export default function SelfServicePage() {
       window.open(qrUrl, '_blank');
     }
   };
+
+  // Cihaz kontrolü yapılırken göster
+  if (checkingDevice) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200">
+        <div className="text-center">
+          <div className="text-4xl mb-3 animate-spin">🔐</div>
+          <div className="text-base font-semibold text-gray-700">Cihaz doğrulanıyor...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Cihaz aktive değilse aktivasyon ekranı göster
+  if (!isDeviceActivated && !error) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div
+          className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4"
+          style={{ fontFamily: "'Poppins', sans-serif" }}
+        >
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">🔒</div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">Cihaz Aktivasyonu</h1>
+            <p className="text-gray-600 text-sm">
+              Bu cihazı self-servis olarak kullanmak için admin panelden aldığınız 6 haneli aktivasyon kodunu girin.
+            </p>
+          </div>
+
+          <div className="mb-6">
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="000000"
+              value={activationCode}
+              onChange={handleActivationCodeChange}
+              onKeyDown={(e) => e.key === 'Enter' && handleActivateDevice()}
+              className="w-full text-center text-4xl font-mono tracking-[0.5em] py-4 px-6 border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:outline-none transition-colors"
+              style={{ letterSpacing: '0.5em' }}
+              maxLength={6}
+              disabled={isActivating}
+              autoFocus
+            />
+          </div>
+
+          {activationError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-red-600 text-sm text-center">{activationError}</p>
+            </div>
+          )}
+
+          <button
+            onClick={handleActivateDevice}
+            disabled={isActivating || activationCode.length !== 6}
+            className={`w-full py-4 px-6 rounded-2xl font-semibold text-white transition-all ${
+              isActivating || activationCode.length !== 6
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg hover:shadow-xl'
+            }`}
+          >
+            {isActivating ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin">⏳</span>
+                Aktive Ediliyor...
+              </span>
+            ) : (
+              'Cihazı Aktive Et'
+            )}
+          </button>
+
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <p className="text-xs text-gray-400 text-center">
+              Aktivasyon kodu 5 dakika geçerlidir. <br />
+              Yeni kod almak için admin paneli kullanın.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
