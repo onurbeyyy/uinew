@@ -46,7 +46,9 @@
       "Bash(dotnet publish:*)",
       "Bash(/mnt/c/Windows/System32/cmd.exe /c \"dotnet build\")",
       "Bash(/mnt/c/Windows/System32/cmd.exe /c \"dotnet publish -c Release -o ./publish\")",
-      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"cd /d C:\\Users\\Onue\\Desktop\\canli menu\\samba\\samba\\MenuPark.API && dotnet build\")"
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"cd /d C:\\Users\\Onue\\Desktop\\canli menu\\samba\\samba\\MenuPark.API && dotnet build\")",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"cd /d C:\\Users\\Onue\\Desktop\\canli menu\\samba\\uinew && git push\")",
+      "Bash(git -C '/mnt/c/Users/Onue/Desktop/canli menu/samba/samba' status)"
     ],
     "deny": [],
     "ask": []

@@ -152,6 +152,31 @@ export default function DeliveryPage() {
   // Cart state (localStorage tabanlı)
   const [cartItems, setCartItems] = useState<LocalCartItem[]>([]);
 
+  // 📊 Ziyaret kaydı fonksiyonu (30 dk içinde tekrar sayma)
+  const trackVisit = (customerId: number) => {
+    try {
+      const storageKey = `menuVisit_${customerId}`;
+      const lastVisit = localStorage.getItem(storageKey);
+      const now = Date.now();
+
+      if (lastVisit) {
+        const lastTime = parseInt(lastVisit, 10);
+        const diffMinutes = (now - lastTime) / (1000 * 60);
+        if (diffMinutes < 30) return;
+      }
+
+      let visitSessionId = localStorage.getItem('menuSessionId');
+      if (!visitSessionId) {
+        visitSessionId = crypto.randomUUID();
+        localStorage.setItem('menuSessionId', visitSessionId);
+      }
+
+      fetch(`/api/visit?customerId=${customerId}&sessionId=${visitSessionId}`)
+        .then(() => localStorage.setItem(storageKey, now.toString()))
+        .catch(() => {});
+    } catch {}
+  };
+
   // Cart functions
   const loadCart = useCallback(() => {
     if (!code) return;
@@ -203,6 +228,11 @@ export default function DeliveryPage() {
         const customerInfo = await customerResponse.json();
         setCustomerData(customerInfo);
         setCustomerDataContext(customerInfo);
+
+        // 📊 Ziyaret kaydı - arka planda gönder
+        if (customerInfo.customer?.id) {
+          trackVisit(customerInfo.customer.id);
+        }
 
         // Delivery settings'i customer'dan al
         if (customerInfo?.customer) {
