@@ -280,8 +280,8 @@ export default function SelfServicePage() {
         const sessionId = data.sessionId;
         setCurrentSessionId(sessionId);
 
-        // QR URL oluştur - kısa URL (ana sayfa session ile yönlendirecek)
-        const url = `${CONFIG.uiBaseUrl}/${code.toLowerCase()}?session=${sessionId}`;
+        // QR URL oluştur - self-service sayfasına yönlendir
+        const url = `${CONFIG.uiBaseUrl}/${code.toLowerCase()}/self?session=${sessionId}`;
         setQrUrl(url);
 
         // Session kontrolünü başlat
