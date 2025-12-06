@@ -36,6 +36,8 @@ export default function SelfServicePage() {
   const sessionCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const checkCountRef = useRef<number>(0);
   const currentSessionIdRef = useRef<string | null>(null); // SignalR closure için
+  const customerCodeRef = useRef<string>(''); // SignalR closure için
+  const customerIdRef = useRef<number>(0); // SignalR closure için
 
   // QR URL için current origin kullan (localhost'ta localhost, production'da production URL)
   const [uiBaseUrl, setUiBaseUrl] = useState('https://www.canlimenu.com');
@@ -88,6 +90,9 @@ export default function SelfServicePage() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
 
+    console.log('🚀 Self-service başlatılıyor - URL:', window.location.href);
+    console.log('🚀 URL params code:', code);
+
     if (!code) {
       setError('Müşteri kodu belirtilmedi');
       setLoading(false);
@@ -96,6 +101,8 @@ export default function SelfServicePage() {
     }
 
     setCustomerCode(code);
+    customerCodeRef.current = code; // Ref'i de güncelle
+    console.log('🚀 customerCodeRef ayarlandı:', customerCodeRef.current);
 
     // Cihaz token kontrolü
     checkDeviceActivation(code);
@@ -216,6 +223,7 @@ export default function SelfServicePage() {
       }
 
       setCustomerId(customer.id);
+      customerIdRef.current = customer.id; // Ref'i de güncelle
       setCustomerName(customer.name);
 
       // Logo URL
@@ -283,9 +291,10 @@ export default function SelfServicePage() {
         currentSessionIdRef.current = sessionId; // Ref'i de güncelle (SignalR için)
 
         // QR URL oluştur - self-service sayfasına yönlendir
+        console.log('🔍 QR oluşturuluyor - code:', code, '| custId:', custId, '| baseUrl:', CONFIG.uiBaseUrl);
         const url = `${CONFIG.uiBaseUrl}/${code.toLowerCase()}/self?session=${sessionId}`;
         setQrUrl(url);
-        console.log('🆕 Yeni QR oluşturuldu:', sessionId);
+        console.log('🆕 Yeni QR oluşturuldu:', sessionId, '| URL:', url);
 
         // Session kontrolünü başlat
         startSessionCheck(sessionId, code, custId);
@@ -354,14 +363,17 @@ export default function SelfServicePage() {
         console.log('📡 SignalR: Session kullanıldı eventi alındı:', data);
         // Ref kullanıyoruz çünkü closure'da state eski kalıyor
         const activeSessionId = currentSessionIdRef.current;
+        const activeCode = customerCodeRef.current;
+        const activeCustId = customerIdRef.current;
         console.log('📡 Aktif session:', activeSessionId, '| Gelen session:', data.sessionId);
+        console.log('📡 Customer code ref:', activeCode, '| Customer ID ref:', activeCustId);
 
         if (data.sessionId === activeSessionId) {
           console.log('✅ Session eşleşti, yeni QR oluşturuluyor...');
           if (sessionCheckIntervalRef.current) {
             clearInterval(sessionCheckIntervalRef.current);
           }
-          createNewSession(customerCode, custId);
+          createNewSession(activeCode, activeCustId);
         }
       });
 
