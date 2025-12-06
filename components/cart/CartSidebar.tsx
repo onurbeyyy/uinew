@@ -693,7 +693,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
           // Delivery'de ana sayfaya yönlendir (yeni sipariş için tekrar gelebilir)
           window.location.href = `/${customerCode}/delivery`;
         } else if (isSelfService) {
-          alert(`🍽️ Self servis siparişiniz alındı!\n\nSipariş No: #${result.orderNumber || 'N/A'}\n\nSiparişiniz hazırlandığında size getirilecektir.`);
+          alert(`🍽️ Siparişiniz alındı!\n\nSipariş No: #${result.orderNumber || 'N/A'}`);
           // Self-service'de ana sayfaya yönlendir
           window.location.href = `/${customerCode}`;
         } else {
