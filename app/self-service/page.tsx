@@ -35,6 +35,7 @@ export default function SelfServicePage() {
   const hubConnectionRef = useRef<signalR.HubConnection | null>(null);
   const sessionCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const checkCountRef = useRef<number>(0);
+  const currentSessionIdRef = useRef<string | null>(null); // SignalR closure için
 
   // QR URL için current origin kullan (localhost'ta localhost, production'da production URL)
   const [uiBaseUrl, setUiBaseUrl] = useState('https://www.canlimenu.com');
@@ -279,10 +280,12 @@ export default function SelfServicePage() {
       if (data.success) {
         const sessionId = data.sessionId;
         setCurrentSessionId(sessionId);
+        currentSessionIdRef.current = sessionId; // Ref'i de güncelle (SignalR için)
 
         // QR URL oluştur - self-service sayfasına yönlendir
         const url = `${CONFIG.uiBaseUrl}/${code.toLowerCase()}/self?session=${sessionId}`;
         setQrUrl(url);
+        console.log('🆕 Yeni QR oluşturuldu:', sessionId);
 
         // Session kontrolünü başlat
         startSessionCheck(sessionId, code, custId);
@@ -308,6 +311,7 @@ export default function SelfServicePage() {
 
         checkCountRef.current++;
         if (checkCountRef.current > CONFIG.maxChecks) {
+          console.log('⏰ Maksimum kontrol sayısına ulaşıldı, yeni QR oluşturuluyor...');
           clearInterval(sessionCheckIntervalRef.current!);
           createNewSession(code, custId);
           return;
@@ -317,31 +321,24 @@ export default function SelfServicePage() {
           `/api/self-service/validate-session?sessionId=${sessionId}`
         );
 
-        if (!response.ok) {
-          const data = await response.json();
-          const errorType = data.error || 'unknown';
-
-          if (errorType === 'already_used' || errorType === 'expired') {
-            clearInterval(sessionCheckIntervalRef.current!);
-            createNewSession(code, custId);
-          }
-          return;
-        }
-
         const data = await response.json();
 
-        if (!data.success) {
+        // Session artık geçerli değilse yeni QR oluştur
+        if (!response.ok || !data.success) {
           const errorType = data.error || 'unknown';
+          console.log('🔄 Session durumu:', errorType, data);
 
-          if (errorType === 'already_used' || errorType === 'expired') {
+          if (errorType === 'already_used' || errorType === 'expired' || errorType === 'not_found') {
+            console.log('🔄 Polling: Session kullanıldı/doldu, yeni QR oluşturuluyor...');
             clearInterval(sessionCheckIntervalRef.current!);
             createNewSession(code, custId);
           }
         }
       } catch (error) {
         // Network hatası, devam et
+        console.log('⚠️ Polling hatası:', error);
       }
-    }, 1500);
+    }, 1000); // 1 saniye (daha hızlı kontrol)
   };
 
   // SignalR bağlantısı (localhost'ta CORS hatası olabilir, production'da çalışır)
@@ -354,8 +351,13 @@ export default function SelfServicePage() {
 
       // Session kullanıldı eventi
       connection.on('SelfServiceSessionUsed', (data: any) => {
-        console.log('📡 SignalR: Session kullanıldı, yeni QR oluşturuluyor...', data);
-        if (data.sessionId === currentSessionId) {
+        console.log('📡 SignalR: Session kullanıldı eventi alındı:', data);
+        // Ref kullanıyoruz çünkü closure'da state eski kalıyor
+        const activeSessionId = currentSessionIdRef.current;
+        console.log('📡 Aktif session:', activeSessionId, '| Gelen session:', data.sessionId);
+
+        if (data.sessionId === activeSessionId) {
+          console.log('✅ Session eşleşti, yeni QR oluşturuluyor...');
           if (sessionCheckIntervalRef.current) {
             clearInterval(sessionCheckIntervalRef.current);
           }
