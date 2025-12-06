@@ -24,6 +24,7 @@ interface ProfileSidebarProps {
   onClose: () => void;
   customerCode?: string;
   isDeliveryMode?: boolean;
+  openRegister?: boolean; // Açıldığında kayıt modalı otomatik açılsın mı?
 }
 
 type TabType = 'orders' | 'tokens' | 'allergies' | 'addresses' | 'settings';
@@ -43,7 +44,7 @@ interface SavedAddress {
   isDefault?: boolean;
 }
 
-export default function ProfileSidebar({ isOpen, onClose, customerCode, isDeliveryMode = false }: ProfileSidebarProps) {
+export default function ProfileSidebar({ isOpen, onClose, customerCode, isDeliveryMode = false, openRegister = false }: ProfileSidebarProps) {
   const { currentUser, isAuthenticated, login, register, logout } = useAuth();
   const { sessionId, tableId, isSelfService } = useTable(); // 🔧 Self-servis session için
   const [activeTab, setActiveTab] = useState<TabType>('orders');
@@ -123,6 +124,27 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
     window.addEventListener('tokenBalanceUpdated', handleTokenBalanceUpdate);
     return () => window.removeEventListener('tokenBalanceUpdated', handleTokenBalanceUpdate);
   }, [currentUser, activeTab]);
+
+  // 🔓 Giriş yapmamış kullanıcı için otomatik login modalı açma
+  const [autoOpenedLogin, setAutoOpenedLogin] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && openRegister && !currentUser) {
+      // Sidebar açıldığında ve openRegister true ise login modalını aç
+      // Kullanıcı isterse oradan kayıt ol'a geçebilir
+      setShowLoginModal(true);
+      setAutoOpenedLogin(true); // Otomatik açıldığını işaretle
+    }
+  }, [isOpen, openRegister, currentUser]);
+
+  // Login modal kapatıldığında (otomatik açıldıysa sidebar'ı da kapat)
+  const handleCloseLoginModal = () => {
+    setShowLoginModal(false);
+    if (autoOpenedLogin) {
+      setAutoOpenedLogin(false);
+      onClose(); // Sidebar'ı da kapat - kullanıcı menüyü görsün
+    }
+  };
 
   // 📍 Adresleri localStorage'dan yükle
   useEffect(() => {
@@ -1904,7 +1926,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
             alignItems: 'center',
             justifyContent: 'center',
           }}
-          onClick={() => setShowLoginModal(false)}
+          onClick={handleCloseLoginModal}
         >
           <div
             style={{
@@ -1920,22 +1942,27 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setShowLoginModal(false)}
+              onClick={handleCloseLoginModal}
               style={{
                 position: 'absolute',
                 top: '15px',
                 right: '15px',
-                background: 'none',
+                background: '#f0f0f0',
                 border: 'none',
-                fontSize: '24px',
-                color: '#999',
+                fontSize: '20px',
+                color: '#666',
                 cursor: 'pointer',
-                padding: '5px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '50%',
                 transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
               }}
             >
-              <i className="fas fa-times"></i>
+              ×
             </button>
 
             <div style={{ textAlign: 'center', marginBottom: '25px' }}>
@@ -2100,17 +2127,22 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
                 position: 'absolute',
                 top: '15px',
                 right: '15px',
-                background: 'none',
+                background: '#f0f0f0',
                 border: 'none',
-                fontSize: '24px',
-                color: '#999',
+                fontSize: '20px',
+                color: '#666',
                 cursor: 'pointer',
-                padding: '5px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '50%',
                 transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
               }}
             >
-              <i className="fas fa-times"></i>
+              ×
             </button>
 
             <div style={{ textAlign: 'center', marginBottom: '25px' }}>

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/UserContext';
 import { useMenu } from '@/contexts/MenuContext';
+import { useSignalR } from '@/hooks/useSignalR';
 import { saveCart as saveCartToStorage, loadCart as loadCartFromStorage, clearCart as clearCartFromStorage } from '@/utils/cartUtils';
 import BottomNavBar from '@/components/layout/BottomNavBar';
 import ProfileSidebar from '@/components/profile/ProfileSidebar';
@@ -213,6 +214,30 @@ export default function DeliveryPage() {
     window.addEventListener('cartUpdated', handleCartUpdate);
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
   }, [loadCart]);
+
+  // SignalR: Token balance güncelleme handler'ı
+  const handleTokenBalanceUpdated = useCallback((data: { userId: number; currentTokens: number; message: string }) => {
+    console.log('🪙 Delivery SignalR: Token balance updated', data);
+    setUserTokenBalance(data.currentTokens);
+  }, [setUserTokenBalance]);
+
+  // SignalR: Sipariş oluşturuldu handler'ı
+  const handleOrderCreated = useCallback((data: any) => {
+    console.log('📦 Delivery SignalR: Order created', data);
+    // Sipariş oluşturulduğunda bildirim
+    if (data.customerCode === code) {
+      loadCart(); // Sepeti yenile
+    }
+  }, [code, loadCart]);
+
+  // SignalR bağlantısı
+  useSignalR({
+    customerId: customerData?.customer?.id,
+    customerCode: code,
+    onTokenBalanceUpdated: handleTokenBalanceUpdated,
+    onOrderCreated: handleOrderCreated,
+    enabled: !!customerData?.customer?.id,
+  });
 
   // Fetch data - Ana sayfa ile aynı API'leri kullan
   useEffect(() => {

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'rea
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/UserContext';
 import { useMenu } from '@/contexts/MenuContext';
+import { useSignalR } from '@/hooks/useSignalR';
 import { saveCart as saveCartToStorage, loadCart as loadCartFromStorage, clearCart as clearCartFromStorage } from '@/utils/cartUtils';
 import BottomNavBar from '@/components/layout/BottomNavBar';
 import ProfileSidebar from '@/components/profile/ProfileSidebar';
@@ -267,6 +268,8 @@ function SelfServiceContent() {
     getTokenSettingsForItem,
     canUseSelfService,
     selfServiceDisabledMessage,
+    userTokenBalance,
+    setUserTokenBalance,
   } = useMenu();
 
   // Data states
@@ -363,6 +366,30 @@ function SelfServiceContent() {
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
   }, [loadCart]);
 
+  // SignalR: Token balance güncelleme handler'ı
+  const handleTokenBalanceUpdated = useCallback((data: { userId: number; currentTokens: number; message: string }) => {
+    console.log('🪙 Self-Service SignalR: Token balance updated', data);
+    setUserTokenBalance(data.currentTokens);
+  }, [setUserTokenBalance]);
+
+  // SignalR: Sipariş oluşturuldu handler'ı
+  const handleOrderCreated = useCallback((data: any) => {
+    console.log('📦 Self-Service SignalR: Order created', data);
+    // Sipariş oluşturulduğunda bildirim
+    if (data.customerCode === code) {
+      loadCart(); // Sepeti yenile
+    }
+  }, [code, loadCart]);
+
+  // SignalR bağlantısı
+  useSignalR({
+    customerId: customerData?.customer?.id,
+    customerCode: code,
+    onTokenBalanceUpdated: handleTokenBalanceUpdated,
+    onOrderCreated: handleOrderCreated,
+    enabled: !!customerData?.customer?.id && sessionValidated,
+  });
+
   // Fetch data - sadece session doğrulandıysa
   useEffect(() => {
     if (!sessionValidated) return;
@@ -440,6 +467,17 @@ function SelfServiceContent() {
 
     if (code && sessionValidated) fetchData();
   }, [code, sessionValidated, setCustomerCode, setCustomerDataContext, setMenuDataContext, setProductTokenSettings, setPortionTokenSettings]);
+
+  // Giriş yapmamış kullanıcılar için otomatik login modalı açma (sadece bir kere)
+  const hasShownLoginRef = useRef(false);
+
+  useEffect(() => {
+    if (!loading && sessionValidated && menuData && !currentUser && !hasShownLoginRef.current) {
+      // Veriler yüklendi ama kullanıcı giriş yapmamış - login modalı aç (sadece 1 kere)
+      hasShownLoginRef.current = true;
+      openProfile();
+    }
+  }, [loading, sessionValidated, menuData, currentUser, openProfile]);
 
   // Kategori tıkla
   const handleCategoryClick = (categoryId: number) => {
@@ -1110,7 +1148,7 @@ function SelfServiceContent() {
       />
 
       {/* Profile Sidebar */}
-      <ProfileSidebar isOpen={isProfileOpen} onClose={closeProfile} customerCode={code} />
+      <ProfileSidebar isOpen={isProfileOpen} onClose={closeProfile} customerCode={code} openRegister={!currentUser} />
 
       <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
     </div>
