@@ -892,7 +892,9 @@ function SelfServiceContent() {
                 const productPrice = product.price || product.Price || 0;
                 const portions = (product as any).Portions || (product as any).portions || [];
                 const productSambaId = product.sambaId || product.SambaId || product.id;
-                const tokenSettings = productTokenSettings?.[productSambaId];
+                // Porsiyon varsa porsiyon bazlı, yoksa ürün bazlı token ayarı
+                const productPortionId = portions.length === 1 ? portions[0]?.sambaPortionId : ((product as any).SambaPortionId || (product as any).sambaPortionId);
+                const tokenSettings = getTokenSettingsForItem(productSambaId, productPortionId);
 
                 return (
                   <div key={`${category.sambaId}-${product.sambaId || idx}`} style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '10px' }}>
