@@ -86,6 +86,16 @@ function SelfServiceContent() {
     const STORAGE_KEY = `selfservice_session_${code}`;
     const TIMESTAMP_KEY = `selfservice_session_time_${code}`;
 
+    // URL'de yeni session varsa, localStorage'daki eski session'ı temizle
+    if (urlSession) {
+      const oldSession = localStorage.getItem(STORAGE_KEY);
+      if (oldSession && oldSession !== urlSession) {
+        console.log('🧹 Eski session temizleniyor:', oldSession, '→ Yeni:', urlSession);
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(TIMESTAMP_KEY);
+      }
+    }
+
     // localStorage'dan session ve timestamp oku
     const storedSession = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
     const storedTimestamp = typeof window !== 'undefined' ? localStorage.getItem(TIMESTAMP_KEY) : null;
