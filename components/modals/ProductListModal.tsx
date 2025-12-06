@@ -559,7 +559,7 @@ export default function ProductListModal() {
                                         {product.price.toFixed(2)} ₺
                                         {/* Token Redeem Badge - Fiyatın yanında */}
                                         {isTableMode && canUseBasket && (() => {
-                                          const tokenSetting = productTokenSettings[product.id] || productTokenSettings[product.sambaId];
+                                          const tokenSetting = getTokenSettingsForItem(product.sambaId, product.sambaPortionId);
                                           if (!tokenSetting || !tokenSetting.redeemTokens || tokenSetting.redeemTokens <= 0) return null;
 
                                           return (
