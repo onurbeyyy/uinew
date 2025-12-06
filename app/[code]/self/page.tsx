@@ -659,10 +659,23 @@ function SelfServiceContent() {
   if (error || !menuData) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f5f5f5' }}>
-        <div style={{ textAlign: 'center', color: '#666' }}>
+        <div style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
           <div style={{ fontSize: '48px', marginBottom: '15px' }}>😕</div>
           <h2>Bir şeyler yanlış gitti</h2>
           <p>{error || 'Menü bulunamadı'}</p>
+          <div style={{ marginTop: '20px', padding: '15px', background: '#fff', borderRadius: '10px', fontSize: '12px', textAlign: 'left', maxWidth: '300px', margin: '20px auto' }}>
+            <strong>Debug bilgisi:</strong><br/>
+            Code: {code}<br/>
+            Session: {sessionId || 'yok'}<br/>
+            Validated: {sessionValidated ? 'evet' : 'hayır'}<br/>
+            URL: {typeof window !== 'undefined' ? window.location.pathname : '-'}
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ marginTop: '15px', padding: '10px 20px', background: '#9c27b0', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+          >
+            Tekrar Dene
+          </button>
         </div>
       </div>
     );
