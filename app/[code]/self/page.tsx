@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/UserContext';
 import { useMenu } from '@/contexts/MenuContext';
@@ -45,6 +45,7 @@ export default function SelfServicePage() {
   const [sessionValidated, setSessionValidated] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionCheckDone, setSessionCheckDone] = useState(false); // Session kontrolü tamamlandı mı?
+  const sessionValidatedRef = useRef(false); // Race condition önlemek için ref
 
   // Session süresi (dakika)
   const SESSION_DURATION_MINUTES = 15;
@@ -56,7 +57,11 @@ export default function SelfServicePage() {
 
   useEffect(() => {
     // Session zaten doğrulandıysa tekrar kontrol etme (URL'den silindikten sonra)
-    if (sessionValidated) return;
+    // Ref kullanıyoruz çünkü state güncellemesi async, ref anında güncellenir
+    if (sessionValidatedRef.current) {
+      console.log('🔒 Session zaten doğrulanmış, tekrar kontrol edilmiyor');
+      return;
+    }
 
     const urlSession = searchParams.get('session');
     const STORAGE_KEY = `selfservice_session_${code}`;
@@ -104,6 +109,8 @@ export default function SelfServicePage() {
           const data = await response.json();
 
           if (data.success) {
+            // Önce ref'i güncelle (anında), sonra state'i
+            sessionValidatedRef.current = true;
             setSessionId(session);
             setSessionValidated(true);
             setSessionCheckDone(true);
@@ -150,6 +157,7 @@ export default function SelfServicePage() {
           }
         } else {
           // localStorage'dan gelen session - doğrudan kullan (zaten doğrulanmış)
+          sessionValidatedRef.current = true;
           setSessionId(session);
           setSessionValidated(true);
           setSessionCheckDone(true);
