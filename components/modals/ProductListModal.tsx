@@ -32,7 +32,7 @@ export default function ProductListModal() {
     isTableMode,
     canUseBasket,
     cartKey,
-    productTokenSettings,
+    getTokenSettingsForItem,
     popularProductIds,
     openProfile,
   } = useMenu();
@@ -458,7 +458,7 @@ export default function ProductListModal() {
                         )}
                         {/* Token Earn Badge - Sol üstte (Popüler yoksa) veya altında */}
                         {isTableMode && canUseBasket && (() => {
-                          const tokenSetting = productTokenSettings[product.id] || productTokenSettings[product.sambaId];
+                          const tokenSetting = getTokenSettingsForItem(product.sambaId, product.sambaPortionId);
                           if (!tokenSetting || !tokenSetting.earnTokens || tokenSetting.earnTokens <= 0) return null;
                           const hasPopularBadge = popularProductIds.has(product.id);
 

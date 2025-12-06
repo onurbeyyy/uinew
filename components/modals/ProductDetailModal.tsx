@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import type { ProductPortion, Product } from '@/types/api';
 
 export default function ProductDetailModal() {
-  const { menuData, customerData, selectedProduct, selectedCategory, isProductDetailModalOpen, closeProductDetailModal, openProductDetailModal, isTableMode, canUseBasket, cartKey, productTokenSettings, openProfile } = useMenu();
+  const { menuData, customerData, selectedProduct, selectedCategory, isProductDetailModalOpen, closeProductDetailModal, openProductDetailModal, isTableMode, canUseBasket, cartKey, getTokenSettingsForItem, openProfile } = useMenu();
   const { language, t } = useLanguage();
   const { isAuthenticated } = useAuth();
   const { showCartToast } = useToast();
@@ -184,10 +184,10 @@ export default function ProductDetailModal() {
   const price = selectedPortion?.price ?? selectedProduct.Price ?? selectedProduct.price ?? 0;
   const totalPrice = price * quantity;
 
-  // Token bilgisi
-  const productId = selectedProduct.Id ?? selectedProduct.id;
+  // Token bilgisi - porsiyon bazlı ayarları da kontrol et
   const sambaId = selectedProduct.SambaId ?? selectedProduct.sambaId;
-  const tokenSetting = (productId && productTokenSettings[productId]) || (sambaId && productTokenSettings[sambaId]);
+  const sambaPortionId = selectedPortion?.sambaPortionId ?? selectedPortion?.SambaPortionId ?? selectedProduct.SambaPortionId ?? selectedProduct.sambaPortionId;
+  const tokenSetting = getTokenSettingsForItem(sambaId, sambaPortionId);
   const hasEarn = tokenSetting && tokenSetting.earnTokens > 0;
   const hasRedeem = tokenSetting && tokenSetting.redeemTokens > 0;
 
