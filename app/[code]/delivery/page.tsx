@@ -85,8 +85,9 @@ export default function DeliveryPage() {
     setCustomerCode,
     setMenuData: setMenuDataContext,
     setCustomerData: setCustomerDataContext,
-    productTokenSettings,
     setProductTokenSettings,
+    setPortionTokenSettings,
+    getTokenSettingsForItem,
     userTokenBalance,
     setUserTokenBalance,
   } = useMenu();
@@ -286,22 +287,27 @@ export default function DeliveryPage() {
           setSelectedCategoryId(menuInfo.menu[0].sambaId);
         }
 
-        // Token settings yükle (jeton sistemi için)
+        // Token settings yükle (jeton sistemi için) - ürün ve porsiyon bazlı ayrı ayrı
         try {
           const tokenResponse = await fetch(`/api/token-settings/${code}`);
           if (tokenResponse.ok) {
             const tokenData = await tokenResponse.json();
-            const tokenMap: Record<number, any> = {};
+            const productMap: Record<number, any> = {};
+            const portionMap: Record<number, any> = {};
+
             tokenData.settings.forEach((setting: any) => {
-              // ProductId ve SambaProductId için map oluştur
-              if (setting.productId) {
-                tokenMap[setting.productId] = setting;
-              }
-              if (setting.sambaProductId) {
-                tokenMap[setting.sambaProductId] = setting;
+              // Porsiyon bazlı mı kontrol et
+              if (setting.sambaPortionId) {
+                portionMap[setting.sambaPortionId] = setting;
+              } else {
+                // Ürün bazlı
+                if (setting.productId) productMap[setting.productId] = setting;
+                if (setting.sambaProductId) productMap[setting.sambaProductId] = setting;
               }
             });
-            setProductTokenSettings(tokenMap);
+
+            setProductTokenSettings(productMap);
+            setPortionTokenSettings(portionMap);
           }
         } catch (tokenErr) {
           console.log('Token settings yüklenemedi:', tokenErr);
@@ -1102,37 +1108,44 @@ export default function DeliveryPage() {
                                     {productPrice.toFixed(2)} ₺
                                   </span>
                                 )}
-                                {/* Jeton bilgileri */}
-                                {(productTokenSettings?.[productId]?.redeemTokens > 0 || productTokenSettings?.[productId]?.earnTokens > 0) && (
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
-                                    {productTokenSettings?.[productId]?.redeemTokens > 0 && (
-                                      <span style={{
-                                        fontSize: '9px',
-                                        color: '#fff',
-                                        fontWeight: 700,
-                                        background: 'linear-gradient(135deg, #ff9800, #ff6d00)',
-                                        padding: '2px 6px',
-                                        borderRadius: '4px',
-                                        boxShadow: '0 1px 3px rgba(255,152,0,0.3)',
-                                      }}>
-                                        🪙 {productTokenSettings[productId].redeemTokens} jetona al
-                                      </span>
-                                    )}
-                                    {productTokenSettings?.[productId]?.earnTokens > 0 && (
-                                      <span style={{
-                                        fontSize: '9px',
-                                        color: '#fff',
-                                        fontWeight: 700,
-                                        background: 'linear-gradient(135deg, #4caf50, #2e7d32)',
-                                        padding: '2px 6px',
-                                        borderRadius: '4px',
-                                        boxShadow: '0 1px 3px rgba(76,175,80,0.3)',
-                                      }}>
-                                        +{productTokenSettings[productId].earnTokens} jeton kazan
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
+                                {/* Jeton bilgileri - porsiyon bazlı kontrol */}
+                                {(() => {
+                                  const portionId = portions.length === 1
+                                    ? portions[0]?.sambaPortionId
+                                    : ((product as any).SambaPortionId || (product as any).sambaPortionId);
+                                  const tokenSettings = getTokenSettingsForItem(productId, portionId);
+                                  if (!tokenSettings || (tokenSettings.redeemTokens <= 0 && tokenSettings.earnTokens <= 0)) return null;
+                                  return (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                                      {tokenSettings.redeemTokens > 0 && (
+                                        <span style={{
+                                          fontSize: '9px',
+                                          color: '#fff',
+                                          fontWeight: 700,
+                                          background: 'linear-gradient(135deg, #ff9800, #ff6d00)',
+                                          padding: '2px 6px',
+                                          borderRadius: '4px',
+                                          boxShadow: '0 1px 3px rgba(255,152,0,0.3)',
+                                        }}>
+                                          🪙 {tokenSettings.redeemTokens} jetona al
+                                        </span>
+                                      )}
+                                      {tokenSettings.earnTokens > 0 && (
+                                        <span style={{
+                                          fontSize: '9px',
+                                          color: '#fff',
+                                          fontWeight: 700,
+                                          background: 'linear-gradient(135deg, #4caf50, #2e7d32)',
+                                          padding: '2px 6px',
+                                          borderRadius: '4px',
+                                          boxShadow: '0 1px 3px rgba(76,175,80,0.3)',
+                                        }}>
+                                          +{tokenSettings.earnTokens} jeton kazan
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </div>
 
                               {isStoreClosed ? (
