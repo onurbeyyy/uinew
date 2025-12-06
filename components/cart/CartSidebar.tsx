@@ -1091,6 +1091,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
             style={{
               borderTop: '1px solid #e2e8f0',
               padding: '12px 15px',
+              paddingBottom: '90px', // BottomNavBar için ekstra boşluk
               background: 'white',
               flexShrink: 0,
             }}
