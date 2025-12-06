@@ -44,7 +44,17 @@ export function useSignalR({ customerId, customerCode, onTokenBalanceUpdated, on
       .withUrl(HUB_URL, {
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
       })
-      .withAutomaticReconnect([0, 2000, 10000, 30000])
+      .withAutomaticReconnect({
+        nextRetryDelayInMilliseconds: (retryContext) => {
+          // İlk 4 deneme: 0, 2s, 10s, 30s
+          if (retryContext.previousRetryCount === 0) return 0;
+          if (retryContext.previousRetryCount === 1) return 2000;
+          if (retryContext.previousRetryCount === 2) return 10000;
+          if (retryContext.previousRetryCount === 3) return 30000;
+          // 4. denemeden sonra: 5 dakikada bir sınırsız dene
+          return 300000; // 5 dakika
+        }
+      })
       .configureLogging(signalR.LogLevel.None) // Production'da log kapalı
       .build();
 
