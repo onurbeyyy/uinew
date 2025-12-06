@@ -46,6 +46,7 @@ export default function SelfServicePage() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionCheckDone, setSessionCheckDone] = useState(false); // Session kontrolü tamamlandı mı?
   const sessionValidatedRef = useRef(false); // Race condition önlemek için ref
+  const hasCheckedRef = useRef(false); // Sadece bir kez kontrol et
 
   // Session süresi (dakika)
   const SESSION_DURATION_MINUTES = 15;
@@ -56,14 +57,18 @@ export default function SelfServicePage() {
   const [showTimeWarning, setShowTimeWarning] = useState(false);
 
   useEffect(() => {
-    // Session zaten doğrulandıysa tekrar kontrol etme (URL'den silindikten sonra)
-    // Ref kullanıyoruz çünkü state güncellemesi async, ref anında güncellenir
-    if (sessionValidatedRef.current) {
-      console.log('🔒 Session zaten doğrulanmış, tekrar kontrol edilmiyor');
+    // Sadece bir kez kontrol et
+    if (hasCheckedRef.current || sessionValidatedRef.current) {
+      console.log('🔒 Session kontrolü zaten yapıldı');
       return;
     }
+    hasCheckedRef.current = true;
 
-    const urlSession = searchParams.get('session');
+    // URL'den session'ı window.location ile oku (searchParams hydration sorunu için)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSession = urlParams.get('session');
+    console.log('🔍 URL Session kontrol ediliyor:', urlSession);
+
     const STORAGE_KEY = `selfservice_session_${code}`;
     const TIMESTAMP_KEY = `selfservice_session_time_${code}`;
 
@@ -179,7 +184,8 @@ export default function SelfServicePage() {
     };
 
     validateSession();
-  }, [searchParams, code]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]); // searchParams kaldırıldı - window.location kullanıyoruz
 
   // Session süre takibi - her dakika kontrol et
   useEffect(() => {
