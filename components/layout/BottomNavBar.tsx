@@ -161,7 +161,7 @@ export default function BottomNavBar({
           display: 'flex',
           justifyContent: 'space-around',
           alignItems: 'center',
-          zIndex: 999999,
+          zIndex: 9999, // Sepet (99999) altında kalmalı
           boxShadow: '0 -2px 20px rgba(0, 0, 0, 0.1)',
         }}
       >

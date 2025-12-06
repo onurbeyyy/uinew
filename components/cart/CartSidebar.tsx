@@ -791,7 +791,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
           zIndex: 99999,
           display: 'flex',
           flexDirection: 'column',
-          paddingBottom: '80px',
+          paddingBottom: '20px',
         }}
       >
         {/* Header - Tek Satır */}
@@ -898,21 +898,25 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
                 className="cart-item"
                 style={{
                   background: 'white',
-                  borderRadius: '12px',
-                  padding: '12px',
-                  marginBottom: '10px',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                  borderRadius: '8px',
+                  padding: '8px 10px',
+                  marginBottom: '6px',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
                 }}
               >
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                   {/* Details */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Product Name + Quantity Controls */}
+                    {/* Product Name + Price + Quantity Controls */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', gap: '8px' }}>
                       <div style={{ fontSize: '14px', fontWeight: 600, color: '#333', flex: 1, minWidth: 0 }}>
                         {item.name}
                       </div>
-                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                        {/* Price */}
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#28a745' }}>
+                          {(item.price * item.quantity).toFixed(2)} ₺
+                        </span>
                         <button
                           onClick={() => updateQuantity(item.productId, item.quantity - 1)}
                           style={{
@@ -957,65 +961,51 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
                       </div>
                     </div>
 
-                    {/* Price Display */}
-                    <div style={{ fontSize: '13px', marginBottom: '8px' }}>
-                      {(() => {
-                        const tokenQty = item.tokenQuantity || 0;
-                        const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
+                    {/* Token Info */}
+                    {(() => {
+                      const tokenQty = item.tokenQuantity || 0;
+                      const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
 
-                        if (tokenQty > 0 && tokenSettings) {
-                          const cashQuantity = item.quantity - tokenQty;
+                      if (tokenQty > 0 && tokenSettings) {
+                        const cashQuantity = item.quantity - tokenQty;
 
-                          if (cashQuantity > 0) {
-                            // Partial token payment
-                            return (
-                              <>
-                                <div style={{ color: '#28a745', fontWeight: 'bold', fontSize: '12px' }}>
-                                  🪙 {tokenQty} adet jeton ile ({tokenQty * tokenSettings.redeemTokens} jeton)
-                                </div>
-                                <div style={{ color: '#666', fontSize: '12px' }}>
-                                  {cashQuantity} adet nakit: {(cashQuantity * item.price).toFixed(2)} ₺
-                                </div>
-                              </>
-                            );
-                          } else {
-                            // All with tokens
-                            return (
-                              <div style={{ color: '#28a745', fontWeight: 'bold' }}>
-                                🪙 {tokenQty} adet x {tokenSettings.redeemTokens} jeton
-                              </div>
-                            );
-                          }
-                        }
-
-                        // Normal cash payment
-                        return (
-                          <div style={{ color: '#666' }}>
-                            {item.price.toFixed(2)} ₺ x {item.quantity}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Earn tokens info (only if not using tokens) */}
-                      {(() => {
-                        const tokenQty = item.tokenQuantity || 0;
-                        const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
-
-                        if (tokenSettings && tokenSettings.earnTokens > 0 && tokenQty === 0) {
+                        if (cashQuantity > 0) {
+                          // Partial token payment
                           return (
-                            <div style={{ fontSize: '11px', color: '#28a745', marginTop: '4px' }}>
-                              +{tokenSettings.earnTokens * item.quantity} jeton kazanacaksınız
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>
+                              <div style={{ color: '#28a745', fontWeight: 'bold' }}>
+                                🪙 {tokenQty} adet jeton ile ({tokenQty * tokenSettings.redeemTokens} jeton)
+                              </div>
+                              <div style={{ color: '#666' }}>
+                                {cashQuantity} adet nakit: {(cashQuantity * item.price).toFixed(2)} ₺
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          // All with tokens
+                          return (
+                            <div style={{ color: '#28a745', fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
+                              🪙 {tokenQty} adet x {tokenSettings.redeemTokens} jeton
                             </div>
                           );
                         }
-                        return null;
-                      })()}
-                    </div>
+                      }
+
+                      // Earn tokens info (only if not using tokens)
+                      if (tokenSettings && tokenSettings.earnTokens > 0) {
+                        return (
+                          <div style={{ fontSize: '11px', color: '#28a745', marginBottom: '4px' }}>
+                            +{tokenSettings.earnTokens * item.quantity} jeton kazanacaksınız
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
 
                     {/* Item Note */}
                     <input
                       type="text"
-                      placeholder="Özel isteğiniz var mı? (Opsiyonel)"
+                      placeholder="Nasıl olsun? sade, demli, acısız vs. (opsiyonel)"
                       value={item.note || ''}
                       onChange={(e) => updateItemNote(item.productId, e.target.value)}
                       maxLength={100}
@@ -1091,7 +1081,6 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
             style={{
               borderTop: '1px solid #e2e8f0',
               padding: '12px 15px',
-              paddingBottom: '20px', // Minimal boşluk
               background: 'white',
               flexShrink: 0,
             }}
