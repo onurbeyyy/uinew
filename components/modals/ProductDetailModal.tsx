@@ -186,7 +186,7 @@ export default function ProductDetailModal() {
 
   // Token bilgisi - porsiyon bazlı ayarları da kontrol et
   const sambaId = selectedProduct.SambaId ?? selectedProduct.sambaId;
-  const sambaPortionId = selectedPortion?.sambaPortionId ?? (selectedProduct as any).SambaPortionId ?? selectedProduct.sambaPortionId;
+  const sambaPortionId = selectedPortion?.sambaPortionId ?? (selectedProduct as any).SambaPortionId ?? (selectedProduct as any).sambaPortionId;
   const tokenSetting = getTokenSettingsForItem(sambaId, sambaPortionId);
   const hasEarn = tokenSetting && tokenSetting.earnTokens > 0;
   const hasRedeem = tokenSetting && tokenSetting.redeemTokens > 0;
