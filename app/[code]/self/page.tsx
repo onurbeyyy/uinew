@@ -959,7 +959,10 @@ function SelfServiceContent() {
                                 <span style={{ fontSize: '14px', fontWeight: 700, color: '#9c27b0' }}>{productPrice.toFixed(2)} ₺</span>
                                 {/* Tek porsiyon/porsiyonsuz ürünler için jeton bilgisi */}
                                 {(() => {
-                                  const singlePortionId = portions.length === 1 ? portions[0].sambaPortionId : undefined;
+                                  // Porsiyon varsa porsiyon ID, yoksa ürünün kendi sambaPortionId'si
+                                  const singlePortionId = portions.length === 1
+                                    ? portions[0].sambaPortionId
+                                    : ((product as any).SambaPortionId || (product as any).sambaPortionId);
                                   const itemTokens = getTokenSettingsForItem(productSambaId, singlePortionId);
                                   return itemTokens && (
                                     <>
