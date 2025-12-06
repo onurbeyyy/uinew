@@ -119,94 +119,62 @@ function SelfServiceContent() {
     // URL'de session varsa kullan, yoksa geçerli localStorage'dan oku
     const session = urlSession || (isStoredSessionValid ? storedSession : null);
 
-    if (!session) {
-      // Session yoksa erişim engelle
-      setSessionError('Bu sayfaya erişmek için QR kodu okutmanız gerekiyor.');
+    // Session varsa HEMEN güven ve devam et
+    if (session) {
+      // Önce ref'i güncelle (anında), sonra state'i
+      sessionValidatedRef.current = true;
+      setSessionId(session);
+      setSessionValidated(true);
       setSessionCheckDone(true);
-      setLoading(false);
-      return;
-    }
 
-    // URL'den gelen yeni session mi yoksa localStorage'dan mı?
-    const isNewSession = !!urlSession;
+      // Session'ı localStorage'a kaydet
+      localStorage.setItem(STORAGE_KEY, session);
+      localStorage.setItem(TIMESTAMP_KEY, Date.now().toString());
+      console.log(`✅ Session kabul edildi: ${session.substring(0, 8)}...`);
 
-    // Session'ı doğrula (sadece yeni session için validate et)
-    const validateSession = async () => {
-      try {
-        // Yeni session ise doğrula, değilse direkt kullan
-        if (isNewSession) {
-          const response = await fetch(`/api/self-service/validate-session?sessionId=${session}`);
-          const data = await response.json();
+      // URL'den temizle (varsa)
+      if (urlSession) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+        console.log('🔒 Session URL\'den gizlendi');
+      }
 
-          if (data.success) {
-            // Önce ref'i güncelle (anında), sonra state'i
-            sessionValidatedRef.current = true;
-            setSessionId(session);
-            setSessionValidated(true);
-            setSessionCheckDone(true);
-
-            // Session'ı localStorage'a kaydet (sayfa yenilendiğinde kullanılacak)
-            localStorage.setItem(STORAGE_KEY, session);
-            localStorage.setItem(TIMESTAMP_KEY, Date.now().toString());
-            console.log(`✅ Session kaydedildi (${SESSION_DURATION_MINUTES} dk geçerli)`);
-
-            // URL'den HEMEN temizle (state güncellemelerinden sonra)
-            const cleanUrl = window.location.pathname;
-            window.history.replaceState({}, '', cleanUrl);
-            console.log('🔒 Session URL\'den gizlendi');
-
-            // Session'ı kullanıldı olarak işaretle (arka planda, await etme)
+      // Arka planda session doğrula (manuel session girişini önlemek için)
+      fetch(`/api/self-service/validate-session?sessionId=${session}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) {
+            // Session geçersiz - manuel girilmiş olabilir
+            console.log('❌ Session doğrulanamadı:', data.error || data.message);
+            sessionValidatedRef.current = false;
+            setSessionValidated(false);
+            setSessionError('Geçersiz QR kod. Lütfen self servis noktasından QR kodu okutun.');
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(TIMESTAMP_KEY);
+          } else {
+            console.log('✅ Session doğrulandı');
+            // Session'ı kullanıldı olarak işaretle
             fetch('/api/selfservice/use', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ sessionId: session })
-            }).catch(err => console.log('UseSession hatası (önemli değil):', err));
-          } else {
-            // Session geçersiz veya kullanılmış
-            const errorType = data.error || '';
-            const message = data.message || '';
-
-            if (errorType === 'already_used' || message.includes('kullanılmış')) {
-              setSessionError('Bu QR kod daha önce kullanılmış. Lütfen yeni QR kodu okutun.');
-            } else if (errorType === 'expired' || message.includes('süresi')) {
-              setSessionError('QR kodun süresi dolmuş. Lütfen yeni QR kodu okutun.');
-            } else if (message.includes('bulunamadı')) {
-              setSessionError('QR kod geçersiz veya süresi dolmuş. Lütfen yeni QR kodu okutun.');
-            } else {
-              setSessionError('Geçersiz QR kod. Lütfen tekrar okutun.');
-            }
-            // Geçersiz session'ı localStorage'dan sil
-            localStorage.removeItem(STORAGE_KEY);
-            localStorage.removeItem(TIMESTAMP_KEY);
-            setSessionCheckDone(true);
-            setLoading(false);
+            }).catch(() => {});
           }
-        } else {
-          // localStorage'dan gelen session - doğrudan kullan (zaten doğrulanmış)
-          sessionValidatedRef.current = true;
-          setSessionId(session);
-          setSessionValidated(true);
-          setSessionCheckDone(true);
+        })
+        .catch(err => {
+          // API hatası - sessizce devam et (bağlantı sorunu olabilir)
+          console.log('⚠️ Session doğrulama hatası (devam ediliyor):', err);
+        });
 
-          // Kalan süreyi logla
-          if (storedTimestamp) {
-            const elapsed = Date.now() - parseInt(storedTimestamp, 10);
-            const remaining = (SESSION_DURATION_MINUTES * 60 * 1000) - elapsed;
-            const remainingMinutes = Math.floor(remaining / 60000);
-            console.log(`🔄 Session localStorage'dan yüklendi (${remainingMinutes} dk kaldı)`);
-          }
-        }
-      } catch (err) {
-        console.error('Session validation error:', err);
-        setSessionError('Bağlantı hatası. Lütfen tekrar deneyin.');
-        setSessionCheckDone(true);
-        setLoading(false);
-      }
-    };
+      return;
+    }
 
-    validateSession();
+    // Session yoksa erişim engelle
+    setSessionError('Bu sayfaya erişmek için QR kodu okutmanız gerekiyor.');
+    setSessionCheckDone(true);
+    setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]); // searchParams kaldırıldı - window.location kullanıyoruz
+  }, [code]);
 
   // Session süre takibi - her dakika kontrol et
   useEffect(() => {
