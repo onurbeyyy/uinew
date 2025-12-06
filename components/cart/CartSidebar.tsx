@@ -783,7 +783,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
           right: isOpen ? 0 : '-100%',
           width: '100%',
           maxWidth: '400px',
-          height: '100vh',
+          height: '100dvh',
           background: 'rgba(245, 245, 245, 0.95)',
           backdropFilter: 'blur(10px)',
           boxShadow: '-4px 0 20px rgba(0, 0, 0, 0.2)',
@@ -791,7 +791,6 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
           zIndex: 99999,
           display: 'flex',
           flexDirection: 'column',
-          paddingBottom: '20px',
         }}
       >
         {/* Header - Tek Satır */}
@@ -1081,6 +1080,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
             style={{
               borderTop: '1px solid #e2e8f0',
               padding: '12px 15px',
+              paddingBottom: '20px',
               background: 'white',
               flexShrink: 0,
             }}
