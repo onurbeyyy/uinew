@@ -241,6 +241,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         id: Date.now(),
         productId: productId,
         sambaId: product.sambaId || product.SambaId,
+        sambaPortionId: product.sambaPortionId || product.SambaPortionId,
         name: product.title || product.Title || '',
         price: product.price || product.Price || 0,
         quantity: 1,
@@ -580,6 +581,20 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         items: items.map(item => {
           const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
           const tokenQty = item.tokenQuantity || 0;
+
+          // 🔍 DEBUG: Token bilgisi kontrolü
+          if (tokenQty > 0) {
+            console.log('🪙 Token Debug:', {
+              productName: item.name,
+              sambaId: item.sambaId,
+              productId: item.productId,
+              sambaPortionId: item.sambaPortionId,
+              tokenQuantity: tokenQty,
+              tokenSettings: tokenSettings,
+              tokensPerItem: tokenSettings?.redeemTokens || 0
+            });
+          }
+
           return {
             productId: item.sambaId || item.productId, // SambaProductId (SambaPOS için)
             actualProductId: item.productId, // Gerçek ID
