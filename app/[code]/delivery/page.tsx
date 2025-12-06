@@ -461,11 +461,17 @@ export default function DeliveryPage() {
       const productName = product.title || (product as any).Title || '';
       const displayName = portionName ? `${productName} (${portionName})` : productName;
 
+      // sambaPortionId: önce portion'dan, yoksa tek porsiyon varsa ondan, yoksa product'tan al
+      const portionId = portion?.sambaPortionId
+        || (portions.length === 1 ? portions[0]?.sambaPortionId : undefined)
+        || (product as any).SambaPortionId
+        || (product as any).sambaPortionId;
+
       const newItem: LocalCartItem = {
         id: Date.now(),
         productId: product.id || (product as any).Id || productId,
         sambaId: product.sambaId || product.SambaId || 0,
-        sambaPortionId: portion?.sambaPortionId,
+        sambaPortionId: portionId,
         portionName: portionName,
         name: displayName,
         price: itemPrice,
