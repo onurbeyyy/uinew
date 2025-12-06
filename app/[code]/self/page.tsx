@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/UserContext';
 import { useMenu } from '@/contexts/MenuContext';
@@ -9,6 +9,19 @@ import BottomNavBar from '@/components/layout/BottomNavBar';
 import ProfileSidebar from '@/components/profile/ProfileSidebar';
 import CartSidebar from '@/components/cart/CartSidebar';
 import type { MenuDto, CustomerInfoResponse, Product } from '@/types/api';
+
+// Loading komponenti
+function LoadingScreen() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f5f5f5' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: '50px', height: '50px', border: '4px solid #e0e0e0', borderTopColor: '#9c27b0', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 15px' }} />
+        <p style={{ color: '#666' }}>Yükleniyor...</p>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
 // Local cart item interface
 interface LocalCartItem {
@@ -34,7 +47,8 @@ interface ProductPortion {
   sambaPortionId?: number;
 }
 
-export default function SelfServicePage() {
+// Ana içerik komponenti
+function SelfServiceContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -125,21 +139,17 @@ export default function SelfServicePage() {
             localStorage.setItem(TIMESTAMP_KEY, Date.now().toString());
             console.log(`✅ Session kaydedildi (${SESSION_DURATION_MINUTES} dk geçerli)`);
 
-            // Session'ı kullanıldı olarak işaretle
-            await fetch('/api/selfservice/use', {
+            // URL'den HEMEN temizle (state güncellemelerinden sonra)
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+            console.log('🔒 Session URL\'den gizlendi');
+
+            // Session'ı kullanıldı olarak işaretle (arka planda, await etme)
+            fetch('/api/selfservice/use', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ sessionId: session })
-            });
-
-            // URL'den temizle
-            setTimeout(() => {
-              const url = new URL(window.location.href);
-              if (url.searchParams.has('session')) {
-                url.searchParams.delete('session');
-                window.history.replaceState({}, '', url.pathname);
-              }
-            }, 100);
+            }).catch(err => console.log('UseSession hatası (önemli değil):', err));
           } else {
             // Session geçersiz veya kullanılmış
             const errorType = data.error || '';
@@ -1062,5 +1072,14 @@ export default function SelfServicePage() {
 
       <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
     </div>
+  );
+}
+
+// Suspense ile sarılmış export - searchParams için gerekli
+export default function SelfServicePage() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <SelfServiceContent />
+    </Suspense>
   );
 }
