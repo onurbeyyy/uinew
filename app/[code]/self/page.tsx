@@ -371,11 +371,19 @@ function SelfServiceContent() {
       try {
         setLoading(true);
         setCustomerCode(code);
+        console.log('📥 Müşteri verisi yükleniyor, code:', code);
 
         const customerResponse = await fetch(`/api/customer/${code}`);
-        if (!customerResponse.ok) throw new Error('Müşteri bilgisi yüklenemedi');
+        console.log('📥 Customer API response status:', customerResponse.status);
+
+        if (!customerResponse.ok) {
+          const errorText = await customerResponse.text();
+          console.error('❌ Customer API hatası:', errorText);
+          throw new Error('Müşteri bilgisi yüklenemedi');
+        }
 
         const customerInfo = await customerResponse.json();
+        console.log('✅ Müşteri bilgisi alındı:', customerInfo?.customer?.name);
         setCustomerData(customerInfo);
         setCustomerDataContext(customerInfo);
 
