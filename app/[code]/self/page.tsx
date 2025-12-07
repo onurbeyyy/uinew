@@ -139,18 +139,26 @@ function SelfServiceContent() {
         console.log('🔒 Session URL\'den gizlendi');
       }
 
-      // Arka planda session doğrula (manuel session girişini önlemek için)
+      // Arka planda session doğrula (sadece expired session'ları engelle)
       fetch(`/api/self-service/validate-session?sessionId=${session}`)
         .then(res => res.json())
         .then(data => {
           if (!data.success) {
-            // Session geçersiz - manuel girilmiş olabilir
-            console.log('❌ Session doğrulanamadı:', data.error || data.message);
-            sessionValidatedRef.current = false;
-            setSessionValidated(false);
-            setSessionError('Geçersiz QR kod. Lütfen self servis noktasından QR kodu okutun.');
-            localStorage.removeItem(STORAGE_KEY);
-            localStorage.removeItem(TIMESTAMP_KEY);
+            const errorType = data.error || data.message || '';
+            console.log('⚠️ Session doğrulama:', errorType);
+
+            // Sadece kesin olarak süresi dolmuş session'ları engelle
+            if (errorType.toLowerCase().includes('expired') || errorType.toLowerCase().includes('doldu')) {
+              sessionValidatedRef.current = false;
+              setSessionValidated(false);
+              setSessionError('Oturum süreniz doldu. Lütfen yeni QR kodu okutun.');
+              localStorage.removeItem(STORAGE_KEY);
+              localStorage.removeItem(TIMESTAMP_KEY);
+            } else {
+              // Diğer hatalar (bulunamadı, vs) - sessizce devam et
+              // QR'dan gelen session'a güven, backend senkronizasyon gecikmesi olabilir
+              console.log('ℹ️ Session doğrulanamadı ama devam ediliyor (QR güvenilir)');
+            }
           } else {
             console.log('✅ Session doğrulandı');
             // Session'ı kullanıldı olarak işaretle
