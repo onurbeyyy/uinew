@@ -456,7 +456,7 @@ export default function ProductListModal() {
                             </span>
                           </div>
                         )}
-                        {/* Token Earn Badge - Sol üstte (Popüler yoksa) veya altında */}
+                        {/* Token Earn Badge - Sol üstte */}
                         {isTableMode && canUseBasket && (() => {
                           const tokenSetting = getTokenSettingsForItem(product.sambaId, product.sambaPortionId);
                           if (!tokenSetting || !tokenSetting.earnTokens || tokenSetting.earnTokens <= 0) return null;
@@ -466,24 +466,24 @@ export default function ProductListModal() {
                             <div style={{
                               position: 'absolute',
                               top: hasPopularBadge ? '42px' : '10px',
-                              left: '10px',
+                              left: '8px',
                               zIndex: 10,
                               pointerEvents: 'none',
                             }}>
                               <span style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '6px',
-                                padding: '6px 12px',
+                                gap: '4px',
+                                padding: '5px 10px',
                                 background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
                                 color: 'white',
-                                borderRadius: '20px',
-                                fontSize: '12px',
+                                borderRadius: '14px',
+                                fontSize: '11px',
                                 fontWeight: 700,
-                                boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2)',
-                                border: '2px solid rgba(255, 255, 255, 0.3)',
+                                boxShadow: '0 2px 8px rgba(76, 175, 80, 0.4)',
+                                border: '1.5px solid rgba(255, 255, 255, 0.3)',
                               }}>
-                                +{tokenSetting.earnTokens} jeton kazan
+                                🎁 +{tokenSetting.earnTokens} jeton kazan
                               </span>
                             </div>
                           );
@@ -521,69 +521,99 @@ export default function ProductListModal() {
                                     flexDirection: 'column',
                                     gap: '6px',
                                   }}>
-                                    {portions.map((portion: any) => (
-                                      <div key={portion.id} style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        padding: '6px 10px',
-                                        background: 'rgba(255,255,255,0.1)',
-                                        borderRadius: '8px',
-                                      }}>
-                                        <span style={{
-                                          fontSize: '15px',
-                                          color: productDescriptionColor,
-                                          fontFamily: productFont,
+                                    {portions.map((portion: any) => {
+                                      const portionTokenSetting = getTokenSettingsForItem(product.sambaId, portion.sambaPortionId);
+                                      const portionHasRedeem = portionTokenSetting && portionTokenSetting.redeemTokens > 0;
+
+                                      return (
+                                        <div key={portion.id} style={{
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          padding: '8px 10px',
+                                          background: 'rgba(255,255,255,0.1)',
+                                          borderRadius: '8px',
+                                          gap: '4px',
                                         }}>
-                                          {language === 'en' ? (portion.nameEnglish || portion.name) : portion.name}
-                                        </span>
-                                        <span style={{
-                                          fontSize: '16px',
-                                          fontWeight: 700,
-                                          color: '#FFFFFF',
-                                          fontFamily: productFont,
-                                        }}>
-                                          {portion.price.toFixed(2)} ₺
-                                        </span>
-                                      </div>
-                                    ))}
+                                          <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                          }}>
+                                            <span style={{
+                                              fontSize: '15px',
+                                              color: productDescriptionColor,
+                                              fontFamily: productFont,
+                                            }}>
+                                              {language === 'en' ? (portion.nameEnglish || portion.name) : portion.name}
+                                            </span>
+                                            <span style={{
+                                              fontSize: '16px',
+                                              fontWeight: 700,
+                                              color: '#FFFFFF',
+                                              fontFamily: productFont,
+                                            }}>
+                                              {portion.price.toFixed(2)} ₺
+                                            </span>
+                                          </div>
+                                          {/* Porsiyon için jetonla al */}
+                                          {isTableMode && canUseBasket && portionHasRedeem && (
+                                            <div style={{ textAlign: 'center' }}>
+                                              <span style={{
+                                                display: 'inline-block',
+                                                padding: '4px 10px',
+                                                fontSize: '11px',
+                                                color: '#fff',
+                                                fontWeight: 600,
+                                                borderRadius: '12px',
+                                                background: 'linear-gradient(135deg, #ff9800, #ff6d00)',
+                                              }}>
+                                                veya 🪙 {portionTokenSetting.redeemTokens} jetonla al
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 );
                               } else {
                                 // Tek porsiyon veya porsiyon yok - normal fiyat göster
                                 return product.price > 0 ? (
-                                  <div className="price-container moved">
-                                    <div className="product-price price">
-                                      <span className="kdv-label"><span>KDV</span><span>Dahil</span></span>
-                                      <span className="price-value" style={{fontFamily: productFont}}>
-                                        {product.price.toFixed(2)} ₺
-                                        {/* Token Redeem Badge - Fiyatın yanında */}
-                                        {isTableMode && canUseBasket && (() => {
-                                          const tokenSetting = getTokenSettingsForItem(product.sambaId, product.sambaPortionId);
-                                          if (!tokenSetting || !tokenSetting.redeemTokens || tokenSetting.redeemTokens <= 0) return null;
-
-                                          return (
-                                            <span style={{
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: '4px',
-                                              marginLeft: '8px',
-                                              padding: '4px 10px',
-                                              background: 'linear-gradient(135deg, #ff9800, #ff6d00)',
-                                              color: 'white',
-                                              borderRadius: '12px',
-                                              fontSize: '11px',
-                                              fontWeight: 700,
-                                              boxShadow: '0 2px 6px rgba(255, 152, 0, 0.4)',
-                                              border: '1px solid rgba(255, 255, 255, 0.3)',
-                                            }}>
-                                              🪙 {tokenSetting.redeemTokens} jetona al
-                                            </span>
-                                          );
-                                        })()}
-                                      </span>
+                                  <>
+                                    <div className="price-container moved">
+                                      <div className="product-price price">
+                                        <span className="kdv-label"><span>KDV</span><span>Dahil</span></span>
+                                        <span className="price-value" style={{fontFamily: productFont}}>
+                                          {product.price.toFixed(2)} ₺
+                                        </span>
+                                      </div>
                                     </div>
-                                  </div>
+                                    {/* Jetonla al - fiyatın altında ayrı satır */}
+                                    {isTableMode && canUseBasket && (() => {
+                                      const tokenSetting = getTokenSettingsForItem(product.sambaId, product.sambaPortionId);
+                                      if (!tokenSetting || !tokenSetting.redeemTokens || tokenSetting.redeemTokens <= 0) return null;
+                                      return (
+                                        <div style={{
+                                          width: '100%',
+                                          textAlign: 'center',
+                                          marginTop: '8px',
+                                        }}>
+                                          <span style={{
+                                            display: 'inline-block',
+                                            padding: '6px 14px',
+                                            fontSize: '12px',
+                                            color: '#fff',
+                                            fontWeight: 600,
+                                            borderRadius: '20px',
+                                            background: 'linear-gradient(135deg, #ff9800, #ff6d00)',
+                                            boxShadow: '0 2px 8px rgba(255, 152, 0, 0.4)',
+                                          }}>
+                                            veya 🪙 {tokenSetting.redeemTokens} jetonla al
+                                          </span>
+                                        </div>
+                                      );
+                                    })()}
+                                  </>
                                 ) : null;
                               }
                             })()}

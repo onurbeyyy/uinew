@@ -46,6 +46,7 @@ export default function CustomerMenu() {
     setTableId,
     tableId,
     setProductTokenSettings,
+    setPortionTokenSettings,
     setUserTokenBalance,
     setPopularProductIds,
     isGameModalOpen,
@@ -175,12 +176,63 @@ export default function CustomerMenu() {
     }
   }, []);
 
+  // ✅ Sipariş onaylandı callback'i
+  const handleOrderApproved = useCallback((data: {
+    orderId: number;
+    orderNumber: string;
+    endUserId: number;
+    earnedTokens?: number;
+    newBalance?: number;
+    message?: string;
+  }) => {
+    console.log('✅ Sipariş onaylandı:', data);
+
+    // Jeton bakiyesini güncelle
+    if (data.newBalance !== undefined) {
+      setUserTokenBalance(data.newBalance);
+    }
+
+    // Bildirim göster
+    const notification = document.createElement('div');
+    notification.innerHTML = `
+      <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #4CAF50, #2e7d32); color: white; padding: 25px 35px; border-radius: 20px; text-align: center; z-index: 100000; font-size: 16px; font-weight: 600; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); animation: fadeIn 0.3s ease;">
+        <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+        <div style="font-size: 20px; margin-bottom: 10px;">Siparişiniz Onaylandı!</div>
+        <div style="font-size: 16px; opacity: 0.9;">Sipariş No: ${data.orderNumber}</div>
+        ${data.earnedTokens ? `<div style="margin-top: 15px; padding: 10px 20px; background: rgba(255,255,255,0.2); border-radius: 10px; font-size: 18px;">🎁 +${data.earnedTokens} jeton kazandınız!</div>` : ''}
+        ${data.newBalance !== undefined ? `<div style="margin-top: 8px; font-size: 14px; opacity: 0.8;">Toplam bakiye: ${data.newBalance} jeton</div>` : ''}
+      </div>
+    `;
+    document.body.appendChild(notification);
+
+    // 5 saniye sonra kaldır
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        notification.style.opacity = '0';
+        notification.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 300);
+      }
+    }, 5000);
+
+    // Event dispatch et (diğer bileşenler için)
+    window.dispatchEvent(new CustomEvent('orderApproved', { detail: data }));
+  }, [setUserTokenBalance]);
+
+  // Kullanıcı ID'sini al
+  const currentEndUserId = currentUser?.id || currentUser?.userId || currentUser?.Id;
+
   // 🔗 SignalR bağlantısı
   useSignalR({
     customerId: customerData?.customer.id,
     customerCode: code,
+    endUserId: currentEndUserId,
     onTokenBalanceUpdated: handleTokenBalanceUpdated,
     onOrderCreated: handleOrderCreated,
+    onOrderApproved: handleOrderApproved,
     enabled: !!customerData?.customer.id,
   });
 
@@ -240,6 +292,10 @@ export default function CustomerMenu() {
         const customerInfo = await customerResponse.json();
         setCustomerData(customerInfo);
         setCustomerDataContext(customerInfo);
+
+        // ⚠️ dataLoading'i ÖNCE set et - aksi halde initialLoading=false ve menuDataLocal=null
+        // arasında kısa bir an hata ekranı gösterilir
+        setDataLoading(true);
         setInitialLoading(false);
 
         // 📊 Ziyaret kaydı - arka planda gönder (30 dk içinde tekrar sayma)
@@ -267,7 +323,6 @@ export default function CustomerMenu() {
         }
 
         // Menu ve categories paralel - retry mekanizması ile
-        setDataLoading(true);
         let menuResponse: Response | null = null;
         let categoriesResponse: Response | null = null;
 
@@ -305,12 +360,22 @@ export default function CustomerMenu() {
             const tokenResponse = await fetch(`/api/token-settings/${code}`);
             if (tokenResponse.ok) {
               const tokenData = await tokenResponse.json();
-              const tokenMap: Record<number, any> = {};
+              const productMap: Record<number, any> = {};
+              const portionMap: Record<number, any> = {};
+
               tokenData.settings.forEach((setting: any) => {
-                if (setting.productId) tokenMap[setting.productId] = setting;
-                if (setting.sambaProductId) tokenMap[setting.sambaProductId] = setting;
+                // Porsiyon ID varsa porsiyon map'e kaydet
+                if (setting.sambaPortionId) {
+                  portionMap[setting.sambaPortionId] = setting;
+                } else {
+                  // Porsiyon yoksa ürün map'e kaydet
+                  if (setting.productId) productMap[setting.productId] = setting;
+                  if (setting.sambaProductId) productMap[setting.sambaProductId] = setting;
+                }
               });
-              setProductTokenSettings(tokenMap);
+
+              setProductTokenSettings(productMap);
+              setPortionTokenSettings(portionMap);
             }
           } catch (tokenErr) {}
         }

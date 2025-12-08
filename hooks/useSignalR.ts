@@ -17,15 +17,29 @@ interface OrderCreatedData {
   timestamp: string;
 }
 
+interface OrderApprovedData {
+  orderId: number;
+  orderNumber: string;
+  endUserId: number;
+  tableName?: string;
+  totalAmount?: number;
+  earnedTokens?: number;
+  newBalance?: number;
+  message?: string;
+  timestamp: string;
+}
+
 interface UseSignalROptions {
   customerId?: number;
   customerCode?: string;
+  endUserId?: number;
   onTokenBalanceUpdated?: (data: { userId: number; currentTokens: number; message: string }) => void;
   onOrderCreated?: (data: OrderCreatedData) => void;
+  onOrderApproved?: (data: OrderApprovedData) => void;
   enabled?: boolean;
 }
 
-export function useSignalR({ customerId, customerCode, onTokenBalanceUpdated, onOrderCreated, enabled = true }: UseSignalROptions) {
+export function useSignalR({ customerId, customerCode, endUserId, onTokenBalanceUpdated, onOrderCreated, onOrderApproved, enabled = true }: UseSignalROptions) {
   const connectionRef = useRef<signalR.HubConnection | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
@@ -86,8 +100,30 @@ export function useSignalR({ customerId, customerCode, onTokenBalanceUpdated, on
       // APK için - Web UI kullanmıyor
     });
 
-    connection.on('OrderStatusChanged', () => {
-      // APK için - Web UI kullanmıyor
+    // ✅ Sipariş durumu değişti (onaylandı, iptal, vb.)
+    connection.on('OrderStatusChanged', (data: any) => {
+      console.log('📋 SignalR: OrderStatusChanged', data);
+      if (onOrderApproved && data) {
+        // Status "Approved" veya "Confirmed" ise bildirim göster
+        const status = (data.status || data.Status || '').toLowerCase();
+        if (status === 'approved' || status === 'confirmed' || status === 'completed') {
+          // endUserId kontrolü
+          const eventEndUserId = data.endUserId || data.EndUserId;
+          if (!endUserId || eventEndUserId === endUserId) {
+            onOrderApproved({
+              orderId: data.orderId || data.OrderId || data.id,
+              orderNumber: data.orderNumber || data.OrderNumber || '',
+              endUserId: eventEndUserId,
+              tableName: data.tableName || data.TableName,
+              totalAmount: data.totalAmount || data.TotalAmount,
+              earnedTokens: data.earnedTokens || data.EarnedTokens,
+              newBalance: data.newBalance || data.NewBalance,
+              message: data.message || data.Message,
+              timestamp: data.timestamp || new Date().toISOString(),
+            });
+          }
+        }
+      }
     });
 
     connection.on('OrderProcessResult', () => {
@@ -114,6 +150,17 @@ export function useSignalR({ customerId, customerCode, onTokenBalanceUpdated, on
       });
     }
 
+    // ✅ Sipariş onaylandı event'i (endUserId bazlı)
+    if (onOrderApproved) {
+      connection.on('OrderApproved', (data: OrderApprovedData) => {
+        console.log('✅ SignalR: OrderApproved', data);
+        // Sadece bu kullanıcının siparişi ise callback'i çağır
+        if (!endUserId || data.endUserId === endUserId) {
+          onOrderApproved(data);
+        }
+      });
+    }
+
     // Bağlantıyı başlat
     connection.start()
       .then(() => {
@@ -136,7 +183,7 @@ export function useSignalR({ customerId, customerCode, onTokenBalanceUpdated, on
         connectionRef.current.stop().catch(() => {});
       }
     };
-  }, [customerId, customerCode, enabled, onTokenBalanceUpdated, onOrderCreated]);
+  }, [customerId, customerCode, endUserId, enabled, onTokenBalanceUpdated, onOrderCreated, onOrderApproved]);
 
   return connectionRef.current;
 }
