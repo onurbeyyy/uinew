@@ -1430,28 +1430,28 @@ body {
 .pdm-container {
   position: relative;
   width: 100%;
-  max-width: 380px;
-  max-height: 85vh;
+  max-width: 300px;
+  max-height: 80vh;
   background: linear-gradient(165deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
-  border-radius: 24px;
+  border-radius: 16px;
   overflow: hidden;
   box-shadow:
-    0 25px 80px rgba(0, 0, 0, 0.5),
+    0 15px 50px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  animation: pdm-slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: pdm-slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   display: flex;
   flex-direction: column;
 }
 
-/* Kapatma Butonu */
+/* Kapatma Butonu - Kompakt */
 .pdm-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 10px;
+  right: 10px;
   z-index: 20;
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1461,7 +1461,8 @@ body {
   border-radius: 50%;
   color: white;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  font-size: 18px;
 }
 
 .pdm-close:hover {
@@ -1511,11 +1512,12 @@ body {
   }
 }
 
-/* Görsel Alanı */
+/* Görsel Alanı - Kompakt */
 .pdm-image-section {
   position: relative;
   width: 100%;
-  aspect-ratio: 1/1;
+  aspect-ratio: 4/3;
+  max-height: 180px;
   overflow: hidden;
 }
 
@@ -1593,55 +1595,53 @@ body {
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* İçerik Alanı */
+/* İçerik Alanı - Kompakt */
 .pdm-content {
-  padding: 24px;
-  padding-top: 20px;
+  padding: 12px 15px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   overflow-y: auto;
   flex: 1;
 }
 
 .pdm-title {
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 700;
   color: white;
   margin: 0;
-  line-height: 1.25;
-  letter-spacing: -0.3px;
+  line-height: 1.2;
 }
 
 .pdm-price {
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 800;
   color: #ff6b35;
 }
 
 .pdm-price span {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 600;
   color: rgba(255, 107, 53, 0.85);
 }
 
 .pdm-description {
-  font-size: 15px;
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.7);
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 /* Porsiyon Seçimi */
 .pdm-portions {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .pdm-portions-label {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1649,7 +1649,7 @@ body {
 .pdm-portions-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .pdm-portion-btn {
@@ -1657,10 +1657,10 @@ body {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 14px 16px;
+  padding: 12px 14px;
   background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1676,13 +1676,13 @@ body {
 }
 
 .pdm-portion-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: white;
 }
 
 .pdm-portion-price {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #4caf50;
 }
@@ -1691,19 +1691,19 @@ body {
   color: #81c784;
 }
 
-/* Token Alanı */
+/* Token Alanı - Kompakt */
 .pdm-tokens {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .pdm-token {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 14px;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
   backdrop-filter: blur(10px);
 }
 
@@ -1718,17 +1718,17 @@ body {
 }
 
 .pdm-token-icon {
-  font-size: 24px;
+  font-size: 16px;
 }
 
 .pdm-token-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .pdm-token-label {
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1738,34 +1738,34 @@ body {
 .pdm-token-redeem .pdm-token-label { color: #ff9800; }
 
 .pdm-token-value {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   color: white;
 }
 
-/* Sepet Alanı */
+/* Sepet Alanı - Kompakt */
 .pdm-cart-section {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Miktar Seçici */
+/* Miktar Seçici - Kompakt */
 .pdm-quantity {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   background: rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  padding: 4px;
+  border-radius: 8px;
+  padding: 3px;
 }
 
 .pdm-qty-btn {
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;

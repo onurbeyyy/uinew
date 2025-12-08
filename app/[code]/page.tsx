@@ -216,8 +216,26 @@ export default function CustomerMenu() {
         setInitialLoading(true);
         setCustomerCode(code);
 
-        const customerResponse = await fetch(`/api/customer/${code}`);
-        if (!customerResponse.ok) throw new Error('Müşteri bilgisi yüklenemedi');
+        // Retry mekanizması - 3 deneme, 500ms aralık
+        let customerResponse: Response | null = null;
+        let lastError: Error | null = null;
+
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            customerResponse = await fetch(`/api/customer/${code}`);
+            if (customerResponse.ok) break;
+            lastError = new Error('Müşteri bilgisi yüklenemedi');
+          } catch (err) {
+            lastError = err instanceof Error ? err : new Error('Bağlantı hatası');
+          }
+
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms bekle
+            console.log(`🔄 Müşteri bilgisi retry ${attempt}/3`);
+          }
+        }
+
+        if (!customerResponse?.ok) throw lastError || new Error('Müşteri bilgisi yüklenemedi');
 
         const customerInfo = await customerResponse.json();
         setCustomerData(customerInfo);
@@ -248,14 +266,28 @@ export default function CustomerMenu() {
           }
         }
 
-        // Menu ve categories paralel
+        // Menu ve categories paralel - retry mekanizması ile
         setDataLoading(true);
-        const [menuResponse, categoriesResponse] = await Promise.all([
-          fetch(`/api/menu/${code}`),
-          fetch(`/api/categories/${code}`)
-        ]);
+        let menuResponse: Response | null = null;
+        let categoriesResponse: Response | null = null;
 
-        if (!menuResponse.ok || !categoriesResponse.ok) throw new Error('Veri yüklenemedi');
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            [menuResponse, categoriesResponse] = await Promise.all([
+              fetch(`/api/menu/${code}`),
+              fetch(`/api/categories/${code}`)
+            ]);
+            if (menuResponse.ok && categoriesResponse.ok) break;
+          } catch (err) {
+            console.log(`🔄 Menü/kategori retry ${attempt}/3`);
+          }
+
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+
+        if (!menuResponse?.ok || !categoriesResponse?.ok) throw new Error('Veri yüklenemedi');
 
         const [menuData, categoriesInfo] = await Promise.all([
           menuResponse.json(),

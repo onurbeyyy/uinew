@@ -10,7 +10,6 @@
       "Bash(npm run build)",
       "Bash(dotnet run)",
       "Bash(dotnet build:*)",
-      "WebFetch(domain:siparis.bukabile.com)",
       "Bash(curl:*)",
       "WebSearch",
       "Bash(fuser:*)",

@@ -1641,119 +1641,36 @@ export default function DeliveryPage() {
         </div>
       )}
 
-      {/* Porsiyon Seçim Modalı */}
+      {/* Porsiyon Seçim Modalı - Mini */}
       {portionModalProduct && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          zIndex: 3000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-        }}
-        onClick={() => setPortionModalProduct(null)}
-        >
-          <div
-            style={{
-              background: 'white',
-              borderRadius: '16px',
-              width: '100%',
-              maxWidth: '400px',
-              maxHeight: '80vh',
-              overflow: 'hidden',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div style={{
-              padding: '20px',
-              borderBottom: '1px solid #eee',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>
-                Porsiyon Seçin
-              </h3>
-              <button
-                onClick={() => setPortionModalProduct(null)}
-                style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#999' }}
-              >
-                ×
-              </button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setPortionModalProduct(null)}>
+          <div style={{ background: 'white', borderRadius: '10px', width: '85%', maxWidth: '280px', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, fontSize: '15px', color: '#333' }}>{portionModalProduct.title || (portionModalProduct as any).Title}</span>
+              <button onClick={() => setPortionModalProduct(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999', padding: 0, lineHeight: 1 }}>×</button>
             </div>
-
-            {/* Ürün Bilgisi */}
-            <div style={{ padding: '15px 20px', borderBottom: '1px solid #eee' }}>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                {getProductImageUrl(portionModalProduct) && (
-                  <img
-                    src={getProductImageUrl(portionModalProduct)}
-                    alt=""
-                    style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover' }}
-                  />
-                )}
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '16px' }}>
-                    {portionModalProduct.title || (portionModalProduct as any).Title}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Porsiyon Listesi */}
-            <div style={{ padding: '15px 20px', maxHeight: '300px', overflowY: 'auto' }}>
+            <div style={{ padding: '10px 14px' }}>
               {((portionModalProduct as any).Portions || (portionModalProduct as any).portions || []).map((portion: ProductPortion) => (
                 <div
                   key={portion.id}
-                  onClick={() => setSelectedPortion(portion)}
+                  onClick={() => { setSelectedPortion(portion); handleAddToCart(portionModalProduct, portion); setPortionModalProduct(null); }}
                   style={{
-                    padding: '12px 15px',
-                    marginBottom: '10px',
-                    border: selectedPortion?.id === portion.id ? '2px solid #ff6b00' : '1px solid #eee',
-                    borderRadius: '10px',
+                    padding: '12px 14px',
+                    marginBottom: '6px',
+                    border: '1px solid #eee',
+                    borderRadius: '8px',
                     cursor: 'pointer',
-                    background: selectedPortion?.id === portion.id ? '#fff8f5' : 'white',
+                    background: 'white',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    fontSize: '14px',
                   }}
                 >
-                  <span style={{ fontWeight: 500 }}>{portion.name}</span>
+                  <span>{portion.name}</span>
                   <span style={{ fontWeight: 700, color: '#ff6b00' }}>{portion.price.toFixed(2)} ₺</span>
                 </div>
               ))}
-            </div>
-
-            {/* Ekle Butonu */}
-            <div style={{ padding: '15px 20px', borderTop: '1px solid #eee' }}>
-              <button
-                onClick={() => {
-                  if (selectedPortion) {
-                    handleAddToCart(portionModalProduct, selectedPortion);
-                    setPortionModalProduct(null);
-                  }
-                }}
-                disabled={!selectedPortion}
-                style={{
-                  width: '100%',
-                  background: selectedPortion ? '#ff6b00' : '#ccc',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '15px',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  cursor: selectedPortion ? 'pointer' : 'not-allowed',
-                }}
-              >
-                Sepete Ekle - {selectedPortion?.price.toFixed(2) || '0.00'} ₺
-              </button>
             </div>
           </div>
         </div>
