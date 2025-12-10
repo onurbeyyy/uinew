@@ -70,6 +70,64 @@ export default function CustomerMenu() {
     }
   }, [tableContextId, tableId, setTableId]);
 
+  // 🪙 Token settings - isTableMode true olduğunda yükle (cookie'den gelen dahil)
+  useEffect(() => {
+    const loadTokenSettings = async () => {
+      if (!isTableMode || !code) return;
+
+      try {
+        const tokenResponse = await fetch(`/api/token-settings/${code}`);
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          const productMap: Record<number, any> = {};
+          const portionMap: Record<number, any> = {};
+
+          tokenData.settings.forEach((setting: any) => {
+            if (setting.sambaPortionId) {
+              portionMap[setting.sambaPortionId] = setting;
+            } else {
+              if (setting.productId) productMap[setting.productId] = setting;
+              if (setting.sambaProductId) productMap[setting.sambaProductId] = setting;
+            }
+          });
+
+          setProductTokenSettings(productMap);
+          setPortionTokenSettings(portionMap);
+          console.log('🪙 Token settings yüklendi (isTableMode)');
+        }
+      } catch (err) {
+        console.error('Token settings yükleme hatası:', err);
+      }
+    };
+
+    loadTokenSettings();
+  }, [isTableMode, code, setProductTokenSettings, setPortionTokenSettings]);
+
+  // 🪙 User token balance - giriş yapılmışsa yükle
+  useEffect(() => {
+    const loadUserTokenBalance = async () => {
+      if (!isTableMode || !currentUser) return;
+
+      try {
+        const userId = currentUser.id || currentUser.userId || currentUser.Id;
+        if (!userId) return;
+
+        const response = await fetch(`/api/user/token-balance?userId=${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && typeof data.balance === 'number') {
+            setUserTokenBalance(data.balance);
+            console.log('🪙 User token balance yüklendi:', data.balance);
+          }
+        }
+      } catch (err) {
+        console.error('Token balance yükleme hatası:', err);
+      }
+    };
+
+    loadUserTokenBalance();
+  }, [isTableMode, currentUser, setUserTokenBalance]);
+
   const [showBanner, setShowBanner] = useState(false);
   const [menuDataLocal, setMenuDataLocal] = useState<MenuDto | null>(null);
   const [customerData, setCustomerData] = useState<CustomerInfoResponse | null>(null);
