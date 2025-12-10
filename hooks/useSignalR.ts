@@ -50,7 +50,6 @@ export function useSignalR({ customerId, customerCode, endUserId, onTokenBalance
 
     // Bağlantı zaten varsa ve bağlıysa, tekrar oluşturma
     if (connectionRef.current?.state === signalR.HubConnectionState.Connected) {
-      console.log('🔗 SignalR: Already connected');
       return;
     }
 
@@ -103,11 +102,10 @@ export function useSignalR({ customerId, customerCode, endUserId, onTokenBalance
 
     // ✅ Sipariş durumu değişti (onaylandı, iptal, vb.)
     connection.on('OrderStatusChanged', (data: any) => {
-      console.log('📋 SignalR: OrderStatusChanged', data);
       if (onOrderApproved && data) {
-        // Status "Approved" veya "Confirmed" ise bildirim göster
+        // Status "Approved", "Confirmed", "Completed" veya "Processed" ise bildirim göster
         const status = (data.status || data.Status || '').toLowerCase();
-        if (status === 'approved' || status === 'confirmed' || status === 'completed') {
+        if (status === 'approved' || status === 'confirmed' || status === 'completed' || status === 'processed') {
           // endUserId kontrolü
           const eventEndUserId = data.endUserId || data.EndUserId;
           if (!endUserId || eventEndUserId === endUserId) {
@@ -138,7 +136,6 @@ export function useSignalR({ customerId, customerCode, endUserId, onTokenBalance
     // 🪙 Token balance güncelleme event'i
     if (onTokenBalanceUpdated) {
       connection.on('TokenBalanceUpdated', (data: { userId: number; currentTokens: number; message: string }) => {
-        console.log('🪙 SignalR: TokenBalanceUpdated', data);
         onTokenBalanceUpdated(data);
       });
     }
@@ -146,7 +143,6 @@ export function useSignalR({ customerId, customerCode, endUserId, onTokenBalance
     // 📦 Sipariş oluşturuldu event'i
     if (onOrderCreated) {
       connection.on('OrderCreated', (data: OrderCreatedData) => {
-        console.log('📦 SignalR: OrderCreated', data);
         onOrderCreated(data);
       });
     }
@@ -154,7 +150,6 @@ export function useSignalR({ customerId, customerCode, endUserId, onTokenBalance
     // ✅ Sipariş onaylandı event'i (endUserId bazlı)
     if (onOrderApproved) {
       connection.on('OrderApproved', (data: OrderApprovedData) => {
-        console.log('✅ SignalR: OrderApproved', data);
         // Sadece bu kullanıcının siparişi ise callback'i çağır
         if (!endUserId || data.endUserId === endUserId) {
           onOrderApproved(data);

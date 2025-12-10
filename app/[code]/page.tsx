@@ -93,7 +93,6 @@ export default function CustomerMenu() {
 
           setProductTokenSettings(productMap);
           setPortionTokenSettings(portionMap);
-          console.log('🪙 Token settings yüklendi (isTableMode)');
         }
       } catch (err) {
         console.error('Token settings yükleme hatası:', err);
@@ -112,12 +111,11 @@ export default function CustomerMenu() {
         const userId = currentUser.id || currentUser.userId || currentUser.Id;
         if (!userId) return;
 
-        const response = await fetch(`/api/user/token-balance?userId=${userId}`);
+        const response = await fetch(`/api/user/token-balance?userId=${userId}&customerCode=${code}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && typeof data.balance === 'number') {
             setUserTokenBalance(data.balance);
-            console.log('🪙 User token balance yüklendi:', data.balance);
           }
         }
       } catch (err) {
@@ -205,7 +203,6 @@ export default function CustomerMenu() {
       if (hadSession) {
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(TIMESTAMP_KEY);
-        console.log('🧹 Normal menüye girildi - self-service session temizlendi');
       }
     }
   }, [code]);
@@ -244,8 +241,6 @@ export default function CustomerMenu() {
     newBalance?: number;
     message?: string;
   }) => {
-    console.log('✅ Sipariş onaylandı:', data);
-
     // Jeton bakiyesini güncelle
     if (data.newBalance !== undefined) {
       setUserTokenBalance(data.newBalance);
@@ -344,7 +339,6 @@ export default function CustomerMenu() {
 
           if (attempt < 3) {
             await new Promise(resolve => setTimeout(resolve, 500));
-            console.log(`🔄 Müşteri bilgisi retry ${attempt}/3`);
           }
         }
 
@@ -500,8 +494,8 @@ export default function CustomerMenu() {
           try {
             menuResponse = await fetch(`/api/menu/${code}`);
             if (menuResponse.ok) break;
-          } catch (err) {
-            console.log(`🔄 Menü retry ${attempt}/3`);
+          } catch {
+            // Retry on error
           }
 
           if (attempt < 3) {

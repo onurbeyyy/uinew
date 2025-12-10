@@ -31,7 +31,6 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     // 🚚 Delivery sayfasında table/session yükleme - delivery bağımsız çalışır
     const isDeliveryPage = window.location.pathname.includes('/delivery');
     if (isDeliveryPage) {
-      console.log('🚚 Delivery sayfası - table/session yüklenmedi');
       return;
     }
 
@@ -49,7 +48,6 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
 
     // Selfservice sayfası değilse, self-service cookie'lerini temizle
     if (!isSelfServicePage && selfServiceCookie) {
-      console.log('🧹 Normal sayfa - self-service cookie\'leri temizlendi');
       deleteCookie('isSelfService');
       deleteCookie('selfServiceSessionId');
     }
@@ -59,7 +57,6 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
       validateSession(sessionParam);
     } else if (savedSessionId && selfServiceCookie && isSelfServicePage) {
       // 🔧 URL'de session yok ama cookie'de var VE selfservice sayfasındayız - geri yükle (login sonrası)
-      console.log('🔄 Session ID cookie\'den yüklendi:', savedSessionId);
       setSelfServiceMode(savedSessionId);
     } else if (tableParam) {
       // URL'de table var - kaydet ve URL'den gizle
@@ -79,13 +76,11 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
           if (url.searchParams.has('table')) {
             url.searchParams.delete('table');
             window.history.replaceState({}, '', url.toString());
-            console.log('🔒 Table ID URL\'den gizlendi');
           }
         }
       }, 100);
     } else if (savedTableId) {
       // 🔧 URL'de table yok ama cookie'de var - geri yükle (login sonrası)
-      console.log('🔄 Table ID cookie\'den yüklendi:', savedTableId);
       setTableId(savedTableId);
       setTableName(savedTableId);
       setIsSelfService(false);
@@ -122,7 +117,6 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
           const url = new URL(window.location.href);
           url.searchParams.delete('session');
           window.history.replaceState({}, '', url.toString());
-          console.log('🔒 Session ID URL\'den gizlendi');
         }
       } else {
         console.error('❌ Self-servis session geçersiz:', data.message);
@@ -170,7 +164,6 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     setIsSelfService(false);
     setSessionId(null);
     setCookie('tableId', table, 15 / (24 * 60)); // 15 dakika (QR geçerlilik süresi)
-    console.log('✅ Table mode aktif, table kaydedildi:', table);
   };
 
   /**
@@ -194,7 +187,6 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     setTableId(null);
     setCookie('isSelfService', 'true', 15 / (24 * 60)); // 15 dakika (QR geçerlilik süresi)
     setCookie('selfServiceSessionId', session, 15 / (24 * 60)); // 15 dakika
-    console.log('✅ Self-service mode aktif, session kaydedildi:', session);
   }, []);
 
   /**
@@ -223,11 +215,8 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
       url.searchParams.delete('session');
       if (hadParams) {
         window.history.replaceState({}, '', url.toString());
-        console.log('🔒 URL parametreleri temizlendi');
       }
     }
-
-    console.log('🔒 Table/Session bilgisi temizlendi');
   }, []);
 
   const value: TableContextType = {

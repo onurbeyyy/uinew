@@ -517,7 +517,6 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         alert(isSelfService ? 'Oturum bilgisi bulunamadı.' : 'Masa bilgisi bulunamadı. Lütfen QR kodu tekrar okutun.');
         return;
       }
-      console.log('🔧 TableId cookie\'den alındı:', cookieTableId);
     }
 
     // 🔐 Giriş kontrolü - Sipariş vermek için giriş şart
@@ -576,15 +575,6 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
       // Delivery modunda isSelfService false olmalı (cookie'den true kalmasını önle)
       const actualIsSelfService = isDelivery ? false : isSelfService;
 
-      // 🔍 DEBUG: Sipariş tipi kontrolü
-      console.log('🔍 Sipariş Debug:', {
-        isDelivery,
-        isSelfService,
-        actualIsSelfService,
-        deliveryInfo: !!deliveryInfo,
-        orderType: isDelivery ? 'Delivery' : (actualIsSelfService ? 'SelfService' : 'Table')
-      });
-
       const orderData: any = {
         customerCode: customerCode,
         tableName: orderTableName,
@@ -596,19 +586,6 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         items: items.map(item => {
           const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
           const tokenQty = item.tokenQuantity || 0;
-
-          // 🔍 DEBUG: Token bilgisi kontrolü
-          if (tokenQty > 0) {
-            console.log('🪙 Token Debug:', {
-              productName: item.name,
-              sambaId: item.sambaId,
-              productId: item.productId,
-              sambaPortionId: item.sambaPortionId,
-              tokenQuantity: tokenQty,
-              tokenSettings: tokenSettings,
-              tokensPerItem: tokenSettings?.redeemTokens || 0
-            });
-          }
 
           return {
             productId: item.sambaId || item.productId, // SambaProductId (SambaPOS için)
@@ -656,10 +633,6 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         orderData.customerNote = `📍 Adres: ${fullAddress}${addr.directions ? `\n🗺️ Tarif: ${addr.directions}` : ''}${userPhone ? `\n📞 Tel: ${userPhone}` : ''}\n💳 Ödeme: Kapıda ${paymentMethodText}${customerNote ? `\n📝 Not: ${customerNote}` : ''}`;
         orderData.notificationMessage = `📍 Paket Servis - ${addr.district}/${addr.city}${userPhone ? ` - Tel: ${userPhone}` : ''}\n💳 Ödeme: Kapıda ${paymentMethodText}`;
       }
-
-      // 🔍 DEBUG: API'ye gönderilen veri
-      console.log('📤 API Request Body:', JSON.stringify(orderData, null, 2));
-      console.log('📦 Delivery bilgileri:', { isDelivery: orderData.isDelivery, orderType: orderData.orderType, isSelfService: orderData.isSelfService });
 
       const response = await fetch('/api/order', {
         method: 'POST',
