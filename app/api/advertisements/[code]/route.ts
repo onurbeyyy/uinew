@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Vercel edge cache'i devre dışı bırak
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const API_BASE_URL = process.env.API_URL || 'https://apicanlimenu.online';
 
 export async function GET(
@@ -23,7 +27,11 @@ export async function GET(
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      },
+    });
   } catch (error) {
     console.error('Advertisements API Error:', error);
     return NextResponse.json(
