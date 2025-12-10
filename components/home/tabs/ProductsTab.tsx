@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getTitle } from '@/utils/language';
 import type { Advertisement, Product } from '@/types/api';
@@ -112,17 +111,16 @@ export default function ProductsTab({ tab }: ProductsTabProps) {
               }}
             >
               {product.picture ? (
-                <Image
+                <img
                   src={
                     product.picture.startsWith('http')
                       ? product.picture.replace('http://', 'https://')
-                      : `https://canlimenu.online/Uploads/${product.picture.replace('Uploads/', '')}`
+                      : `https://apicanlimenu.online/Uploads/${product.picture.replace('Uploads/', '')}`
                   }
                   alt={productTitle}
-                  width={100}
-                  height={80}
                   className="header-product-image"
                   loading="eager"
+                  decoding="async"
                 />
               ) : (
                 <div className="header-product-image" style={{ background: 'rgba(0,0,0,0.2)' }} />

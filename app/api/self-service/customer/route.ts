@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const apiUrl = process.env.API_URL || 'https://canlimenu.online';
+    const apiUrl = process.env.API_URL || 'https://apicanlimenu.online';
     const response = await fetch(`${apiUrl}/api/Customer/CustomerInfoByCode?code=${code}`, {
       method: 'GET',
       headers: {

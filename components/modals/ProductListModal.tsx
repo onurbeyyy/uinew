@@ -219,7 +219,7 @@ export default function ProductListModal() {
       return picture.replace('http://', 'https://');
     }
     const cleanPath = picture.startsWith('Uploads/') ? picture.substring(8) : picture;
-    return 'https://canlimenu.online/Uploads/' + cleanPath;
+    return 'https://apicanlimenu.online/Uploads/' + cleanPath;
   };
 
   const customerLogo = menuData?.customerLogo ? getImageUrl(menuData.customerLogo) : undefined;
@@ -228,7 +228,7 @@ export default function ProductListModal() {
   const backgroundUrl = customerData?.customer.webBackground
     ? customerData.customer.webBackground.startsWith('http')
       ? customerData.customer.webBackground.replace('http://', 'https://')
-      : `https://canlimenu.online/Uploads/${customerData.customer.webBackground.replace('Uploads/', '')}`
+      : `https://apicanlimenu.online/Uploads/${customerData.customer.webBackground.replace('Uploads/', '')}`
     : undefined;
 
   const containerStyle = backgroundUrl
@@ -313,7 +313,7 @@ export default function ProductListModal() {
                       const picturePath = picture.startsWith('Uploads/')
                         ? picture.substring('Uploads/'.length)
                         : picture;
-                      categoryImageUrl = `https://canlimenu.online/Uploads/${picturePath}`;
+                      categoryImageUrl = `https://apicanlimenu.online/Uploads/${picturePath}`;
                     }
                   } else if (customerLogo) {
                     // Picture yoksa logo kullan

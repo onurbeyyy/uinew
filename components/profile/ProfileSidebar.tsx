@@ -994,7 +994,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
                             logoUrl = order.venueLogo.replace('http://', 'https://');
                           } else {
                             const cleanPath = order.venueLogo.replace(/^\/+/, '').replace('Uploads/', '');
-                            logoUrl = `https://canlimenu.online/Uploads/${cleanPath}`;
+                            logoUrl = `https://apicanlimenu.online/Uploads/${cleanPath}`;
                           }
                         }
 
@@ -1144,7 +1144,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
                             logoUrl = restaurant.restaurantLogo.replace('http://', 'https://');
                           } else {
                             const cleanPath = restaurant.restaurantLogo.replace(/^\/+/, '').replace('Uploads/', '');
-                            logoUrl = `https://canlimenu.online/Uploads/${cleanPath}`;
+                            logoUrl = `https://apicanlimenu.online/Uploads/${cleanPath}`;
                           }
                         }
 

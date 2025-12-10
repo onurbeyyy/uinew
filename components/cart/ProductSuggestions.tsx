@@ -117,7 +117,7 @@ export default function ProductSuggestions({
           return customerLogo.replace('http://', 'https://');
         }
         const cleanPath = customerLogo.startsWith('Uploads/') ? customerLogo.substring(8) : customerLogo;
-        return `https://canlimenu.online/Uploads/${cleanPath}`;
+        return `https://apicanlimenu.online/Uploads/${cleanPath}`;
       }
       return '';
     }
@@ -125,7 +125,7 @@ export default function ProductSuggestions({
       return picture.replace('http://', 'https://');
     }
     const cleanPath = picture.startsWith('Uploads/') ? picture.substring(8) : picture;
-    return `https://canlimenu.online/Uploads/${cleanPath}`;
+    return `https://apicanlimenu.online/Uploads/${cleanPath}`;
   };
 
   const handleAddSuggestion = (product: any) => {

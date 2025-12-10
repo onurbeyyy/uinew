@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://apicanlimenu.online';
 
 // PUT - Varsayılan adres yap
 export async function PUT(

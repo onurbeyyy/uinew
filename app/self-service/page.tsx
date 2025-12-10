@@ -50,7 +50,7 @@ export default function SelfServicePage() {
   }, []);
 
   const CONFIG = {
-    signalRBaseUrl: process.env.NEXT_PUBLIC_SIGNALR_URL || 'https://canlimenu.online',
+    signalRBaseUrl: process.env.NEXT_PUBLIC_SIGNALR_URL || 'https://apicanlimenu.online',
     uiBaseUrl: uiBaseUrl,
     expirySeconds: 300, // 5 dakika
     qrSize: 240,
@@ -235,7 +235,7 @@ export default function SelfServicePage() {
           const logoPath = logoUrl.startsWith('Uploads/')
             ? logoUrl.substring('Uploads/'.length)
             : logoUrl;
-          logoUrl = `https://canlimenu.online/Uploads/${logoPath}`;
+          logoUrl = `https://apicanlimenu.online/Uploads/${logoPath}`;
         }
         setCustomerLogo(logoUrl);
       }
@@ -249,7 +249,7 @@ export default function SelfServicePage() {
           const bgPath = bgUrl.startsWith('Uploads/')
             ? bgUrl.substring('Uploads/'.length)
             : bgUrl;
-          bgUrl = `https://canlimenu.online/Uploads/${bgPath}`;
+          bgUrl = `https://apicanlimenu.online/Uploads/${bgPath}`;
         }
         setBackgroundImage(bgUrl);
       }

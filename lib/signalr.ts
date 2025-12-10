@@ -2,7 +2,7 @@ import * as signalR from '@microsoft/signalr';
 
 const HUB_URL = process.env.NEXT_PUBLIC_SIGNALR_URL
   ? `${process.env.NEXT_PUBLIC_SIGNALR_URL}/apimenuhub`
-  : 'https://canlimenu.online/apimenuhub';
+  : 'https://apicanlimenu.online/apimenuhub';
 
 class SignalRService {
   private connection: signalR.HubConnection | null = null;

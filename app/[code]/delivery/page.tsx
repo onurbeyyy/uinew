@@ -383,7 +383,7 @@ export default function DeliveryPage() {
       const picturePath = picture.startsWith('Uploads/')
         ? picture.substring('Uploads/'.length)
         : picture;
-      return `https://canlimenu.online/Uploads/${picturePath}`;
+      return `https://apicanlimenu.online/Uploads/${picturePath}`;
     }
     return '';
   };
@@ -394,7 +394,7 @@ export default function DeliveryPage() {
       if (customerData.customer.logo.startsWith('http')) {
         return customerData.customer.logo.replace('http://', 'https://');
       }
-      return `https://canlimenu.online/Uploads/${customerData.customer.logo.replace('Uploads/', '')}`;
+      return `https://apicanlimenu.online/Uploads/${customerData.customer.logo.replace('Uploads/', '')}`;
     }
     return '';
   };

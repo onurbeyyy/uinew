@@ -202,12 +202,12 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
     const maxRetries = 3;
 
     const setupConnection = async () => {
-      const hubUrl = 'https://api.menupark.com/gamehub';
+      const hubUrl = `${process.env.NEXT_PUBLIC_GAME_HUB_URL || 'https://apicanlimenu.online'}/gamehub`;
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
           transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
-          withCredentials: true
+          withCredentials: false // CORS için credentials kapalı
         })
         .withAutomaticReconnect([0, 1000, 2000, 5000, 10000])
         .configureLogging(signalR.LogLevel.Warning)

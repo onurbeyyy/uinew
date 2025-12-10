@@ -75,7 +75,7 @@ export default function CustomerMenuClient({
   const bannerUrlEarly = initialCustomerData?.customer.showBanner && initialCustomerData?.customer.banner
     ? initialCustomerData.customer.banner.startsWith('http')
       ? initialCustomerData.customer.banner.replace('http://', 'https://')
-      : `https://canlimenu.online/Uploads/${initialCustomerData.customer.banner.replace('Uploads/', '')}`
+      : `https://apicanlimenu.online/Uploads/${initialCustomerData.customer.banner.replace('Uploads/', '')}`
     : null;
 
   // Banner görselini en başta preload et
@@ -363,7 +363,7 @@ export default function CustomerMenuClient({
     const bgUrl = customerData?.customer?.webBackground
       ? customerData.customer.webBackground.startsWith('http')
         ? customerData.customer.webBackground.replace('http://', 'https://')
-        : `https://canlimenu.online/Uploads/${customerData.customer.webBackground.replace('Uploads/', '')}`
+        : `https://apicanlimenu.online/Uploads/${customerData.customer.webBackground.replace('Uploads/', '')}`
       : undefined;
 
     const bgStyle = bgUrl
@@ -386,23 +386,23 @@ export default function CustomerMenuClient({
   const logoUrl = customerData?.customer.logo
     ? customerData.customer.logo.startsWith('http')
       ? customerData.customer.logo.replace('http://', 'https://')
-      : `https://canlimenu.online/Uploads/${customerData.customer.logo.replace('Uploads/', '')}`
+      : `https://apicanlimenu.online/Uploads/${customerData.customer.logo.replace('Uploads/', '')}`
     : menuDataLocal.customerLogo
     ? menuDataLocal.customerLogo.startsWith('http')
       ? menuDataLocal.customerLogo.replace('http://', 'https://')
-      : `https://canlimenu.online/Uploads/${menuDataLocal.customerLogo.replace('Uploads/', '')}`
+      : `https://apicanlimenu.online/Uploads/${menuDataLocal.customerLogo.replace('Uploads/', '')}`
     : undefined;
 
   const backgroundUrl = customerData?.customer.webBackground
     ? customerData.customer.webBackground.startsWith('http')
       ? customerData.customer.webBackground.replace('http://', 'https://')
-      : `https://canlimenu.online/Uploads/${customerData.customer.webBackground.replace('Uploads/', '')}`
+      : `https://apicanlimenu.online/Uploads/${customerData.customer.webBackground.replace('Uploads/', '')}`
     : undefined;
 
   const bannerUrl = customerData?.customer.showBanner && customerData?.customer.banner
     ? customerData.customer.banner.startsWith('http')
       ? customerData.customer.banner.replace('http://', 'https://')
-      : `https://canlimenu.online/Uploads/${customerData.customer.banner.replace('Uploads/', '')}`
+      : `https://apicanlimenu.online/Uploads/${customerData.customer.banner.replace('Uploads/', '')}`
     : undefined;
 
   const bgStyle = backgroundUrl
@@ -425,7 +425,7 @@ export default function CustomerMenuClient({
         categoryImageUrl = picture.replace('http://', 'https://');
       } else {
         const picturePath = picture.startsWith('Uploads/') ? picture.substring('Uploads/'.length) : picture;
-        categoryImageUrl = `https://canlimenu.online/Uploads/${picturePath}`;
+        categoryImageUrl = `https://apicanlimenu.online/Uploads/${picturePath}`;
       }
     } else if (logoUrl) {
       categoryImageUrl = logoUrl;

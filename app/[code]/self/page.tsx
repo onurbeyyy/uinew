@@ -524,7 +524,7 @@ function SelfServiceContent() {
     if (picture) {
       if (picture.startsWith('http')) return picture.replace('http://', 'https://');
       const picturePath = picture.startsWith('Uploads/') ? picture.substring('Uploads/'.length) : picture;
-      return `https://canlimenu.online/Uploads/${picturePath}`;
+      return `https://apicanlimenu.online/Uploads/${picturePath}`;
     }
     return '';
   };
@@ -535,7 +535,7 @@ function SelfServiceContent() {
       if (customerData.customer.logo.startsWith('http')) {
         return customerData.customer.logo.replace('http://', 'https://');
       }
-      return `https://canlimenu.online/Uploads/${customerData.customer.logo.replace('Uploads/', '')}`;
+      return `https://apicanlimenu.online/Uploads/${customerData.customer.logo.replace('Uploads/', '')}`;
     }
     return '';
   };

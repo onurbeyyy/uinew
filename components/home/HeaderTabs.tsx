@@ -10,9 +10,10 @@ import ProductsTab from './tabs/ProductsTab';
 interface HeaderTabsProps {
   customerCode: string;
   fallbackLogoUrl?: string;
+  advertisements?: Advertisement[] | null; // null = henüz yüklenmedi, [] = yüklendi ama boş
 }
 
-export default function HeaderTabs({ customerCode, fallbackLogoUrl }: HeaderTabsProps) {
+export default function HeaderTabs({ customerCode, fallbackLogoUrl, advertisements }: HeaderTabsProps) {
   const [tabs, setTabs] = useState<Advertisement[]>([]);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -20,8 +21,21 @@ export default function HeaderTabs({ customerCode, fallbackLogoUrl }: HeaderTabs
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  // Fetch tabs from API
+  // Prop olarak gelirse direkt kullan (preload edilmiş, anında göster)
+  // null/undefined = henüz yüklenmedi, [] = yüklendi ama boş, [...] = yüklendi ve dolu
   useEffect(() => {
+    if (advertisements !== null && advertisements !== undefined) {
+      // Prop geldi (boş veya dolu), API çağrısı yapma
+      setTabs(advertisements);
+      setLoading(false);
+    }
+  }, [advertisements]);
+
+  // Prop yoksa (null/undefined) API'den çek (fallback - eski sayfalar için)
+  useEffect(() => {
+    // Prop tanımlıysa (boş bile olsa) API çağrısı yapma
+    if (advertisements !== null && advertisements !== undefined) return;
+
     async function fetchTabs() {
       try {
         const response = await fetch(`/api/advertisements/${customerCode}`);
@@ -42,7 +56,7 @@ export default function HeaderTabs({ customerCode, fallbackLogoUrl }: HeaderTabs
     } else {
       setLoading(false);
     }
-  }, [customerCode]);
+  }, [customerCode, advertisements]);
 
   // Auto-rotation
   useEffect(() => {

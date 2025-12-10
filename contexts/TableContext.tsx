@@ -42,7 +42,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
 
     const selfServiceCookie = getCookie('isSelfService');
     const savedSessionId = getCookie('selfServiceSessionId');
-    const savedTableId = getCookie('tableId'); // 🔧 Table ID'yi cookie'den al
+    const savedTableId = getCookie('tableCode') || getCookie('tableId'); // 🔧 Table ID'yi cookie'den al (middleware tableCode kullanıyor)
 
     // Self-service cookie'leri sadece /selfservice sayfasında geçerli
     const isSelfServicePage = pathname.includes('/selfservice');
@@ -97,6 +97,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
         deleteCookie('selfServiceSessionId');
       }
       deleteCookie('tableId');
+      deleteCookie('tableCode');
       setTableId(null);
       setTableName(null);
       setIsSelfService(false);
@@ -207,6 +208,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     deleteCookie('isSelfService');
     deleteCookie('selfServiceSessionId');
     deleteCookie('tableId'); // Table cookie'sini de sil
+    deleteCookie('tableCode'); // Middleware'in kullandığı cookie
 
     // ✅ localStorage'dan masa ismini de sil
     if (typeof window !== 'undefined') {

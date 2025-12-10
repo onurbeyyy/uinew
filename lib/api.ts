@@ -3,7 +3,7 @@ import { t, loadLocale } from './i18n';
 
 // Server-side: direkt backend URL, Client-side: /backend-api proxy
 const API_BASE_URL = typeof window === 'undefined'
-  ? (process.env.API_URL || 'https://canlimenu.online')
+  ? (process.env.API_URL || 'https://apicanlimenu.online')
   : '/backend-api';
 
 export class ApiError extends Error {

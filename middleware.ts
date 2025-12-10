@@ -31,7 +31,7 @@ export function middleware(request: NextRequest) {
           httpOnly: false, // Frontend'den okunabilir olmalı (sipariş gönderirken gerekli)
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
-          maxAge: 60 * 20, // 20 dakika (sipariş verdikten sonra otomatik silinecek)
+          maxAge: 60 * 15, // 15 dakika geçerli
           path: '/'
         });
 

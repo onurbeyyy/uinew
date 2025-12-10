@@ -23,7 +23,7 @@ import SuggestionModal from '@/components/modals/SuggestionModal';
 import EmailVerifiedPopup from '@/components/notifications/EmailVerifiedPopup';
 import WaiterCallRateLimitModal from '@/components/modals/WaiterCallRateLimitModal';
 import ImagePreloadContainer from '@/components/common/ImagePreloadContainer';
-import type { MenuDto, CustomerInfoResponse, CategoryDto } from '@/types/api';
+import type { MenuDto, CustomerInfoResponse, CategoryDto, Advertisement } from '@/types/api';
 
 export default function CustomerMenu() {
   const params = useParams();
@@ -74,6 +74,7 @@ export default function CustomerMenu() {
   const [menuDataLocal, setMenuDataLocal] = useState<MenuDto | null>(null);
   const [customerData, setCustomerData] = useState<CustomerInfoResponse | null>(null);
   const [categoriesData, setCategoriesData] = useState<CategoryDto[]>([]);
+  const [advertisements, setAdvertisements] = useState<Advertisement[] | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -268,7 +269,9 @@ export default function CustomerMenu() {
         setInitialLoading(true);
         setCustomerCode(code);
 
-        // Retry mekanizması - 3 deneme, 500ms aralık
+        // ═══════════════════════════════════════════════════════════
+        // AŞAMA 1: Müşteri bilgisi (3 deneme)
+        // ═══════════════════════════════════════════════════════════
         let customerResponse: Response | null = null;
         let lastError: Error | null = null;
 
@@ -282,7 +285,7 @@ export default function CustomerMenu() {
           }
 
           if (attempt < 3) {
-            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms bekle
+            await new Promise(resolve => setTimeout(resolve, 500));
             console.log(`🔄 Müşteri bilgisi retry ${attempt}/3`);
           }
         }
@@ -293,12 +296,130 @@ export default function CustomerMenu() {
         setCustomerData(customerInfo);
         setCustomerDataContext(customerInfo);
 
-        // ⚠️ dataLoading'i ÖNCE set et - aksi halde initialLoading=false ve menuDataLocal=null
-        // arasında kısa bir an hata ekranı gösterilir
+        // ═══════════════════════════════════════════════════════════
+        // AŞAMA 2: Kategoriler + Reklamları al
+        // ═══════════════════════════════════════════════════════════
+        const normalizeUrl = (url: string): string => {
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            const cleanPath = url.startsWith('Uploads/') ? url.substring('Uploads/'.length) : url;
+            return `https://apicanlimenu.online/Uploads/${cleanPath}`;
+          }
+          return url.replace('http://', 'https://');
+        };
+
+        const [categoriesResponse, adsResponse] = await Promise.all([
+          fetch(`/api/categories/${code}`),
+          fetch(`/api/advertisements/${code}`)
+        ]);
+
+        let categoriesInfo: CategoryDto[] = [];
+        if (categoriesResponse.ok) {
+          categoriesInfo = await categoriesResponse.json();
+          setCategoriesData(categoriesInfo);
+          setCategoriesDataContext(categoriesInfo);
+        }
+
+        // Reklamları işle
+        let adsData: Advertisement[] = [];
+        if (adsResponse.ok) {
+          const adsResult = await adsResponse.json();
+          if (adsResult.success && adsResult.data) {
+            adsData = adsResult.data;
+            setAdvertisements(adsData);
+
+            const popularIds = new Set<number>();
+            adsData.forEach((ad: any) => {
+              if ((ad.tabType === 'FavoriteProducts' || ad.tabType === 'BestSellingProducts') && ad.selectedProductIds) {
+                try {
+                  const ids = JSON.parse(ad.selectedProductIds);
+                  ids.forEach((id: number) => popularIds.add(id));
+                } catch (e) {}
+              }
+            });
+            if (popularIds.size > 0) setPopularProductIds(popularIds);
+          } else {
+            setAdvertisements([]);
+          }
+        } else {
+          setAdvertisements([]);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // AŞAMA 3: TÜM kritik görselleri topla ve ÖNCE yükle
+        // Sıra: Banner → Reklamlar → Logo → Background → Kategoriler
+        // ═══════════════════════════════════════════════════════════
+        const criticalUrls: string[] = [];
+
+        // 1. Banner
+        if (customerInfo.customer?.showBanner && customerInfo.customer?.banner) {
+          criticalUrls.push(normalizeUrl(customerInfo.customer.banner));
+        }
+
+        // 2. Reklam görselleri
+        adsData.forEach(ad => {
+          if (ad.imageUrl) {
+            ad.imageUrl.split(',').forEach(url => {
+              const trimmed = url.trim();
+              if (trimmed) criticalUrls.push(normalizeUrl(trimmed));
+            });
+          }
+        });
+
+        // 3. Logo
+        if (customerInfo.customer?.logo) {
+          criticalUrls.push(normalizeUrl(customerInfo.customer.logo));
+        }
+
+        // 4. Background
+        if (customerInfo.customer?.webBackground) {
+          criticalUrls.push(normalizeUrl(customerInfo.customer.webBackground));
+        }
+
+        // 5. Kategori görselleri
+        categoriesInfo.forEach(cat => {
+          if (cat.picture) {
+            criticalUrls.push(normalizeUrl(cat.picture));
+          }
+        });
+
+        // Duplicate'leri kaldır
+        const uniqueUrls = [...new Set(criticalUrls)];
+
+        // Görselleri yükle ve GERÇEKTEN tamamlanmasını bekle
+        if (uniqueUrls.length > 0) {
+          console.log(`🖼️ ${uniqueUrls.length} kritik görsel yükleniyor...`);
+
+          const preloadImage = (url: string): Promise<void> => {
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                console.log(`✓ ${url.split('/').pop()}`);
+                resolve();
+              };
+              img.onerror = () => {
+                console.log(`✗ ${url.split('/').pop()}`);
+                resolve();
+              };
+              img.src = url;
+            });
+          };
+
+          // Tümünü başlat ve max 2 saniye bekle
+          const allPreloads = uniqueUrls.map(url => preloadImage(url));
+
+          await Promise.race([
+            Promise.all(allPreloads),
+            new Promise(resolve => setTimeout(resolve, 2000))
+          ]);
+
+          console.log(`✅ Kritik görsel preload tamamlandı`);
+        }
+
+        // ⚠️ dataLoading'i set et - loading ekranını göstermeye devam
         setDataLoading(true);
         setInitialLoading(false);
 
-        // 📊 Ziyaret kaydı - arka planda gönder (30 dk içinde tekrar sayma)
+        // 📊 Ziyaret kaydı - arka planda gönder
         if (customerInfo.customer?.id) {
           trackVisit(customerInfo.customer.id);
         }
@@ -322,19 +443,17 @@ export default function CustomerMenu() {
           }
         }
 
-        // Menu ve categories paralel - retry mekanizması ile
+        // ═══════════════════════════════════════════════════════════
+        // AŞAMA 4: Menüyü al (kategoriler zaten hazır)
+        // ═══════════════════════════════════════════════════════════
         let menuResponse: Response | null = null;
-        let categoriesResponse: Response | null = null;
 
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
-            [menuResponse, categoriesResponse] = await Promise.all([
-              fetch(`/api/menu/${code}`),
-              fetch(`/api/categories/${code}`)
-            ]);
-            if (menuResponse.ok && categoriesResponse.ok) break;
+            menuResponse = await fetch(`/api/menu/${code}`);
+            if (menuResponse.ok) break;
           } catch (err) {
-            console.log(`🔄 Menü/kategori retry ${attempt}/3`);
+            console.log(`🔄 Menü retry ${attempt}/3`);
           }
 
           if (attempt < 3) {
@@ -342,17 +461,11 @@ export default function CustomerMenu() {
           }
         }
 
-        if (!menuResponse?.ok || !categoriesResponse?.ok) throw new Error('Veri yüklenemedi');
+        if (!menuResponse?.ok) throw new Error('Menü yüklenemedi');
 
-        const [menuData, categoriesInfo] = await Promise.all([
-          menuResponse.json(),
-          categoriesResponse.json()
-        ]);
-
+        const menuData = await menuResponse.json();
         setMenuDataLocal(menuData);
-        setCategoriesData(categoriesInfo);
         setMenuData(menuData);
-        setCategoriesDataContext(categoriesInfo);
 
         // Token settings
         if (tableParam) {
@@ -364,11 +477,9 @@ export default function CustomerMenu() {
               const portionMap: Record<number, any> = {};
 
               tokenData.settings.forEach((setting: any) => {
-                // Porsiyon ID varsa porsiyon map'e kaydet
                 if (setting.sambaPortionId) {
                   portionMap[setting.sambaPortionId] = setting;
                 } else {
-                  // Porsiyon yoksa ürün map'e kaydet
                   if (setting.productId) productMap[setting.productId] = setting;
                   if (setting.sambaProductId) productMap[setting.sambaProductId] = setting;
                 }
@@ -379,26 +490,6 @@ export default function CustomerMenu() {
             }
           } catch (tokenErr) {}
         }
-
-        // Popüler ürünler
-        try {
-          const adsResponse = await fetch(`/api/advertisements/${code}`);
-          if (adsResponse.ok) {
-            const adsData = await adsResponse.json();
-            if (adsData.success && adsData.data) {
-              const popularIds = new Set<number>();
-              adsData.data.forEach((ad: any) => {
-                if ((ad.tabType === 'FavoriteProducts' || ad.tabType === 'BestSellingProducts') && ad.selectedProductIds) {
-                  try {
-                    const ids = JSON.parse(ad.selectedProductIds);
-                    ids.forEach((id: number) => popularIds.add(id));
-                  } catch (e) {}
-                }
-              });
-              if (popularIds.size > 0) setPopularProductIds(popularIds);
-            }
-          }
-        } catch (adsErr) {}
 
         setDataLoading(false);
         setError(null);
@@ -440,7 +531,6 @@ export default function CustomerMenu() {
     window.history.replaceState({}, '', url.toString());
   }, [initialLoading, joinBackgammonParam, setPendingJoinRoomId, openGameModal]);
 
-  const handleImagesLoaded = () => {};
   const handleBannerClose = () => setShowBanner(false);
 
   const handleWaiterCall = async () => {
@@ -507,13 +597,13 @@ export default function CustomerMenu() {
     const logoUrl = customerData?.customer.logo
       ? customerData.customer.logo.startsWith('http')
         ? customerData.customer.logo.replace('http://', 'https://')
-        : `https://canlimenu.online/Uploads/${customerData.customer.logo.replace('Uploads/', '')}`
+        : `https://apicanlimenu.online/Uploads/${customerData.customer.logo.replace('Uploads/', '')}`
       : undefined;
 
     const backgroundUrl = customerData?.customer.webBackground
       ? customerData.customer.webBackground.startsWith('http')
         ? customerData.customer.webBackground.replace('http://', 'https://')
-        : `https://canlimenu.online/Uploads/${customerData.customer.webBackground.replace('Uploads/', '')}`
+        : `https://apicanlimenu.online/Uploads/${customerData.customer.webBackground.replace('Uploads/', '')}`
       : undefined;
 
     return <LoadingScreen logoUrl={logoUrl} backgroundUrl={backgroundUrl} />;
@@ -535,23 +625,23 @@ export default function CustomerMenu() {
   const logoUrl = customerData?.customer.logo
     ? customerData.customer.logo.startsWith('http')
       ? customerData.customer.logo.replace('http://', 'https://')
-      : `https://canlimenu.online/Uploads/${customerData.customer.logo.replace('Uploads/', '')}`
+      : `https://apicanlimenu.online/Uploads/${customerData.customer.logo.replace('Uploads/', '')}`
     : menuDataLocal.customerLogo
     ? menuDataLocal.customerLogo.startsWith('http')
       ? menuDataLocal.customerLogo.replace('http://', 'https://')
-      : `https://canlimenu.online/Uploads/${menuDataLocal.customerLogo.replace('Uploads/', '')}`
+      : `https://apicanlimenu.online/Uploads/${menuDataLocal.customerLogo.replace('Uploads/', '')}`
     : undefined;
 
   const backgroundUrl = customerData?.customer.webBackground
     ? customerData.customer.webBackground.startsWith('http')
       ? customerData.customer.webBackground.replace('http://', 'https://')
-      : `https://canlimenu.online/Uploads/${customerData.customer.webBackground.replace('Uploads/', '')}`
+      : `https://apicanlimenu.online/Uploads/${customerData.customer.webBackground.replace('Uploads/', '')}`
     : undefined;
 
   const bannerUrl = customerData?.customer.showBanner && customerData?.customer.banner
     ? customerData.customer.banner.startsWith('http')
       ? customerData.customer.banner.replace('http://', 'https://')
-      : `https://canlimenu.online/Uploads/${customerData.customer.banner.replace('Uploads/', '')}`
+      : `https://apicanlimenu.online/Uploads/${customerData.customer.banner.replace('Uploads/', '')}`
     : undefined;
 
   const bgStyle = backgroundUrl
@@ -574,7 +664,7 @@ export default function CustomerMenu() {
         categoryImageUrl = picture.replace('http://', 'https://');
       } else {
         const picturePath = picture.startsWith('Uploads/') ? picture.substring('Uploads/'.length) : picture;
-        categoryImageUrl = `https://canlimenu.online/Uploads/${picturePath}`;
+        categoryImageUrl = `https://apicanlimenu.online/Uploads/${picturePath}`;
       }
     } else if (logoUrl) {
       categoryImageUrl = logoUrl;
@@ -598,18 +688,12 @@ export default function CustomerMenu() {
         <BannerModal bannerUrl={bannerUrl} isOpen={showBanner} onClose={handleBannerClose} />
       )}
 
-      <ImagePreloadContainer
-        menuData={menuDataLocal}
-        categoriesData={categoriesData}
-        customerLogo={logoUrl}
-        backgroundUrl={backgroundUrl}
-        bannerUrl={bannerUrl}
-        onImagesLoaded={handleImagesLoaded}
-      />
+      {/* Ürün görselleri arka planda preload edilir (kritik görseller zaten yüklendi) */}
+      <ImagePreloadContainer menuData={menuDataLocal} />
 
       <div className="main-container" style={{ ...bgStyle, minHeight: '100vh' }}>
         <LanguageSelector />
-        <HeaderTabs customerCode={code} fallbackLogoUrl={logoUrl} />
+        <HeaderTabs customerCode={code} fallbackLogoUrl={logoUrl} advertisements={advertisements} />
         <CategoryGrid categories={categoryList} />
       </div>
 

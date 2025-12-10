@@ -234,7 +234,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         if (!picture) return '';
         if (picture.startsWith('http')) return picture.replace('http://', 'https://');
         const cleanPath = picture.startsWith('Uploads/') ? picture.substring(8) : picture;
-        return `https://canlimenu.online/Uploads/${cleanPath}`;
+        return `https://apicanlimenu.online/Uploads/${cleanPath}`;
       };
 
       const newItem: CartItem = {
@@ -508,8 +508,16 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         return;
       }
     } else if (!customerCode || (!tableId && !sessionId)) {
-      alert(isSelfService ? 'Oturum bilgisi bulunamadı.' : 'Masa bilgisi bulunamadı.');
-      return;
+      // 🔧 Cookie'den tableCode kontrol et (TableContext sync sorunu için fallback)
+      const tableCodeCookie = document.cookie.split(';').find(c => c.trim().startsWith('tableCode='));
+      const tableIdCookie = document.cookie.split(';').find(c => c.trim().startsWith('tableId='));
+      const cookieTableId = tableCodeCookie?.split('=')[1] || tableIdCookie?.split('=')[1];
+
+      if (!cookieTableId && !sessionId) {
+        alert(isSelfService ? 'Oturum bilgisi bulunamadı.' : 'Masa bilgisi bulunamadı. Lütfen QR kodu tekrar okutun.');
+        return;
+      }
+      console.log('🔧 TableId cookie\'den alındı:', cookieTableId);
     }
 
     // 🔐 Giriş kontrolü - Sipariş vermek için giriş şart
@@ -536,8 +544,13 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
 
       // Delivery için tableName = "Paket Servis" + kullanıcı adı
       // Self-service için tableName = kullanıcı nickname'i (eski yapı gibi)
-      // Normal masa için tableName = localStorage'dan gerçek masa adı
-      let orderTableName = tableId;
+      // Normal masa için tableName = localStorage'dan veya cookie'den al
+      // 🔧 Cookie'den tableId al (fallback)
+      const tableCodeCookie = document.cookie.split(';').find(c => c.trim().startsWith('tableCode='));
+      const tableIdCookie = document.cookie.split(';').find(c => c.trim().startsWith('tableId='));
+      const cookieTableId = tableCodeCookie?.split('=')[1] || tableIdCookie?.split('=')[1];
+
+      let orderTableName = tableId || cookieTableId || '';
       if (isDelivery) {
         orderTableName = `Paket - ${userNickname || 'Müşteri'}`;
       } else if (isSelfService && userNickname && userNickname.trim() !== '') {
@@ -549,6 +562,8 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         const storedTableName = localStorage.getItem('currentTableName');
         if (storedTableName) {
           orderTableName = storedTableName;
+        } else if (!orderTableName && cookieTableId) {
+          orderTableName = cookieTableId;
         }
       }
 
@@ -678,12 +693,8 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
           setCustomerNote('');
         }
 
-        // ✅ Sipariş verildiğinde table/session bilgisini temizle (delivery değilse)
-        // Böylece aynı QR ile tekrar sipariş verilemez (15 dk süresi dolmadan bile)
-        if (!isDelivery) {
-          clearTableInfo();
-          console.log('🔒 Table/Session bilgisi temizlendi - sipariş tamamlandı');
-        }
+        // 📝 Table/session bilgisi artık sipariş sonrası silinmiyor
+        // Cookie süresi (15 dk) dolana kadar tekrar sipariş verilebilir
 
         onClose();
 

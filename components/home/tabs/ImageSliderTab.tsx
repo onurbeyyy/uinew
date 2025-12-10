@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import type { Advertisement } from '@/types/api';
 
 interface ImageSliderTabProps {
@@ -23,7 +22,7 @@ export default function ImageSliderTab({ tab }: ImageSliderTabProps) {
           // Convert to full URL if needed
           if (!url.startsWith('http://') && !url.startsWith('https://')) {
             const cleanPath = url.startsWith('Uploads/') ? url.substring(8) : url;
-            return `https://canlimenu.online/Uploads/${cleanPath}`;
+            return `https://apicanlimenu.online/Uploads/${cleanPath}`;
           }
           return url.replace('http://', 'https://');
         });
@@ -61,14 +60,12 @@ export default function ImageSliderTab({ tab }: ImageSliderTabProps) {
             className={`header-image-slide ${idx === currentSlide ? 'active' : ''}`}
             data-slide={idx}
           >
-            <Image
+            <img
               src={img}
               alt={`Slide ${idx + 1}`}
-              width={1920}
-              height={1080}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               loading="eager"
-              fetchPriority="high"
+              decoding="async"
             />
           </div>
         ))}

@@ -24,7 +24,7 @@ function SuggestionContent() {
 
     const fetchCustomerInfo = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://apicanlimenu.online';
         const response = await fetch(`${apiUrl}/api/Customer/CustomerInfo?code=${code}`);
         if (response.ok) {
           const data = await response.json();
@@ -34,7 +34,7 @@ function SuggestionContent() {
           if (data.customerLogo) {
             const logo = data.customerLogo.startsWith('http')
               ? data.customerLogo.replace('http://', 'https://')
-              : `https://canlimenu.online/Uploads/${data.customerLogo.replace('Uploads/', '')}`;
+              : `https://apicanlimenu.online/Uploads/${data.customerLogo.replace('Uploads/', '')}`;
             setCustomerLogo(logo);
           }
         }
@@ -59,7 +59,7 @@ function SuggestionContent() {
     setStatus('idle');
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://canlimenu.online';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://apicanlimenu.online';
       const response = await fetch(`${apiUrl}/api/CustomerSuggestion/Create`, {
         method: 'POST',
         headers: {

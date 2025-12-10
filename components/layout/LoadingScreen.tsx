@@ -1,7 +1,5 @@
 'use client';
 
-import Image from 'next/image';
-
 interface LoadingScreenProps {
   logoUrl?: string;
   backgroundUrl?: string;
@@ -47,15 +45,18 @@ export default function LoadingScreen({ logoUrl, backgroundUrl }: LoadingScreenP
               transformOrigin: 'center'
             }}
           >
-            <Image
+            <img
               src={logoUrl}
               alt="Logo"
               width={200}
               height={200}
-              priority
+              loading="eager"
+              decoding="async"
               style={{
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.3))'
+                filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.3))',
+                maxWidth: '200px',
+                maxHeight: '200px'
               }}
             />
           </div>

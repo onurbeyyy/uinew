@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.API_URL || 'https://canlimenu.online';
+const API_BASE_URL = process.env.API_URL || 'https://apicanlimenu.online';
 
 export async function POST(request: NextRequest) {
   try {

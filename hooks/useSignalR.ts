@@ -5,7 +5,7 @@ import * as signalR from '@microsoft/signalr';
 
 const HUB_URL = process.env.NEXT_PUBLIC_SIGNALR_URL
   ? `${process.env.NEXT_PUBLIC_SIGNALR_URL}/apimenuhub`
-  : 'https://canlimenu.online/apimenuhub';
+  : 'https://apicanlimenu.online/apimenuhub';
 
 interface OrderCreatedData {
   orderId: number;
@@ -57,6 +57,7 @@ export function useSignalR({ customerId, customerCode, endUserId, onTokenBalance
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(HUB_URL, {
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
+        withCredentials: false, // CORS için credentials kapalı
       })
       .withAutomaticReconnect({
         nextRetryDelayInMilliseconds: (retryContext) => {

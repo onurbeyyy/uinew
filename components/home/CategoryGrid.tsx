@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useMenu } from '@/contexts/MenuContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -53,16 +52,12 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
             }}
             onClick={(e) => handleCategoryClick(e, category.id)}
           >
-            <Image
+            <img
               src={category.image}
               alt={displayName}
-              width={300}
-              height={300}
               className="card-image"
-              priority={index < 6}
-              loading={index < 6 ? 'eager' : 'lazy'}
-              quality={75}
-              placeholder="empty"
+              loading="eager"
+              decoding="async"
             />
             <div className="card-content">
               <h3 className="card-title" style={{ fontFamily: categoryFont, color: indexTextColor }}>

@@ -165,7 +165,7 @@ export default function ProductDetailModal() {
           return customerLogo.replace('http://', 'https://');
         }
         const cleanPath = customerLogo.startsWith('Uploads/') ? customerLogo.substring(8) : customerLogo;
-        return `https://canlimenu.online/Uploads/${cleanPath}`;
+        return `https://apicanlimenu.online/Uploads/${cleanPath}`;
       }
       return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="600"%3E%3Crect fill="%231a1a2e" width="800" height="600"/%3E%3C/svg%3E';
     }
@@ -173,7 +173,7 @@ export default function ProductDetailModal() {
       return picture.replace('http://', 'https://');
     }
     const cleanPath = picture.startsWith('Uploads/') ? picture.substring(8) : picture;
-    return `https://canlimenu.online/Uploads/${cleanPath}`;
+    return `https://apicanlimenu.online/Uploads/${cleanPath}`;
   };
 
   const productImageUrl = getImageUrl(selectedProduct.Picture ?? selectedProduct.picture);

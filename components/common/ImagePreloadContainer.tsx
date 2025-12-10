@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import type { MenuDto, CategoryDto } from '@/types/api';
+import type { MenuDto, CategoryDto, Advertisement } from '@/types/api';
 
 interface ImagePreloadContainerProps {
   menuData: MenuDto | null;
   categoriesData?: CategoryDto[];
+  advertisements?: Advertisement[] | null;
   customerLogo?: string;
   backgroundUrl?: string;
   bannerUrl?: string;
@@ -13,19 +14,17 @@ interface ImagePreloadContainerProps {
 }
 
 /**
- * Görsel Preload Container
+ * Ürün Görselleri Preload Container
  *
- * Eski sistemdeki hızlı yükleme stratejisini uygular:
- * - Tüm ürün görsellerini gizli bir div içinde eager loading ile yükler
+ * NOT: Kritik görseller (reklamlar, kategoriler, logo, background) artık
+ * page.tsx'de loading ekranı sırasında preload ediliyor.
+ *
+ * Bu component sadece ÜRÜN görsellerini arka planda yükler:
  * - Modal açıldığında görseller zaten cache'te olduğu için ANINDA görünür
- * - opacity: 0 ile tamamen gizli ama browser yine de yüklüyor
+ * - Düşük öncelikli, kullanıcı deneyimini bloklamaz
  */
 export default function ImagePreloadContainer({
   menuData,
-  categoriesData,
-  customerLogo,
-  backgroundUrl,
-  bannerUrl,
   onImagesLoaded
 }: ImagePreloadContainerProps) {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -36,81 +35,59 @@ export default function ImagePreloadContainer({
   useEffect(() => {
     if (!menuData) return;
 
-    const urls: string[] = [];
-    const urlSet = new Set<string>(); // Duplicate önlemek için
+    const productUrls: string[] = [];
+    const seenUrls = new Set<string>();
 
-    // Kritik görseller - en yüksek öncelik
-    if (backgroundUrl) urlSet.add(backgroundUrl);
-    if (customerLogo) urlSet.add(customerLogo);
-    if (bannerUrl) urlSet.add(bannerUrl);
+    // Helper: URL'yi düzelt
+    const normalizeUrl = (url: string): string => {
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        const cleanPath = url.startsWith('Uploads/') ? url.substring('Uploads/'.length) : url;
+        return `https://apicanlimenu.online/Uploads/${cleanPath}`;
+      }
+      return url.replace('http://', 'https://');
+    };
 
-    // Kategori görsellerini ekle (CategoryGrid'de gösteriliyor)
-    if (categoriesData) {
-      categoriesData.forEach(categoryData => {
-        if (categoryData.picture) {
-          let pictureUrl = categoryData.picture;
-
-          // URL format düzelt
-          if (!pictureUrl.startsWith('http://') && !pictureUrl.startsWith('https://')) {
-            const picturePath = pictureUrl.startsWith('Uploads/')
-              ? pictureUrl.substring('Uploads/'.length)
-              : pictureUrl;
-            pictureUrl = `https://canlimenu.online/Uploads/${picturePath}`;
-          } else if (pictureUrl.startsWith('http://')) {
-            pictureUrl = pictureUrl.replace('http://', 'https://');
-          }
-
-          urlSet.add(pictureUrl);
-        }
-      });
-    }
-
-    // Tüm ürün görsellerini topla
+    // Sadece ürün görselleri (kritik görseller page.tsx'de yükleniyor)
     menuData.menu.forEach(category => {
       category.products.forEach(product => {
         if (product.picture) {
-          let pictureUrl = product.picture;
-
-          // URL format düzelt
-          if (!pictureUrl.startsWith('http://') && !pictureUrl.startsWith('https://')) {
-            const picturePath = pictureUrl.startsWith('Uploads/')
-              ? pictureUrl.substring('Uploads/'.length)
-              : pictureUrl;
-            pictureUrl = `https://canlimenu.online/Uploads/${picturePath}`;
-          } else if (pictureUrl.startsWith('http://')) {
-            pictureUrl = pictureUrl.replace('http://', 'https://');
+          const normalized = normalizeUrl(product.picture);
+          if (!seenUrls.has(normalized)) {
+            seenUrls.add(normalized);
+            productUrls.push(normalized);
           }
-
-          urlSet.add(pictureUrl);
         }
       });
     });
 
-    // Set'ten array'e çevir (duplicate'ler otomatik temizlendi)
-    const uniqueUrls = Array.from(urlSet);
-    setImageUrls(uniqueUrls);
-    totalCountRef.current = uniqueUrls.length;
+    setImageUrls(productUrls);
+    totalCountRef.current = productUrls.length;
     loadedCountRef.current = 0;
     callbackCalledRef.current = false;
-  }, [menuData, categoriesData, customerLogo, backgroundUrl, bannerUrl]);
+
+    if (productUrls.length > 0) {
+      console.log(`📦 ${productUrls.length} ürün görseli arka planda yükleniyor...`);
+    }
+  }, [menuData]);
 
   const handleImageLoad = () => {
     loadedCountRef.current++;
 
     // Tüm görseller yüklendi mi?
-    if (loadedCountRef.current >= totalCountRef.current && !callbackCalledRef.current && onImagesLoaded) {
+    if (loadedCountRef.current >= totalCountRef.current && !callbackCalledRef.current) {
       callbackCalledRef.current = true;
-      onImagesLoaded();
+      console.log(`✅ Tüm ürün görselleri yüklendi`);
+      if (onImagesLoaded) onImagesLoaded();
     }
   };
 
-  const handleImageError = (url: string) => {
+  const handleImageError = () => {
     loadedCountRef.current++;
 
     // Hata olsa da devam et
-    if (loadedCountRef.current >= totalCountRef.current && !callbackCalledRef.current && onImagesLoaded) {
+    if (loadedCountRef.current >= totalCountRef.current && !callbackCalledRef.current) {
       callbackCalledRef.current = true;
-      onImagesLoaded();
+      if (onImagesLoaded) onImagesLoaded();
     }
   };
 
@@ -133,12 +110,12 @@ export default function ImagePreloadContainer({
         <img
           key={`preload-${index}`}
           src={url}
-          alt={`Preload ${index}`}
+          alt=""
           loading="eager"
-          fetchPriority={index < 50 ? 'high' : 'auto'}
+          fetchPriority="low"
           decoding="async"
           onLoad={handleImageLoad}
-          onError={() => handleImageError(url)}
+          onError={handleImageError}
           style={{ display: 'none' }}
         />
       ))}

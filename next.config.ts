@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
 
   // API Proxy - Backend URL'ini gizler
   async rewrites() {
-    const backendUrl = process.env.API_URL || 'https://canlimenu.online';
+    const backendUrl = process.env.API_URL || 'https://apicanlimenu.online';
     return [
       {
         // /backend-api/api/Customer/... → backend/api/Customer/...
@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true, // Vercel Image Optimization kapatıldı (ücretsiz limit aşımı önlendi)
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'apicanlimenu.online',
+        pathname: '/Uploads/**',
+      },
       {
         protocol: 'https',
         hostname: 'canlimenu.online',

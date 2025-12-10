@@ -252,11 +252,12 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode, pl
   // SignalR Connection
   useEffect(() => {
     const setupConnection = async () => {
-      const hubUrl = 'https://api.menupark.com/gamehub';
+      const hubUrl = `${process.env.NEXT_PUBLIC_GAME_HUB_URL || 'https://apicanlimenu.online'}/gamehub`;
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
-          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
+          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
+          withCredentials: false
         })
         .withAutomaticReconnect()
         .configureLogging(signalR.LogLevel.Error)

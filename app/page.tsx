@@ -263,7 +263,7 @@ export default function WelcomePage() {
               customers.map((customer, idx) => {
                 const logoUrl = customer.logo.startsWith('http')
                   ? customer.logo
-                  : `https://canlimenu.online/Uploads/${customer.logo.replace('Uploads/', '')}`;
+                  : `https://apicanlimenu.online/Uploads/${customer.logo.replace('Uploads/', '')}`;
 
                 return (
                   <div key={idx} className="reference-card-welcome animate-on-scroll">

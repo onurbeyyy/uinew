@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'CustomerId gerekli' }, { status: 400 });
     }
 
-    const apiUrl = process.env.API_URL || 'https://canlimenu.online';
+    const apiUrl = process.env.API_URL || 'https://apicanlimenu.online';
     const response = await fetch(`${apiUrl}/api/SelfService/CreateSession`, {
       method: 'POST',
       headers: {
