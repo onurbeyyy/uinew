@@ -15,7 +15,7 @@ export async function GET(
       headers: {
         'Content-Type': 'application/json',
       },
-      next: { revalidate: 60 }, // Cache for 60 seconds
+      cache: 'no-store', // Her zaman güncel veri al
     });
 
     if (!response.ok) {
