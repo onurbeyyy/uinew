@@ -51,10 +51,6 @@ export function loadCart(cartKey: string, currentCustomerCode: string): any[] {
 
     // 1. CustomerCode kontrolü - başka customer ise temizle (case-insensitive)
     if (cartData.customerCode && cartData.customerCode.toLowerCase() !== currentCustomerCode.toLowerCase()) {
-      console.log('🗑️ Cart cleared: Different customer code', {
-        old: cartData.customerCode,
-        new: currentCustomerCode,
-      });
       clearCart(cartKey);
       return [];
     }
@@ -64,7 +60,6 @@ export function loadCart(cartKey: string, currentCustomerCode: string): any[] {
       const now = Date.now();
       const age = now - cartData.timestamp;
       if (age > CART_EXPIRY_TIME) {
-        console.log('🗑️ Cart cleared: Expired (> 3 hours)');
         clearCart(cartKey);
         return [];
       }

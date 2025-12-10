@@ -106,7 +106,6 @@ export default function ProductsTab({ tab }: ProductsTabProps) {
               key={product.id}
               className="header-product-card"
               onClick={() => {
-                console.log('Product clicked:', product.id);
                 // TODO: Open product modal
               }}
             >

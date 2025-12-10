@@ -237,7 +237,6 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode, pl
           }),
           VenueCode: customerCode || 'global'
         });
-        console.log('✅ RPS skoru kaydedildi:', myPlayer.score);
       }
     } catch (err) {
       console.error('❌ RPS skor kayıt hatası:', err);
@@ -455,14 +454,12 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode, pl
 
       // Reconnection handlers - telefon geldiğinde tekrar bağlanabilmek için
       newConnection.onreconnected(async () => {
-        console.log('[RPS] SignalR reconnected, rejoining room...');
         setIsConnected(true);
 
         // Oda varsa tekrar katıl
         if (roomIdRef.current && playerIdRef.current) {
           try {
             await newConnection.invoke('JoinRoom', roomIdRef.current, playerIdRef.current, nicknameRef.current);
-            console.log('[RPS] Rejoined room after reconnect');
           } catch (err) {
             console.error('[RPS] Failed to rejoin room:', err);
           }
@@ -470,12 +467,10 @@ export default function RockPaperScissors({ onBack, joinRoomId, customerCode, pl
       });
 
       newConnection.onreconnecting(() => {
-        console.log('[RPS] SignalR reconnecting...');
         setIsConnected(false);
       });
 
       newConnection.onclose(() => {
-        console.log('[RPS] SignalR connection closed');
         setIsConnected(false);
       });
 

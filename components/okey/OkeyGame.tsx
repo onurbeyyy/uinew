@@ -37,7 +37,6 @@ export default function OkeyGame({ customerCode, onBack }: OkeyGameProps) {
         id = `oyuncu-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         sessionStorage.setItem('okey-oyuncu-id', id);
       }
-      console.log('🆔 Oyuncu ID:', id);
       return id;
     }
     return `oyuncu-${Date.now()}`;
@@ -129,12 +128,8 @@ export default function OkeyGame({ customerCode, onBack }: OkeyGameProps) {
   useEffect(() => {
     if (pendingJoinRoomId && baglantiDurumu === 'Online' && oyuncuAdi && odaAramaModunda) {
       // Otomatik olarak odaya katıl
-      console.log('🔗 Pending room bulundu, otomatik katılım yapılıyor:', pendingJoinRoomId);
-      console.log('🔗 Oyuncu ID:', oyuncuId);
-      console.log('🔗 Oyuncu Adı:', oyuncuAdi);
 
       odayaKatil(pendingJoinRoomId).then(() => {
-        console.log('✅ Pending join: Odaya katılım başarılı');
       }).catch((err) => {
         console.error('❌ Pending join: Odaya katılım hatası:', err);
       });
@@ -162,18 +157,14 @@ export default function OkeyGame({ customerCode, onBack }: OkeyGameProps) {
       });
 
       signalRService.onOyunBasladi((yeniOda) => {
-        console.log('🎮 Oyun başladı!', yeniOda);
-        console.log('👤 Benim oyuncu ID:', oyuncuId);
 
         setOda(yeniOda);
         setOdaAramaModunda(false);
 
         // Kendi taşlarımı bul
         const benimOyuncu = yeniOda.oyuncular.find((o) => o.id === oyuncuId);
-        console.log('🔍 Bulunan oyuncu:', benimOyuncu);
 
         if (benimOyuncu) {
-          console.log('🎴 Elimdeki taşlar:', benimOyuncu.istaka);
           setElimdekiTaslar(benimOyuncu.istaka);
         } else {
           console.error('❌ Oyuncu bulunamadı! Tüm oyuncular:', yeniOda.oyuncular.map(o => ({ id: o.id, ad: o.ad })));
@@ -184,12 +175,10 @@ export default function OkeyGame({ customerCode, onBack }: OkeyGameProps) {
       });
 
       signalRService.onTasCekildi((tas) => {
-        console.log('🎴 Taş çekildi:', tas);
         setElimdekiTaslar((prev) => [...prev, tas]);
       });
 
       signalRService.onSonTasAlindi((alanOyuncuId, tas) => {
-        console.log('📥 Son taş alındı:', { alanOyuncuId, tas });
 
         // Eğer ben aldıysam, elime ekle
         if (alanOyuncuId === oyuncuId) {
@@ -221,20 +210,16 @@ export default function OkeyGame({ customerCode, onBack }: OkeyGameProps) {
       });
 
       signalRService.onOyuncuKatildi((guncellenenOda) => {
-        console.log('👥 Oyuncu katıldı event\'i geldi:', guncellenenOda);
         setOda(guncellenenOda);
 
         // Eğer oyun "Oynuyor" durumundaysa (4. oyuncu katıldı ve oyun başladı)
         if (guncellenenOda.durum === 'Oynuyor') {
-          console.log('🎮 Oyun zaten başlamış, taşları yükleniyor...');
           setOdaAramaModunda(false);
 
           // Kendi taşlarımı bul
           const benimOyuncu = guncellenenOda.oyuncular.find((o) => o.id === oyuncuId);
-          console.log('🔍 (OyuncuKatildi) Bulunan oyuncu:', benimOyuncu);
 
           if (benimOyuncu) {
-            console.log('🎴 (OyuncuKatildi) Elimdeki taşlar:', benimOyuncu.istaka);
             setElimdekiTaslar(benimOyuncu.istaka);
           }
         }
@@ -246,7 +231,6 @@ export default function OkeyGame({ customerCode, onBack }: OkeyGameProps) {
       });
 
       signalRService.onOyuncuAyrildi((ayrilanOyuncuId) => {
-        console.log('👋 Oyuncu ayrıldı:', ayrilanOyuncuId);
         // Odadan oyuncuyu çıkar
         if (oda) {
           const yeniOyuncular = oda.oyuncular.filter((o) => o.id !== ayrilanOyuncuId);
@@ -258,7 +242,6 @@ export default function OkeyGame({ customerCode, onBack }: OkeyGameProps) {
       });
 
       signalRService.onOyunBitti((data) => {
-        console.log('🎉 Oyun bitti:', data);
         alert(`🎉 ${data.message}`);
         // Oyun bittiğinde oda durumunu güncelle
         if (oda) {
@@ -276,7 +259,6 @@ export default function OkeyGame({ customerCode, onBack }: OkeyGameProps) {
 
       // ÖNEMLI: Event listener'lar kurulduktan SONRA durumu Online yap
       // Böylece pending join çalıştığında event'leri alabilir
-      console.log('✅ Event listener\'lar kuruldu, durum Online yapılıyor');
       setBaglantiDurumu('Online');
     } catch (error) {
       console.error('Bağlantı hatası:', error);
@@ -306,9 +288,7 @@ export default function OkeyGame({ customerCode, onBack }: OkeyGameProps) {
     }
 
     try {
-      console.log('📞 odayaKatil çağrılıyor:', { odaId, oyuncuId, oyuncuAdi });
       await signalRService.odayaKatil(odaId, oyuncuId, oyuncuAdi);
-      console.log('✅ odayaKatil başarılı - bekleme ekranına geçiliyor...');
 
       // Lobby'den katıldığında direkt bekleme ekranına git
       setOdaAramaModunda(false);

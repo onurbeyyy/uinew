@@ -46,7 +46,6 @@ class GameSignalRService {
   // Bağlantıyı başlat
   async connect(): Promise<void> {
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
-      console.log('✅ GameHub zaten bağlı');
       return;
     }
 
@@ -61,19 +60,15 @@ class GameSignalRService {
 
     // Reconnect event'leri
     this.connection.onreconnecting(() => {
-      console.log('🔄 GameHub yeniden bağlanıyor...');
     });
 
     this.connection.onreconnected(() => {
-      console.log('✅ GameHub yeniden bağlandı');
     });
 
     this.connection.onclose(() => {
-      console.log('❌ GameHub bağlantısı kapandı');
     });
 
     await this.connection.start();
-    console.log('✅ GameHub bağlantısı kuruldu');
   }
 
   // Bağlantıyı kapat
@@ -81,7 +76,6 @@ class GameSignalRService {
     if (this.connection) {
       await this.connection.stop();
       this.connection = null;
-      console.log('🔌 GameHub bağlantısı kapatıldı');
     }
   }
 
@@ -89,14 +83,12 @@ class GameSignalRService {
   async joinVenueLobby(venueCode: string): Promise<void> {
     if (!this.connection) throw new Error('Bağlantı yok');
     await this.connection.invoke('JoinVenueLobby', venueCode);
-    console.log(`📍 Venue lobby'ye katıldı: ${venueCode}`);
   }
 
   // Venue lobby'den ayrıl
   async leaveVenueLobby(venueCode: string): Promise<void> {
     if (!this.connection) throw new Error('Bağlantı yok');
     await this.connection.invoke('LeaveVenueLobby', venueCode);
-    console.log(`👋 Venue lobby'den ayrıldı: ${venueCode}`);
   }
 
   // Venue lobby'deki odaları getir - Event ile dönüyor
@@ -106,7 +98,6 @@ class GameSignalRService {
     return new Promise((resolve, reject) => {
       // VenueLobby event'ini dinle (tek seferlik)
       const handler = (data: any) => {
-        console.log(`📋 VenueLobby event alındı:`, data);
         this.connection?.off('venueLobby', handler);
         resolve(data.rooms || []);
       };
@@ -148,28 +139,24 @@ class GameSignalRService {
       isPublic
     );
 
-    console.log(`🎮 Oda oluşturma isteği gönderildi, RoomCreated event'i bekleniyor...`);
   }
 
   // Odaya katıl
   async joinRoom(roomId: string, playerId: string, playerName: string): Promise<void> {
     if (!this.connection) throw new Error('Bağlantı yok');
     await this.connection.invoke('JoinRoom', roomId, playerId, playerName);
-    console.log(`➕ Odaya katıldı: ${roomId}`);
   }
 
   // Odadan ayrıl
   async leaveRoom(playerId: string): Promise<void> {
     if (!this.connection) throw new Error('Bağlantı yok');
     await this.connection.invoke('LeaveRoom', playerId);
-    console.log(`➖ Odadan ayrıldı`);
   }
 
   // Oyunu başlat
   async startGame(roomId: string): Promise<void> {
     if (!this.connection) throw new Error('Bağlantı yok');
     await this.connection.invoke('StartGame', roomId);
-    console.log(`🎯 Oyun başlatıldı: ${roomId}`);
   }
 
   // Oda bilgisini getir
@@ -236,7 +223,6 @@ class GameSignalRService {
 
     this.eventHandlers.get(eventName)!.push(callback);
     this.connection.on(eventName, callback as any);
-    console.log(`👂 Event dinleniyor: ${eventName}`);
   }
 
   // Tüm event listener'ları kaldır
@@ -248,7 +234,6 @@ class GameSignalRService {
         });
       });
       this.eventHandlers.clear();
-      console.log('🔇 Tüm event listener\'lar kaldırıldı');
     }
   }
 }

@@ -9,7 +9,6 @@ export async function GET(
   try {
     const params = await context.params;
     const { userId } = params;
-    console.log('Fetching orders for userId:', userId);
 
     const response = await fetch(`${API_BASE_URL}/api/EndUser/orders/${userId}`, {
       method: 'GET',
@@ -19,7 +18,6 @@ export async function GET(
     });
 
     const result = await response.json();
-    console.log('Orders API response:', result, 'Status:', response.status);
 
     return NextResponse.json(result, { status: response.status });
   } catch (error) {

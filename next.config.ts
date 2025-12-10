@@ -45,7 +45,6 @@ const nextConfig: NextConfig = {
   // Webpack config (production obfuscation için)
   webpack: (config, { isServer, dev }) => {
     if (!dev && !isServer) {
-      console.log('🔒 Production build - obfuscation hazır');
     }
     return config;
   },

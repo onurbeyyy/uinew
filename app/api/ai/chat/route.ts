@@ -16,14 +16,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔍 AI Chat API - Request:', {
-      message: message.substring(0, 50),
-      customerCode,
-      sessionId,
-      menuDataLength: menuData?.length || 0,
-      pageUrl
-    });
-
     // 1. İlk olarak backend Chat API'ye dene
     try {
       const backendResponse = await fetch(`${BACKEND_API_URL}/api/Chat/ask`, {
@@ -44,13 +36,6 @@ export async function POST(request: NextRequest) {
       if (backendResponse.ok) {
         const data = await backendResponse.json();
 
-        console.log('✅ Backend response:', {
-          hasResponse: !!data.response,
-          remainingMessages: data.remainingMessages,
-          rateLimited: data.rateLimited,
-          fallback: data.fallback
-        });
-
         // Rate limit kontrolü
         if (data.rateLimited) {
           return NextResponse.json({
@@ -63,7 +48,6 @@ export async function POST(request: NextRequest) {
 
         // Backend fallback flag kontrolü
         if (data.fallback) {
-          console.log('⚠️ Backend returned fallback flag');
           throw new Error('Backend fallback - switching to Gemini');
         }
 
@@ -77,15 +61,12 @@ export async function POST(request: NextRequest) {
         console.error('❌ Backend response not OK:', backendResponse.status);
         throw new Error(`Backend API error: ${backendResponse.status}`);
       }
-    } catch (backendError) {
-      console.log('⚠️ Backend Chat API failed, falling back to Gemini:', backendError);
-      // Gemini'ye geç
+    } catch {
+      // Backend failed, fallback to Gemini
     }
 
     // 2. Backend başarısız olursa Gemini'yi kullan
     try {
-      console.log('🔄 Falling back to Gemini AI');
-
       // Prepare menu data string for Gemini
       let menuDataStr = '';
       if (menuData) {
@@ -115,8 +96,8 @@ export async function POST(request: NextRequest) {
               }
             });
           }
-        } catch (e) {
-          console.error('Error parsing menu data:', e);
+        } catch {
+          // Failed to parse menu data
         }
       }
 
@@ -207,8 +188,6 @@ export async function POST(request: NextRequest) {
       context += `KRİTİK UYARI: ASLA menüde olmayan ürün uydurma! SADECE yukarıdaki gerçek menü verilerini kullan. Eğer ürün yoksa 'Bu ürün menümüzde yok' de!\n\n`;
       context += `Müşteri sorusu: ${message}`;
 
-      console.log('📝 Context prepared. Menu data length:', menuDataStr.length);
-
       const requestBody = {
         contents: [
           {
@@ -239,10 +218,8 @@ export async function POST(request: NextRequest) {
       }
 
       const geminiData = await geminiResponse.json();
-      console.log('✅ Gemini response received:', JSON.stringify(geminiData).substring(0, 200));
 
       if (!geminiData.candidates || !geminiData.candidates[0]?.content?.parts?.[0]?.text) {
-        console.error('❌ Invalid Gemini response structure:', geminiData);
         throw new Error('Invalid Gemini response structure');
       }
 

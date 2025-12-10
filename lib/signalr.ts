@@ -11,7 +11,6 @@ class SignalRService {
 
   async connect() {
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
-      console.log('SignalR: Already connected');
       return;
     }
 
@@ -38,7 +37,6 @@ class SignalRService {
     });
 
     this.connection.onreconnected((connectionId) => {
-      console.log('SignalR: Reconnected', connectionId);
       this.reconnectAttempts = 0;
     });
 
@@ -49,7 +47,6 @@ class SignalRService {
 
     try {
       await this.connection.start();
-      console.log('SignalR: Connected successfully');
     } catch (err) {
       console.error('SignalR: Connection failed', err);
       throw err;
@@ -60,7 +57,6 @@ class SignalRService {
     if (this.connection) {
       await this.connection.stop();
       this.connection = null;
-      console.log('SignalR: Disconnected');
     }
   }
 
@@ -72,7 +68,6 @@ class SignalRService {
 
     try {
       await this.connection.invoke('CallWaiter', customerCode, tableName, message);
-      console.log('SignalR: Waiter called successfully');
     } catch (err) {
       console.error('SignalR: CallWaiter failed', err);
       throw err;
@@ -97,7 +92,6 @@ class SignalRService {
 
     try {
       await this.connection.invoke('CreateOrder', customerCode, tableName, items);
-      console.log('SignalR: Order sent successfully');
     } catch (err) {
       console.error('SignalR: SendOrder failed', err);
       throw err;

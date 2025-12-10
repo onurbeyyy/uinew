@@ -217,13 +217,11 @@ export default function DeliveryPage() {
 
   // SignalR: Token balance güncelleme handler'ı
   const handleTokenBalanceUpdated = useCallback((data: { userId: number; currentTokens: number; message: string }) => {
-    console.log('🪙 Delivery SignalR: Token balance updated', data);
     setUserTokenBalance(data.currentTokens);
   }, [setUserTokenBalance]);
 
   // SignalR: Sipariş oluşturuldu handler'ı
   const handleOrderCreated = useCallback((data: any) => {
-    console.log('📦 Delivery SignalR: Order created', data);
     // Sipariş oluşturulduğunda bildirim
     if (data.customerCode === code) {
       loadCart(); // Sepeti yenile
@@ -270,18 +268,15 @@ export default function DeliveryPage() {
           const hasAccess = c.hasDeliveryAccess ?? c.HasDeliveryAccess ?? false;
           const isEnabled = c.isDeliveryEnabled ?? c.IsDeliveryEnabled ?? false;
 
-          console.log('🔍 Delivery Check:', { hasAccess, isEnabled });
 
           // Süperadmin erişim vermemişse → menüye yönlendir
           if (!hasAccess) {
-            console.log('🚫 Paket servis erişim hakkı yok, menüye yönlendiriliyor...');
             router.replace(`/${code}`);
             return;
           }
 
           // Müşteri kapatmışsa → sayfa açılsın ama "kapalı" modunda
           if (!isEnabled) {
-            console.log('🏪 Restoran paket servisi kapatmış - kapalı modu aktif');
             setIsStoreClosed(true);
           }
 
@@ -335,7 +330,6 @@ export default function DeliveryPage() {
             setPortionTokenSettings(portionMap);
           }
         } catch (tokenErr) {
-          console.log('Token settings yüklenemedi:', tokenErr);
         }
 
         setError(null);

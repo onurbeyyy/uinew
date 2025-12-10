@@ -489,14 +489,12 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
 
       // Reconnection handlers - telefon geldiğinde tekrar bağlanabilmek için
       conn.onreconnected(async () => {
-        console.log('[Quiz] SignalR reconnected, rejoining room...');
         setIsConnected(true);
 
         // Oda varsa tekrar katıl
         if (roomIdRef.current && playerIdRef.current) {
           try {
             await conn.invoke('JoinQuiz', roomIdRef.current, playerIdRef.current, nicknameRef.current);
-            console.log('[Quiz] Rejoined room after reconnect');
           } catch (err) {
             console.error('[Quiz] Failed to rejoin room:', err);
           }
@@ -504,12 +502,10 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
       });
 
       conn.onreconnecting(() => {
-        console.log('[Quiz] SignalR reconnecting...');
         setIsConnected(false);
       });
 
       conn.onclose(() => {
-        console.log('[Quiz] SignalR connection closed');
         setIsConnected(false);
       });
 

@@ -207,7 +207,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         tableCode: registerData.tableCode,
       };
 
-      console.log('📤 Register request:', JSON.stringify(requestBody, null, 2));
 
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -218,7 +217,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       });
 
       const data = await response.json();
-      console.log('📥 Register response:', response.status, data);
 
       if (!response.ok || !data.success) {
         return {

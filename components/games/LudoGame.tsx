@@ -526,7 +526,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
 
       // Reconnect sonrası oyun durumunu almak için
       newConnection.on('LudoGameState', (data: any) => {
-        console.log('[Ludo] Game state received:', data);
         const room = data.room || data.Room || data;
 
         // Oyuncu listesi
@@ -607,14 +606,12 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
 
       // Reconnect olduğunda odaya tekrar katıl
       newConnection.onreconnected(async () => {
-        console.log('[Ludo] SignalR reconnected, rejoining room...');
         setIsConnected(true);
 
         // Oda varsa tekrar katıl
         if (roomIdRef.current && playerIdRef.current) {
           try {
             await newConnection.invoke('JoinLudoRoom', roomIdRef.current, playerIdRef.current, nicknameRef.current, endUserId);
-            console.log('[Ludo] Rejoined room after reconnect');
 
             // Oyun state'ini yeniden al (sıra, zar vs.)
             setTimeout(async () => {
@@ -622,7 +619,6 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
                 await newConnection.invoke('GetLudoGameState', roomIdRef.current, playerIdRef.current);
               } catch (e) {
                 // Backend bu metodu desteklemeyebilir, sessizce geç
-                console.log('[Ludo] GetLudoGameState not supported or failed');
               }
             }, 500);
           } catch (err) {
@@ -632,13 +628,11 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
       });
 
       newConnection.onreconnecting(() => {
-        console.log('[Ludo] SignalR reconnecting...');
         setIsConnected(false);
         setGameMessage('Bağlantı koptu, yeniden bağlanılıyor...');
       });
 
       newConnection.onclose(() => {
-        console.log('[Ludo] SignalR connection closed');
         setIsConnected(false);
       });
 

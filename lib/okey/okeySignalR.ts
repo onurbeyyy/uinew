@@ -51,7 +51,6 @@ class OkeySignalRService {
       .build();
 
     await this.connection.start();
-    console.log('✅ Okey Hub bağlantısı kuruldu');
   }
 
   // Bağlantıyı kapat

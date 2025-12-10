@@ -662,7 +662,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // Reconnect sonrası oyun durumunu almak için
       newConnection.on('BackgammonGameState', (data: any) => {
-        console.log('[Backgammon] Game state received:', data);
         const room = data.room || data.Room || data;
 
         // Board
@@ -709,7 +708,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
 
       // Reconnection handlers - telefon geldiğinde tekrar bağlanabilmek için
       newConnection.onreconnected(async () => {
-        console.log('[Backgammon] SignalR reconnected, rejoining room...');
         setIsConnected(true);
 
         // Oda varsa tekrar katıl
@@ -717,7 +715,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
           try {
             const endUserId = currentUser?.id || currentUser?.userId || null;
             await newConnection.invoke('JoinBackgammonRoom', roomIdRef.current, playerIdRef.current, nicknameRef.current, endUserId);
-            console.log('[Backgammon] Rejoined room after reconnect');
 
             // Sıra bizdeyse ve zar atılmışsa valid moves iste
             // (BackgammonRoomJoined event'i ile state güncellenecek, sonra validMoves alınacak)
@@ -726,7 +723,6 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
                 await newConnection.invoke('GetBackgammonValidMoves', roomIdRef.current, playerIdRef.current);
               } catch (e) {
                 // Backend bu metodu desteklemeyebilir, sessizce geç
-                console.log('[Backgammon] GetBackgammonValidMoves not supported or failed');
               }
             }, 500);
           } catch (err) {
@@ -736,12 +732,10 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
       });
 
       newConnection.onreconnecting(() => {
-        console.log('[Backgammon] SignalR reconnecting...');
         setIsConnected(false);
       });
 
       newConnection.onclose(() => {
-        console.log('[Backgammon] SignalR connection closed');
         setIsConnected(false);
       });
 

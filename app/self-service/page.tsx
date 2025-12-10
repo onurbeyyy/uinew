@@ -90,8 +90,6 @@ export default function SelfServicePage() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
 
-    console.log('🚀 Self-service başlatılıyor - URL:', window.location.href);
-    console.log('🚀 URL params code:', code);
 
     if (!code) {
       setError('Müşteri kodu belirtilmedi');
@@ -102,7 +100,6 @@ export default function SelfServicePage() {
 
     setCustomerCode(code);
     customerCodeRef.current = code; // Ref'i de güncelle
-    console.log('🚀 customerCodeRef ayarlandı:', customerCodeRef.current);
 
     // Cihaz token kontrolü
     checkDeviceActivation(code);
@@ -291,10 +288,8 @@ export default function SelfServicePage() {
         currentSessionIdRef.current = sessionId; // Ref'i de güncelle (SignalR için)
 
         // QR URL oluştur - self-service sayfasına yönlendir
-        console.log('🔍 QR oluşturuluyor - code:', code, '| custId:', custId, '| baseUrl:', CONFIG.uiBaseUrl);
         const url = `${CONFIG.uiBaseUrl}/${code.toLowerCase()}/self?session=${sessionId}`;
         setQrUrl(url);
-        console.log('🆕 Yeni QR oluşturuldu:', sessionId, '| URL:', url);
 
         // Session kontrolünü başlat
         startSessionCheck(sessionId, code, custId);
@@ -320,7 +315,6 @@ export default function SelfServicePage() {
 
         checkCountRef.current++;
         if (checkCountRef.current > CONFIG.maxChecks) {
-          console.log('⏰ Maksimum kontrol sayısına ulaşıldı, yeni QR oluşturuluyor...');
           clearInterval(sessionCheckIntervalRef.current!);
           createNewSession(code, custId);
           return;
@@ -335,17 +329,14 @@ export default function SelfServicePage() {
         // Session artık geçerli değilse yeni QR oluştur
         if (!response.ok || !data.success) {
           const errorType = data.error || 'unknown';
-          console.log('🔄 Session durumu:', errorType, data);
 
           if (errorType === 'already_used' || errorType === 'expired' || errorType === 'not_found') {
-            console.log('🔄 Polling: Session kullanıldı/doldu, yeni QR oluşturuluyor...');
             clearInterval(sessionCheckIntervalRef.current!);
             createNewSession(code, custId);
           }
         }
       } catch (error) {
         // Network hatası, devam et
-        console.log('⚠️ Polling hatası:', error);
       }
     }, 1000); // 1 saniye (daha hızlı kontrol)
   };
@@ -360,16 +351,12 @@ export default function SelfServicePage() {
 
       // Session kullanıldı eventi
       connection.on('SelfServiceSessionUsed', (data: any) => {
-        console.log('📡 SignalR: Session kullanıldı eventi alındı:', data);
         // Ref kullanıyoruz çünkü closure'da state eski kalıyor
         const activeSessionId = currentSessionIdRef.current;
         const activeCode = customerCodeRef.current;
         const activeCustId = customerIdRef.current;
-        console.log('📡 Aktif session:', activeSessionId, '| Gelen session:', data.sessionId);
-        console.log('📡 Customer code ref:', activeCode, '| Customer ID ref:', activeCustId);
 
         if (data.sessionId === activeSessionId) {
-          console.log('✅ Session eşleşti, yeni QR oluşturuluyor...');
           if (sessionCheckIntervalRef.current) {
             clearInterval(sessionCheckIntervalRef.current);
           }
@@ -378,16 +365,13 @@ export default function SelfServicePage() {
       });
 
       await connection.start();
-      console.log('✅ SignalR bağlantısı kuruldu');
 
       // Customer grubuna katıl
       await connection.invoke('JoinCustomerGroup', custId);
-      console.log('✅ Customer grubuna katıldı:', custId);
 
       hubConnectionRef.current = connection;
     } catch (error) {
       // SignalR hatası (CORS vs), sessizce devam et - polling zaten çalışıyor
-      console.log('⚠️ SignalR bağlanamadı (polling aktif)');
     }
   };
 

@@ -47,7 +47,6 @@ function AlienAttackContent() {
         ? (user?.nickName || user?.nickname || user?.firstName || 'Player')
         : `user${randomId}`;
 
-      console.log('[AlienAttack] Skor gönderiliyor - Nick:', nickname, 'Score:', score, 'Aliens:', aliensKilled);
 
       const response = await fetch('/api/game/submit', {
         method: 'POST',
@@ -62,7 +61,6 @@ function AlienAttackContent() {
       });
 
       if (response.ok) {
-        console.log('[AlienAttack] Skor başarıyla gönderildi:', score);
       } else {
         const errorText = await response.text();
         console.error('[AlienAttack] Skor gönderilemedi:', response.status, errorText);
@@ -96,7 +94,6 @@ function AlienAttackContent() {
           .slice(0, 5)
           .map((entry, index) => ({ ...entry, rank: index + 1 }));
 
-        console.log('[AlienAttack] Leaderboard alındı (filtrelenmiş):', filteredData);
 
         // iframe'e gönder
         if (iframeRef.current?.contentWindow) {
@@ -129,7 +126,6 @@ function AlienAttackContent() {
         }
       }
     } catch (err) {
-      console.log('Tam ekran açılamadı');
     }
   }, []);
 
@@ -196,13 +192,11 @@ function AlienAttackContent() {
 
       // Game Over mesajı
       if (event.data && typeof event.data === 'object' && event.data.type === 'alienAttackGameOver') {
-        console.log('[AlienAttack] Game Over mesajı alındı:', event.data);
         submitScore(event.data.score || 0, event.data.aliensKilled || 0);
       }
 
       // Leaderboard isteği
       if (event.data && typeof event.data === 'object' && event.data.type === 'alienAttackGetLeaderboard') {
-        console.log('[AlienAttack] Leaderboard isteği alındı');
         fetchLeaderboard(event.data.score || 0);
       }
     };

@@ -137,7 +137,6 @@ export default function AlienAttackGame({ onBack, playerNickname, customerCode }
           }
         } catch (err) {
           // Kullanıcı etkileşimi olmadan fullscreen açılamayabilir
-          console.log('Otomatik tam ekran için dokunun');
         }
       }
     };

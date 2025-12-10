@@ -74,7 +74,6 @@ function SelfServiceContent() {
   useEffect(() => {
     // Sadece bir kez kontrol et
     if (hasCheckedRef.current || sessionValidatedRef.current) {
-      console.log('🔒 Session kontrolü zaten yapıldı');
       return;
     }
     hasCheckedRef.current = true;
@@ -82,7 +81,6 @@ function SelfServiceContent() {
     // URL'den session'ı window.location ile oku (searchParams hydration sorunu için)
     const urlParams = new URLSearchParams(window.location.search);
     const urlSession = urlParams.get('session');
-    console.log('🔍 URL Session kontrol ediliyor:', urlSession);
 
     const STORAGE_KEY = `selfservice_session_${code}`;
     const TIMESTAMP_KEY = `selfservice_session_time_${code}`;
@@ -91,7 +89,6 @@ function SelfServiceContent() {
     if (urlSession) {
       const oldSession = localStorage.getItem(STORAGE_KEY);
       if (oldSession && oldSession !== urlSession) {
-        console.log('🧹 Eski session temizleniyor:', oldSession, '→ Yeni:', urlSession);
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(TIMESTAMP_KEY);
       }
@@ -112,7 +109,6 @@ function SelfServiceContent() {
         // Süresi dolmuş session'ı temizle
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(TIMESTAMP_KEY);
-        console.log(`🕐 Session süresi doldu (${SESSION_DURATION_MINUTES} dk)`);
       }
     }
 
@@ -130,13 +126,11 @@ function SelfServiceContent() {
       // Session'ı localStorage'a kaydet
       localStorage.setItem(STORAGE_KEY, session);
       localStorage.setItem(TIMESTAMP_KEY, Date.now().toString());
-      console.log(`✅ Session kabul edildi: ${session.substring(0, 8)}...`);
 
       // URL'den temizle (varsa)
       if (urlSession) {
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, '', cleanUrl);
-        console.log('🔒 Session URL\'den gizlendi');
       }
 
       // Arka planda session doğrula (sadece expired session'ları engelle)
@@ -145,7 +139,6 @@ function SelfServiceContent() {
         .then(data => {
           if (!data.success) {
             const errorType = data.error || data.message || '';
-            console.log('⚠️ Session doğrulama:', errorType);
 
             // Sadece kesin olarak süresi dolmuş session'ları engelle
             if (errorType.toLowerCase().includes('expired') || errorType.toLowerCase().includes('doldu')) {
@@ -157,10 +150,8 @@ function SelfServiceContent() {
             } else {
               // Diğer hatalar (bulunamadı, vs) - sessizce devam et
               // QR'dan gelen session'a güven, backend senkronizasyon gecikmesi olabilir
-              console.log('ℹ️ Session doğrulanamadı ama devam ediliyor (QR güvenilir)');
             }
           } else {
-            console.log('✅ Session doğrulandı');
             // Session'ı kullanıldı olarak işaretle
             fetch('/api/selfservice/use', {
               method: 'POST',
@@ -171,7 +162,6 @@ function SelfServiceContent() {
         })
         .catch(err => {
           // API hatası - sessizce devam et (bağlantı sorunu olabilir)
-          console.log('⚠️ Session doğrulama hatası (devam ediliyor):', err);
         });
 
       return;
@@ -344,13 +334,11 @@ function SelfServiceContent() {
 
   // SignalR: Token balance güncelleme handler'ı
   const handleTokenBalanceUpdated = useCallback((data: { userId: number; currentTokens: number; message: string }) => {
-    console.log('🪙 Self-Service SignalR: Token balance updated', data);
     setUserTokenBalance(data.currentTokens);
   }, [setUserTokenBalance]);
 
   // SignalR: Sipariş oluşturuldu handler'ı
   const handleOrderCreated = useCallback((data: any) => {
-    console.log('📦 Self-Service SignalR: Order created', data);
     // Sipariş oluşturulduğunda bildirim
     if (data.customerCode === code) {
       loadCart(); // Sepeti yenile
@@ -374,10 +362,8 @@ function SelfServiceContent() {
       try {
         setLoading(true);
         setCustomerCode(code);
-        console.log('📥 Müşteri verisi yükleniyor, code:', code);
 
         const customerResponse = await fetch(`/api/customer/${code}`);
-        console.log('📥 Customer API response status:', customerResponse.status);
 
         if (!customerResponse.ok) {
           const errorText = await customerResponse.text();
@@ -386,7 +372,6 @@ function SelfServiceContent() {
         }
 
         const customerInfo = await customerResponse.json();
-        console.log('✅ Müşteri bilgisi alındı:', customerInfo?.customer?.name);
         setCustomerData(customerInfo);
         setCustomerDataContext(customerInfo);
 
@@ -429,7 +414,6 @@ function SelfServiceContent() {
             setPortionTokenSettings(portionMap);
           }
         } catch (e) {
-          console.log('Token settings yüklenemedi');
         }
 
         setError(null);

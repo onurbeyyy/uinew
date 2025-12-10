@@ -5,7 +5,6 @@ const API_BASE_URL = process.env.API_URL || 'https://apicanlimenu.online';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('Register request body:', body);
 
     // EndUser kaydı için doğru endpoint'i kullan
     const response = await fetch(`${API_BASE_URL}/api/EndUser/register`, {
@@ -17,7 +16,6 @@ export async function POST(request: NextRequest) {
     });
 
     const result = await response.json();
-    console.log('Register API response:', result, 'Status:', response.status);
 
     return NextResponse.json(result, { status: response.status });
   } catch (error: any) {
