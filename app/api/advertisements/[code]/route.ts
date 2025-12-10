@@ -4,7 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const API_BASE_URL = process.env.API_URL || 'https://apicanlimenu.online';
+// Hetzner API - sabit URL kullan (env variable override etmesin)
+const API_BASE_URL = 'https://apicanlimenu.online';
 
 export async function GET(
   request: NextRequest,
