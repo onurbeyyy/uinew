@@ -65,9 +65,6 @@ export default function ImagePreloadContainer({
     loadedCountRef.current = 0;
     callbackCalledRef.current = false;
 
-    if (productUrls.length > 0) {
-      console.log(`📦 ${productUrls.length} ürün görseli arka planda yükleniyor...`);
-    }
   }, [menuData]);
 
   const handleImageLoad = () => {
@@ -76,7 +73,6 @@ export default function ImagePreloadContainer({
     // Tüm görseller yüklendi mi?
     if (loadedCountRef.current >= totalCountRef.current && !callbackCalledRef.current) {
       callbackCalledRef.current = true;
-      console.log(`✅ Tüm ürün görselleri yüklendi`);
       if (onImagesLoaded) onImagesLoaded();
     }
   };

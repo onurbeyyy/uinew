@@ -387,19 +387,11 @@ export default function CustomerMenu() {
 
         // Görselleri yükle ve GERÇEKTEN tamamlanmasını bekle
         if (uniqueUrls.length > 0) {
-          console.log(`🖼️ ${uniqueUrls.length} kritik görsel yükleniyor...`);
-
           const preloadImage = (url: string): Promise<void> => {
             return new Promise((resolve) => {
               const img = new Image();
-              img.onload = () => {
-                console.log(`✓ ${url.split('/').pop()}`);
-                resolve();
-              };
-              img.onerror = () => {
-                console.log(`✗ ${url.split('/').pop()}`);
-                resolve();
-              };
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
               img.src = url;
             });
           };
@@ -411,8 +403,6 @@ export default function CustomerMenu() {
             Promise.all(allPreloads),
             new Promise(resolve => setTimeout(resolve, 2000))
           ]);
-
-          console.log(`✅ Kritik görsel preload tamamlandı`);
         }
 
         // ⚠️ dataLoading'i set et - loading ekranını göstermeye devam
