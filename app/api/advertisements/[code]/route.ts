@@ -13,13 +13,15 @@ export async function GET(
   try {
     const { code } = await params;
 
-    const apiUrl = `${API_BASE_URL}/api/Advertisements/GetActiveTabs?customerCode=${code}`;
+    // Cache buster ile API'yi çağır
+    const apiUrl = `${API_BASE_URL}/api/Advertisements/GetActiveTabs?customerCode=${code}&_t=${Date.now()}`;
 
     const response = await fetch(apiUrl, {
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
       },
-      cache: 'no-store', // Her zaman güncel veri al
+      cache: 'no-store',
     });
 
     if (!response.ok) {
