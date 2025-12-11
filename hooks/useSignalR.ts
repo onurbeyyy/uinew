@@ -58,6 +58,8 @@ export function useSignalR({ customerId, customerCode, endUserId, onTokenBalance
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
         withCredentials: false, // CORS için credentials kapalı
       })
+      .withServerTimeout(120000) // 2 dakika - timeout hatalarını azaltır
+      .withKeepAliveInterval(30000) // 30 saniyede bir keepAlive gönder
       .withAutomaticReconnect({
         nextRetryDelayInMilliseconds: (retryContext) => {
           // İlk 4 deneme: 0, 2s, 10s, 30s
