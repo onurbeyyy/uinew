@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerApiClient } from '@/lib/api';
 
+// Cache'i devre dışı bırak - her zaman güncel veri
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
@@ -11,7 +15,11 @@ export async function GET(
     const api = createServerApiClient();
     const customerData = await api.getCustomer(code);
 
-    return NextResponse.json(customerData);
+    return NextResponse.json(customerData, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      },
+    });
   } catch (error) {
     console.error('Customer API Error:', error);
     return NextResponse.json(
