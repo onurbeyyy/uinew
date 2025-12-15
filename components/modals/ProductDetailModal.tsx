@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import type { ProductPortion, Product } from '@/types/api';
 
 export default function ProductDetailModal() {
-  const { menuData, customerData, selectedProduct, selectedCategory, isProductDetailModalOpen, closeProductDetailModal, openProductDetailModal, isTableMode, canUseBasket, cartKey, getTokenSettingsForItem, openProfile } = useMenu();
+  const { menuData, customerData, selectedProduct, selectedCategory, isProductDetailModalOpen, closeProductDetailModal, openProductDetailModal, isTableMode, canUseBasket, cartKey, getTokenSettingsForItem, openProfile, canOrderProduct, todayHappyHourTimeRange } = useMenu();
   const { language, t } = useLanguage();
   const { isAuthenticated } = useAuth();
   const { showCartToast } = useToast();
@@ -139,6 +139,7 @@ export default function ProductDetailModal() {
         price: itemPrice,
         quantity: quantity,
         image: selectedProduct.Picture ?? selectedProduct.picture,
+        linkedProductId: selectedProduct.LinkedProductId ?? selectedProduct.linkedProductId, // HH bağlı ürün
       });
     }
 
@@ -314,7 +315,7 @@ export default function ProductDetailModal() {
           )}
 
           {/* Sepete Ekleme Alanı */}
-          {isTableMode && canUseBasket && (
+          {isTableMode && canUseBasket && canOrderProduct(selectedProduct) && (
             <div className="pdm-cart-section">
               {/* Miktar Seçici */}
               <div className="pdm-quantity">
@@ -344,6 +345,16 @@ export default function ProductDetailModal() {
                 <span className="pdm-add-btn-text">{t('addToCart')}</span>
                 <span className="pdm-add-btn-price">{totalPrice.toFixed(2)} TL</span>
               </button>
+            </div>
+          )}
+
+          {/* Happy Hour dışında HH ürünü mesajı */}
+          {isTableMode && canUseBasket && !canOrderProduct(selectedProduct) && todayHappyHourTimeRange && (
+            <div className="pdm-hh-message">
+              <span className="pdm-hh-icon">🍺</span>
+              <span className="pdm-hh-text">
+                Bu ürün {todayHappyHourTimeRange} saatlerinde sipariş edilebilir
+              </span>
             </div>
           )}
 

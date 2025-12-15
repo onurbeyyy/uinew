@@ -19,6 +19,8 @@ class SignalRService {
         skipNegotiation: false,
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents,
       })
+      .withServerTimeout(120000) // 2 dakika
+      .withKeepAliveInterval(30000) // 30 saniye
       .withAutomaticReconnect({
         nextRetryDelayInMilliseconds: (retryContext) => {
           if (retryContext.previousRetryCount >= this.maxReconnectAttempts) {
@@ -27,28 +29,25 @@ class SignalRService {
           return Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
         },
       })
-      .configureLogging(signalR.LogLevel.Information)
+      .configureLogging(signalR.LogLevel.None)
       .build();
 
     // Event handlers
-    this.connection.onreconnecting((error) => {
-      console.warn('SignalR: Reconnecting...', error);
+    this.connection.onreconnecting(() => {
       this.reconnectAttempts++;
     });
 
-    this.connection.onreconnected((connectionId) => {
+    this.connection.onreconnected(() => {
       this.reconnectAttempts = 0;
     });
 
-    this.connection.onclose((error) => {
-      console.error('SignalR: Connection closed', error);
+    this.connection.onclose(() => {
       this.connection = null;
     });
 
     try {
       await this.connection.start();
     } catch (err) {
-      console.error('SignalR: Connection failed', err);
       throw err;
     }
   }
@@ -69,7 +68,6 @@ class SignalRService {
     try {
       await this.connection.invoke('CallWaiter', customerCode, tableName, message);
     } catch (err) {
-      console.error('SignalR: CallWaiter failed', err);
       throw err;
     }
   }
@@ -93,7 +91,6 @@ class SignalRService {
     try {
       await this.connection.invoke('CreateOrder', customerCode, tableName, items);
     } catch (err) {
-      console.error('SignalR: SendOrder failed', err);
       throw err;
     }
   }

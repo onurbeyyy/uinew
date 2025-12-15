@@ -54,8 +54,10 @@ class GameSignalRService {
         skipNegotiation: false,
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
       })
+      .withServerTimeout(120000)
+      .withKeepAliveInterval(30000)
       .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Information)
+      .configureLogging(signalR.LogLevel.None)
       .build();
 
     // Reconnect event'leri
@@ -213,7 +215,6 @@ class GameSignalRService {
   // Generic event listener
   private on(eventName: string, callback: Function) {
     if (!this.connection) {
-      console.warn(`⚠️ Bağlantı yok, event dinlenemedi: ${eventName}`);
       return;
     }
 

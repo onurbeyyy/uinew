@@ -46,8 +46,10 @@ class OkeySignalRService {
         skipNegotiation: false,
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
       })
+      .withServerTimeout(120000)
+      .withKeepAliveInterval(30000)
       .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Information)
+      .configureLogging(signalR.LogLevel.None)
       .build();
 
     await this.connection.start();

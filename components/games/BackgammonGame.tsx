@@ -256,8 +256,10 @@ export default function BackgammonGame({ customerCode, joinRoomId, onBack }: Bac
           transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
           withCredentials: false
         })
+        .withServerTimeout(120000)
+        .withKeepAliveInterval(30000)
         .withAutomaticReconnect()
-        .configureLogging(signalR.LogLevel.Error)
+        .configureLogging(signalR.LogLevel.None)
         .build();
 
       // =====================================

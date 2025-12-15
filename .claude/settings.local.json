@@ -91,7 +91,15 @@
       "Bash(do curl -s -o /dev/null -w \"Test $i: %{time_total}s\\n\" \"https://apicanlimenu.online/Uploads/1/Logo/f2ecf3c3-d8d3-488e-b637-c21ab90459ee.png\")",
       "Bash(do curl -s -o /dev/null -w \"Test $i: %{time_total}s\\n\" -k -H \"Host: apicanlimenu.online\" \"https://46.224.32.229/api/Menu/GetMenuDto?code=canlimenu\")",
       "Bash(for i in 1 2 3 4 5)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npx tsc:*)",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"cd /d C:\\Users\\Onue\\Desktop\\canli menu\\samba\\samba && dotnet clean && dotnet build -c Release\")",
+      "Bash(/mnt/c/Windows/System32/cmd.exe:*)",
+      "Bash(export SSHPASS='KCILpMCVubZf4PMO3')",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(chmod:*)",
+      "Bash(npm info:*)"
     ],
     "deny": [],
     "ask": []

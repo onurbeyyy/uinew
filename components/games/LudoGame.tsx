@@ -245,8 +245,10 @@ export default function LudoGame({ onBack, joinRoomId, customerCode }: LudoGameP
           transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
           withCredentials: false
         })
+        .withServerTimeout(120000)
+        .withKeepAliveInterval(30000)
         .withAutomaticReconnect()
-        .configureLogging(signalR.LogLevel.Error)
+        .configureLogging(signalR.LogLevel.None)
         .build();
 
       // Helper function to normalize player data

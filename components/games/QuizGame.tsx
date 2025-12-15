@@ -215,8 +215,10 @@ export default function QuizGame({ onBack, joinRoomId, customerCode, currentUser
           transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
           withCredentials: false
         })
+        .withServerTimeout(120000)
+        .withKeepAliveInterval(30000)
         .withAutomaticReconnect()
-        .configureLogging(signalR.LogLevel.Error)
+        .configureLogging(signalR.LogLevel.None)
         .build();
 
       // === EVENT HANDLERS ===

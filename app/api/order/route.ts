@@ -18,6 +18,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('📦 Order Request:', JSON.stringify(body, null, 2));
+
     const response = await fetch(`${API_BASE_URL}/api/Order/create`, {
       method: 'POST',
       headers: {
@@ -26,7 +28,16 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    const result = await response.json();
+    const responseText = await response.text();
+    console.log('📦 Order Response Status:', response.status);
+    console.log('📦 Order Response:', responseText);
+
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      result = { success: false, error: responseText };
+    }
 
     return NextResponse.json(result, { status: response.status });
   } catch (error) {

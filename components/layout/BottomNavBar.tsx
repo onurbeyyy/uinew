@@ -193,17 +193,45 @@ export default function BottomNavBar({
 
         {/* Garson Çağır (sadece masa ID varsa) */}
         {showWaiterCall && tableId && (
-          <NavButton
-            icon={
-              <svg style={{ width: '24px', height: '24px', fill: 'white' }} viewBox="0 0 24 24">
+          <div
+            onClick={handleWaiterClick}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '12px',
+              position: 'relative',
+            }}
+          >
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                background: 'linear-gradient(135deg, #ff9500 0%, #ff6b00 100%)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '4px',
+                boxShadow: '0 4px 15px rgba(255, 107, 0, 0.4)',
+              }}
+            >
+              <svg style={{ width: '20px', height: '20px', fill: 'white' }} viewBox="0 0 24 24">
                 <path d="M18.06 23H19.72C20.56 23 21.25 22.35 21.35 21.53L23 5.05H18V1H16.03V5.05H11.06L11.36 7.39C13.07 7.86 14.67 8.71 15.63 9.65C17.07 11.07 18.06 12.54 18.06 14.94V23M1 22V21H16.03V22C16.03 22.54 15.58 23 15.03 23H2C1.45 23 1 22.54 1 22M16.03 15C16.03 7 1 7 1 15H16.03M1 17H16V19H1V17Z" />
               </svg>
-            }
-            label={t('waiterCall')}
-            onClick={handleWaiterClick}
-            gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-            top="-15px"
-          />
+            </div>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#ff6b00',
+              }}
+            >
+              {t('waiterCall')}
+            </span>
+          </div>
         )}
 
         {/* Oyun Butonu - Dikkat Çekici Animasyonlu */}

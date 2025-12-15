@@ -48,6 +48,8 @@ export interface CustomerEntity {
   freeDeliveryThreshold?: number;
   estimatedDeliveryTime?: number;
   deliveryZones?: string;
+  // Happy Hour Settings
+  happyHourJson?: string;
   // 🔒 GÜVENLİK: token field'ı API'den artık gelmiyor (güvenlik nedeniyle kaldırıldı)
   // database, email, emailVerificationToken field'ları da asla frontend'e gelmemeli
 }
@@ -99,8 +101,10 @@ export interface Product {
   properties?: ProductProperty[];
   subCategoryTag?: string;
   allergens?: string; // Alerjenler (virgülle ayrılmış veya JSON array)
+  linkedProductId?: number; // Happy Hour ürünlerinin bağlı olduğu normal ürün ID'si
   // Capital case alternatives (for compatibility)
   Id?: number;
+  LinkedProductId?: number;
   SambaId?: number;
   Title?: string;
   TitleEn?: string;
@@ -238,4 +242,22 @@ export interface ProductTokenSettingsResponse {
 
 export interface UserTokenBalance {
   currentTokens: number;
+}
+
+// Happy Hour Settings (gün bazlı)
+export interface DayHappyHour {
+  enabled: boolean;
+  startTime: string; // "17:00"
+  endTime: string;   // "20:00"
+}
+
+export interface HappyHourSettings {
+  isActive: boolean;
+  monday: DayHappyHour;
+  tuesday: DayHappyHour;
+  wednesday: DayHappyHour;
+  thursday: DayHappyHour;
+  friday: DayHappyHour;
+  saturday: DayHappyHour;
+  sunday: DayHappyHour;
 }

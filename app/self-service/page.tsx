@@ -346,7 +346,10 @@ export default function SelfServicePage() {
     try {
       const connection = new signalR.HubConnectionBuilder()
         .withUrl(`${CONFIG.signalRBaseUrl}/apimenuhub`)
+        .withServerTimeout(120000)
+        .withKeepAliveInterval(30000)
         .withAutomaticReconnect()
+        .configureLogging(signalR.LogLevel.None)
         .build();
 
       // Session kullanıldı eventi

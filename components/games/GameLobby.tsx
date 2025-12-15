@@ -209,8 +209,10 @@ export default function GameLobby({ onJoinGame, onBack, inline = false, customer
           transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
           withCredentials: false // CORS için credentials kapalı
         })
+        .withServerTimeout(120000)
+        .withKeepAliveInterval(30000)
         .withAutomaticReconnect([0, 1000, 2000, 5000, 10000])
-        .configureLogging(signalR.LogLevel.Warning)
+        .configureLogging(signalR.LogLevel.None)
         .build();
 
       // Event handlers

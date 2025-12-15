@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useMenu } from '@/contexts/MenuContext';
 import { useAuth } from '@/contexts/UserContext';
 import { useTable } from '@/contexts/TableContext';
@@ -19,6 +19,7 @@ interface CartItem {
   tokenQuantity?: number; // Kaç adet jeton ile alınacak
   portionName?: string;
   sambaPortionId?: number;
+  linkedProductId?: number; // Happy Hour bağlı ürün ID'si
 }
 
 interface DeliveryInfo {
@@ -130,7 +131,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
     }, 3000);
   };
 
-  // Load user token balance
+  // Load user token balance (localStorage cached - 60 saniye)
   useEffect(() => {
     const loadTokenBalance = async () => {
       const userData = localStorage.getItem('userData');
@@ -141,22 +142,35 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         const user = JSON.parse(userData);
         const userId = user.id || user.userId || user.Id;
 
-        if (!userId) {
-          return;
+        if (!userId) return;
+
+        // localStorage cache kontrolü (60 saniye) - ana sayfa ile paylaşımlı
+        const cacheKey = `tokenBalance_${userId}_${customerCode}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { balance, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < 60000) { // 60 saniye
+            setUserTokenBalance(balance);
+            return;
+          }
         }
 
         const response = await fetch(
           `/api/user/token-balance?userId=${userId}&customerCode=${customerCode}`
         );
 
+        if (!response.ok) return; // 429 veya diğer hatalar için sessizce çık
+
         const result = await response.json();
 
         if (result.balance) {
           const tokenBalance = result.balance.currentTokens || result.balance.CurrentTokens || 0;
           setUserTokenBalance(tokenBalance);
+          // Cache'e kaydet
+          localStorage.setItem(cacheKey, JSON.stringify({ balance: tokenBalance, timestamp: Date.now() }));
         }
-      } catch (error) {
-        console.error('Failed to load token balance:', error);
+      } catch {
+        // Sessizce başarısız ol
       }
     };
 
@@ -246,6 +260,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         price: product.price || product.Price || 0,
         quantity: 1,
         image: getImageUrl(product.picture || product.Picture),
+        linkedProductId: product.linkedProductId || product.LinkedProductId, // HH bağlı ürün
       };
 
       saveCart([...items, newItem]);
@@ -549,6 +564,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
       const tableIdCookie = document.cookie.split(';').find(c => c.trim().startsWith('tableId='));
       const cookieTableId = tableCodeCookie?.split('=')[1] || tableIdCookie?.split('=')[1];
 
+      // Normal masa: tableId (secureId) kullan - garson çağırma ile aynı
       let orderTableName = tableId || cookieTableId || '';
       if (isDelivery) {
         orderTableName = `Paket - ${userNickname || 'Müşteri'}`;
@@ -556,15 +572,8 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         orderTableName = userNickname;
       } else if (isSelfService) {
         orderTableName = sessionId || 'Self-Service';
-      } else {
-        // Normal masa modu - gerçek masa adını localStorage'dan al
-        const storedTableName = localStorage.getItem('currentTableName');
-        if (storedTableName) {
-          orderTableName = storedTableName;
-        } else if (!orderTableName && cookieTableId) {
-          orderTableName = cookieTableId;
-        }
       }
+      // Normal masa modu: tableId zaten secureId olarak ayarlandı
 
       // Teslimat ücreti hesapla
       const actualDeliveryFee = isDelivery && deliveryInfo
@@ -587,9 +596,14 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
           const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
           const tokenQty = item.tokenQuantity || 0;
 
+          // 🍺 Happy Hour: Bağlı ürün varsa onu kullan (sipariş sistemine normal ürün gider)
+          const effectiveProductId = item.linkedProductId || item.sambaId || item.productId;
+
           return {
-            productId: item.sambaId || item.productId, // SambaProductId (SambaPOS için)
-            actualProductId: item.productId, // Gerçek ID
+            productId: effectiveProductId, // SambaProductId (HH varsa bağlı ürün)
+            actualProductId: item.productId, // Gerçek ID (UI'daki ürün)
+            originalProductId: item.sambaId || item.productId, // Orijinal ID (log için)
+            linkedProductId: item.linkedProductId, // HH bağlı ürün ID (log için)
             portionId: item.sambaPortionId, // Porsiyon ID (jeton için)
             productName: item.name,
             quantity: item.quantity,
@@ -674,16 +688,13 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         // ✅ Başarı mesajı göster
         if (isDelivery) {
           alert(`🎉 Paket siparişiniz başarıyla alındı!\n\nSipariş No: #${result.orderNumber || 'N/A'}\n\nSiparişiniz en kısa sürede hazırlanıp adresinize teslim edilecektir.`);
-          // Delivery'de ana sayfaya yönlendir (yeni sipariş için tekrar gelebilir)
-          window.location.href = `/${customerCode}/delivery`;
+          // Delivery'de sayfada kal (yeni sipariş için tekrar gelebilir)
         } else if (isSelfService) {
           alert(`🍽️ Siparişiniz alındı!\n\nSipariş No: #${result.orderNumber || 'N/A'}`);
-          // Self-service'de ana sayfaya yönlendir
-          window.location.href = `/${customerCode}`;
+          // Self-service'de sayfada kal
         } else {
           alert(`Siparişiniz başarıyla alındı! Sipariş No: #${result.orderNumber || 'N/A'}\n\nYeni sipariş için QR kodu tekrar okutun.`);
-          // Sayfayı yenile - temiz başlangıç için
-          window.location.href = `/${customerCode}`;
+          // Sayfada kal - yenileme gerek yok
         }
       } else {
         // Hata durumları

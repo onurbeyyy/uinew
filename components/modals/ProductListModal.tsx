@@ -35,6 +35,8 @@ export default function ProductListModal() {
     getTokenSettingsForItem,
     popularProductIds,
     openProfile,
+    canOrderProduct,
+    todayHappyHourTimeRange,
   } = useMenu();
   const { language, t } = useLanguage();
   const { isAuthenticated } = useAuth();
@@ -47,6 +49,8 @@ export default function ProductListModal() {
   const productListRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+  const touchEndY = useRef<number>(0);
 
   // Load cart items from cartUtils
   useEffect(() => {
@@ -106,6 +110,7 @@ export default function ProductListModal() {
         price: product.price,
         quantity: 1,
         image: productImageUrl,
+        linkedProductId: product.LinkedProductId ?? product.linkedProductId, // HH bağlı ürün
       });
     }
 
@@ -161,22 +166,30 @@ export default function ProductListModal() {
   // Swipe handling for category switching
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.changedTouches[0].screenX;
+    touchStartY.current = e.changedTouches[0].screenY;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     touchEndX.current = e.changedTouches[0].screenX;
+    touchEndY.current = e.changedTouches[0].screenY;
     handleSwipe();
   };
 
   const handleSwipe = () => {
-    const swipeThreshold = 50;
-    const diff = touchStartX.current - touchEndX.current;
+    const swipeThreshold = 150; // Yatay swipe için minimum mesafe (belirgin swipe)
+    const diffX = touchStartX.current - touchEndX.current;
+    const diffY = touchStartY.current - touchEndY.current;
 
-    if (Math.abs(diff) > swipeThreshold && categories.length > 0) {
+    // Yatay hareket dikey hareketin en az 3 katı olmalı (çok belirgin yatay swipe)
+    if (Math.abs(diffX) < Math.abs(diffY) * 3) {
+      return;
+    }
+
+    if (Math.abs(diffX) > swipeThreshold && categories.length > 0) {
       const currentIndex = categories.findIndex((cat) => cat.sambaId === activeCategory?.sambaId);
 
       if (currentIndex !== -1) {
-        if (diff > 0) {
+        if (diffX > 0) {
           // Swipe left - next category
           const nextIndex = (currentIndex + 1) % categories.length;
           switchCategory(categories[nextIndex]);
@@ -623,7 +636,7 @@ export default function ProductListModal() {
                                 {productDetail}
                               </p>
                             )}
-                            {isTableMode && canUseBasket && (
+                            {isTableMode && canUseBasket && canOrderProduct(product) && (
                               <button
                                 type="button"
                                 className="add-to-cart-btn"
@@ -658,6 +671,23 @@ export default function ProductListModal() {
                                 <i className="fas fa-shopping-cart"></i>
                                 {t('addToCart')}
                               </button>
+                            )}
+                            {/* HH dışında HH ürünleri için mesaj */}
+                            {isTableMode && canUseBasket && !canOrderProduct(product) && todayHappyHourTimeRange && (
+                              <div style={{
+                                width: '100%',
+                                padding: '8px',
+                                marginTop: '8px',
+                                background: 'linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 165, 0, 0.15))',
+                                border: '1px solid rgba(255, 107, 107, 0.3)',
+                                borderRadius: '8px',
+                                fontSize: '11px',
+                                color: '#ff6b6b',
+                                textAlign: 'center',
+                              }}>
+                                <span style={{ marginRight: '4px' }}>🍺</span>
+                                Bu ürün {todayHappyHourTimeRange} saatlerinde sipariş edilebilir
+                              </div>
                             )}
                           </div>
                         </div>

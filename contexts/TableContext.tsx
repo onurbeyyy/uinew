@@ -163,7 +163,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     setTableName(name);
     setIsSelfService(false);
     setSessionId(null);
-    setCookie('tableId', table, 15 / (24 * 60)); // 15 dakika (QR geçerlilik süresi)
+    setCookie('tableId', table, 15 / 60); // 15 dakika (QR geçerlilik süresi)
   };
 
   /**
@@ -174,7 +174,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     setTableName(tableName);
     setIsSelfService(false);
     setSessionId(null);
-    setCookie('tableId', tableId, 15 / (24 * 60)); // 15 dakika
+    setCookie('tableId', tableId, 15 / 60); // 15 dakika
   }, []);
 
   /**
@@ -185,8 +185,8 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     setSessionId(session);
     setTableName('Self-Servis');
     setTableId(null);
-    setCookie('isSelfService', 'true', 15 / (24 * 60)); // 15 dakika (QR geçerlilik süresi)
-    setCookie('selfServiceSessionId', session, 15 / (24 * 60)); // 15 dakika
+    setCookie('isSelfService', 'true', 15 / 60); // 15 dakika (QR geçerlilik süresi)
+    setCookie('selfServiceSessionId', session, 15 / 60); // 15 dakika
   }, []);
 
   /**

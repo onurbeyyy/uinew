@@ -1,9 +1,10 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { useTable } from '@/contexts/TableContext';
 import { checkAndCleanCart } from '@/utils/cartUtils';
-import type { MenuDto, MenuListDto, Product, CustomerInfoResponse, CategoryDto, ProductTokenSetting } from '@/types/api';
+import { parseHappyHourSettings, isCurrentlyHappyHour, canOrderHappyHourProduct, getTodayHappyHourTimeRange } from '@/utils/happyHour';
+import type { MenuDto, MenuListDto, Product, CustomerInfoResponse, CategoryDto, ProductTokenSetting, HappyHourSettings } from '@/types/api';
 
 interface MenuContextType {
   menuData: MenuDto | null;
@@ -61,6 +62,11 @@ interface MenuContextType {
   hasValidSubscription: boolean;
   basketDisabledMessage: string | null; // Sepet neden kapalı?
   selfServiceDisabledMessage: string | null; // Self-servis neden kapalı?
+  // Happy Hour
+  happyHourSettings: HappyHourSettings | null;
+  isHappyHourTime: boolean;
+  canOrderProduct: (product: Product) => boolean;
+  todayHappyHourTimeRange: string | null; // Bugünün HH saat aralığı (örn: "17:00 - 20:00")
 }
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
@@ -96,6 +102,29 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     }
     // Porsiyon yoksa veya porsiyon için ayar yoksa, ürün bazlı kontrol et
     return productTokenSettings[sambaProductId];
+  };
+
+  // Happy Hour ayarları
+  const happyHourSettings = useMemo(() => {
+    return parseHappyHourSettings(customerData?.customer?.happyHourJson);
+  }, [customerData?.customer?.happyHourJson]);
+
+  // Şu an HH zamanı mı?
+  const [isHappyHourTime, setIsHappyHourTime] = useState(false);
+
+  // HH zamanını her dakika kontrol et
+  useEffect(() => {
+    const checkHappyHour = () => {
+      setIsHappyHourTime(isCurrentlyHappyHour(happyHourSettings));
+    };
+    checkHappyHour(); // İlk kontrol
+    const interval = setInterval(checkHappyHour, 60000); // Her dakika kontrol
+    return () => clearInterval(interval);
+  }, [happyHourSettings]);
+
+  // Ürün sipariş edilebilir mi? (HH kontrolü dahil)
+  const canOrderProduct = (product: Product): boolean => {
+    return canOrderHappyHourProduct(product, happyHourSettings);
   };
 
   // Cart key: use tableId if available, otherwise sessionId
@@ -259,6 +288,11 @@ export function MenuProvider({ children }: { children: ReactNode }) {
           if (!customerData.customer?.isSelfServiceEnabled) return 'Self-servis şu an kapalı';
           return null;
         })(),
+        // Happy Hour
+        happyHourSettings,
+        isHappyHourTime,
+        canOrderProduct,
+        todayHappyHourTimeRange: getTodayHappyHourTimeRange(happyHourSettings),
       }}
     >
       {children}

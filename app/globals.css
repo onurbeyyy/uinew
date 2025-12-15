@@ -1847,6 +1847,29 @@ body {
   border-radius: 8px;
 }
 
+/* Happy Hour Mesajı */
+.pdm-hh-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 165, 0, 0.15));
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 12px;
+  margin-top: auto;
+}
+
+.pdm-hh-icon {
+  font-size: 24px;
+}
+
+.pdm-hh-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ff6b6b;
+  line-height: 1.4;
+}
+
 /* Sadece Fiyat Gösterimi */
 .pdm-price-display {
   display: flex;

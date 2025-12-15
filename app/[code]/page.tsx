@@ -102,7 +102,7 @@ export default function CustomerMenu() {
     loadTokenSettings();
   }, [isTableMode, code, setProductTokenSettings, setPortionTokenSettings]);
 
-  // 🪙 User token balance - giriş yapılmışsa yükle
+  // 🪙 User token balance - giriş yapılmışsa yükle (cached - 60 saniye)
   useEffect(() => {
     const loadUserTokenBalance = async () => {
       if (!isTableMode || !currentUser) return;
@@ -111,20 +111,33 @@ export default function CustomerMenu() {
         const userId = currentUser.id || currentUser.userId || currentUser.Id;
         if (!userId) return;
 
+        // localStorage cache kontrolü (60 saniye)
+        const cacheKey = `tokenBalance_${userId}_${code}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { balance, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < 60000) { // 60 saniye
+            setUserTokenBalance(balance);
+            return;
+          }
+        }
+
         const response = await fetch(`/api/user/token-balance?userId=${userId}&customerCode=${code}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && typeof data.balance === 'number') {
             setUserTokenBalance(data.balance);
+            // Cache'e kaydet
+            localStorage.setItem(cacheKey, JSON.stringify({ balance: data.balance, timestamp: Date.now() }));
           }
         }
-      } catch (err) {
-        console.error('Token balance yükleme hatası:', err);
+      } catch {
+        // Sessizce başarısız ol
       }
     };
 
     loadUserTokenBalance();
-  }, [isTableMode, currentUser, setUserTokenBalance]);
+  }, [isTableMode, currentUser, setUserTokenBalance, code]);
 
   const [showBanner, setShowBanner] = useState(false);
   const [menuDataLocal, setMenuDataLocal] = useState<MenuDto | null>(null);
