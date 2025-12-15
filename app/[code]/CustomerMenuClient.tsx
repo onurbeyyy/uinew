@@ -238,15 +238,34 @@ export default function CustomerMenuClient({
               const productMap: Record<number, any> = {};
               const portionMap: Record<number, any> = {};
 
-              tokenData.settings.forEach((setting: any) => {
-                if (setting.sambaPortionId) {
-                  portionMap[setting.sambaPortionId] = setting;
+              // API case'i farklı olabilir - hem PascalCase hem camelCase kontrol et
+              const settings = tokenData.settings || tokenData.Settings || [];
+
+              settings.forEach((s: any) => {
+                // Normalize data (hem PascalCase hem camelCase destekle)
+                const normalizedSetting = {
+                  productId: s.productId ?? s.ProductId,
+                  sambaProductId: s.sambaProductId ?? s.SambaProductId,
+                  sambaPortionId: s.sambaPortionId ?? s.SambaPortionId,
+                  earnTokens: s.earnTokens ?? s.EarnTokens ?? 0,
+                  redeemTokens: s.redeemTokens ?? s.RedeemTokens ?? 0,
+                };
+
+                // Porsiyon bazlı ayar varsa portionMap'e ekle
+                if (normalizedSetting.sambaPortionId) {
+                  portionMap[normalizedSetting.sambaPortionId] = normalizedSetting;
                 } else {
-                  if (setting.productId) productMap[setting.productId] = setting;
-                  if (setting.sambaProductId) productMap[setting.sambaProductId] = setting;
+                  // Ürün bazlı ayarları productMap'e ekle
+                  if (normalizedSetting.productId) {
+                    productMap[normalizedSetting.productId] = normalizedSetting;
+                  }
+                  if (normalizedSetting.sambaProductId) {
+                    productMap[normalizedSetting.sambaProductId] = normalizedSetting;
+                  }
                 }
               });
 
+              console.log('🪙 Token settings loaded:', { products: Object.keys(productMap).length, portions: Object.keys(portionMap).length });
               setProductTokenSettings(productMap);
               setPortionTokenSettings(portionMap);
             }

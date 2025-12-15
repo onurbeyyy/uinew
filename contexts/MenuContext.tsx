@@ -96,6 +96,16 @@ export function MenuProvider({ children }: { children: ReactNode }) {
 
   // Helper: Porsiyon veya ürün için token ayarlarını getir
   const getTokenSettingsForItem = (sambaProductId: number, sambaPortionId?: number): ProductTokenSetting | undefined => {
+    // Debug log
+    console.log('🔍 getTokenSettingsForItem:', {
+      sambaProductId,
+      sambaPortionId,
+      productMapKeys: Object.keys(productTokenSettings),
+      portionMapKeys: Object.keys(portionTokenSettings),
+      productHit: productTokenSettings[sambaProductId],
+      portionHit: sambaPortionId ? portionTokenSettings[sambaPortionId] : undefined
+    });
+
     // Önce porsiyon bazlı kontrol et
     if (sambaPortionId && portionTokenSettings[sambaPortionId]) {
       return portionTokenSettings[sambaPortionId];

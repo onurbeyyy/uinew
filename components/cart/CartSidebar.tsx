@@ -1017,7 +1017,21 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
 
                     {/* Token Button */}
                     {(() => {
-                      const tokenSettings = getTokenSettingsForItem(item.sambaId || item.productId, item.sambaPortionId);
+                      const lookupKey = item.sambaId || item.productId;
+                      const tokenSettings = getTokenSettingsForItem(lookupKey, item.sambaPortionId);
+
+                      // Debug log
+                      console.log('🪙 Token check:', {
+                        itemName: item.name,
+                        sambaId: item.sambaId,
+                        productId: item.productId,
+                        lookupKey,
+                        sambaPortionId: item.sambaPortionId,
+                        tokenSettings,
+                        hasSettings: !!tokenSettings,
+                        redeemTokens: tokenSettings?.redeemTokens
+                      });
+
                       if (!tokenSettings || tokenSettings.redeemTokens <= 0) return null;
 
                       const tokenQty = item.tokenQuantity || 0;
