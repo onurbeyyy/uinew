@@ -55,6 +55,7 @@ export default function CustomerMenuClient({
     setTableId,
     tableId,
     setProductTokenSettings,
+    setPortionTokenSettings,
     setUserTokenBalance,
     setPopularProductIds,
     isGameModalOpen,
@@ -234,12 +235,20 @@ export default function CustomerMenuClient({
             const tokenResponse = await fetch(`/api/token-settings/${code}`);
             if (tokenResponse.ok) {
               const tokenData = await tokenResponse.json();
-              const tokenMap: Record<number, any> = {};
+              const productMap: Record<number, any> = {};
+              const portionMap: Record<number, any> = {};
+
               tokenData.settings.forEach((setting: any) => {
-                if (setting.productId) tokenMap[setting.productId] = setting;
-                if (setting.sambaProductId) tokenMap[setting.sambaProductId] = setting;
+                if (setting.sambaPortionId) {
+                  portionMap[setting.sambaPortionId] = setting;
+                } else {
+                  if (setting.productId) productMap[setting.productId] = setting;
+                  if (setting.sambaProductId) productMap[setting.sambaProductId] = setting;
+                }
               });
-              setProductTokenSettings(tokenMap);
+
+              setProductTokenSettings(productMap);
+              setPortionTokenSettings(portionMap);
             }
           } catch (tokenErr) {
             console.error('Token settings load error:', tokenErr);
@@ -271,7 +280,7 @@ export default function CustomerMenuClient({
     }
 
     loadAdditionalData();
-  }, [code, tableParam, customerData?.customer.id, setProductTokenSettings, setPopularProductIds]);
+  }, [code, tableParam, customerData?.customer.id, setProductTokenSettings, setPortionTokenSettings, setPopularProductIds]);
 
   // joinRoom parametresi kontrolü
   useEffect(() => {
