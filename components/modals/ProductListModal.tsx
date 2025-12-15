@@ -24,6 +24,7 @@ export default function ProductListModal() {
   const {
     menuData,
     customerData,
+    customerCode,
     categoriesData,
     selectedCategory,
     isProductListModalOpen,
@@ -55,8 +56,7 @@ export default function ProductListModal() {
   // Load cart items from cartUtils
   useEffect(() => {
     const loadCart = () => {
-      if (isTableMode && cartKey && menuData) {
-        const customerCode = menuData.customerTitle || 'unknown';
+      if (isTableMode && cartKey && customerCode) {
         const items = loadCartFromStorage(cartKey, customerCode);
         setCartItems(items);
       }
@@ -90,7 +90,7 @@ export default function ProductListModal() {
       return;
     }
 
-    const customerCode = menuData.customerTitle || 'unknown';
+    if (!customerCode) return;
     let items = loadCartFromStorage(cartKey, customerCode);
 
     const existingItemIndex = items.findIndex(

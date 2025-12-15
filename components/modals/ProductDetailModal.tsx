@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import type { ProductPortion, Product } from '@/types/api';
 
 export default function ProductDetailModal() {
-  const { menuData, customerData, selectedProduct, selectedCategory, isProductDetailModalOpen, closeProductDetailModal, openProductDetailModal, isTableMode, canUseBasket, cartKey, getTokenSettingsForItem, openProfile, canOrderProduct, todayHappyHourTimeRange } = useMenu();
+  const { menuData, customerData, customerCode, selectedProduct, selectedCategory, isProductDetailModalOpen, closeProductDetailModal, openProductDetailModal, isTableMode, canUseBasket, cartKey, getTokenSettingsForItem, openProfile, canOrderProduct, todayHappyHourTimeRange } = useMenu();
   const { language, t } = useLanguage();
   const { isAuthenticated } = useAuth();
   const { showCartToast } = useToast();
@@ -100,7 +100,7 @@ export default function ProductDetailModal() {
   }, [isProductDetailModalOpen, closeProductDetailModal]);
 
   const handleAddToCart = () => {
-    if (!selectedProduct || !isTableMode || !cartKey || !menuData) return;
+    if (!selectedProduct || !isTableMode || !cartKey || !customerCode) return;
 
     // Giriş kontrolü
     if (!isAuthenticated) {
@@ -110,7 +110,6 @@ export default function ProductDetailModal() {
       return;
     }
 
-    const customerCode = menuData.customerTitle || 'unknown';
     let cartItems = loadCart(cartKey, customerCode);
 
     // Porsiyon varsa porsiyon ID'sini, yoksa ürün ID'sini kullan
