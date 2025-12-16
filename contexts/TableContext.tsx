@@ -39,9 +39,43 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     const sessionParam = params.get('session');
     const pathname = window.location.pathname;
 
+    // 🔐 Mevcut customer code'u URL'den al
+    const pathParts = pathname.split('/').filter(Boolean);
+    const currentCustomerCode = pathParts[0] || params.get('code') || '';
+
     const selfServiceCookie = getCookie('isSelfService');
     const savedSessionId = getCookie('selfServiceSessionId');
     const savedTableId = getCookie('tableCode') || getCookie('tableId'); // 🔧 Table ID'yi cookie'den al (middleware tableCode kullanıyor)
+    const savedCustomerCode = getCookie('tableCustomerCode'); // 🔐 Masa hangi müşteriye ait?
+
+    // 🔐 Farklı müşteriye geçildiyse masa bilgisini temizle
+    if (savedTableId && savedCustomerCode && currentCustomerCode && savedCustomerCode !== currentCustomerCode) {
+      console.log(`🔐 Farklı müşteriye geçildi (${savedCustomerCode} → ${currentCustomerCode}), masa bilgisi temizleniyor`);
+      deleteCookie('tableId');
+      deleteCookie('tableCode');
+      deleteCookie('tableCustomerCode');
+      deleteCookie('isSelfService');
+      deleteCookie('selfServiceSessionId');
+      setTableId(null);
+      setTableName(null);
+      setIsSelfService(false);
+      setSessionId(null);
+      return;
+    }
+
+    // 🔐 Masasız QR okutulduysa (code var ama table yok) → eski masa bilgisini temizle
+    const codeParam = params.get('code');
+    if (codeParam && !tableParam && !sessionParam && savedTableId) {
+      console.log(`🔐 Masasız QR okutuldu (code=${codeParam}), masa bilgisi temizleniyor`);
+      deleteCookie('tableId');
+      deleteCookie('tableCode');
+      deleteCookie('tableCustomerCode');
+      setTableId(null);
+      setTableName(null);
+      setIsSelfService(false);
+      setSessionId(null);
+      return;
+    }
 
     // Self-service cookie'leri sadece /selfservice sayfasında geçerli
     const isSelfServicePage = pathname.includes('/selfservice');
@@ -60,7 +94,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
       setSelfServiceMode(savedSessionId);
     } else if (tableParam) {
       // URL'de table var - kaydet ve URL'den gizle
-      setTableInfoWithCookie(tableParam, tableParam);
+      setTableInfoWithCookie(tableParam, tableParam, currentCustomerCode);
 
       // Self-service cookie'lerini temizle
       if (selfServiceCookie) {
@@ -99,6 +133,38 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
       setSessionId(null);
     }
   }, []);
+
+  // ⏰ 15 dakika sonra otomatik temizle - cookie ile senkronize
+  useEffect(() => {
+    // tableId veya sessionId yoksa timer kurma
+    if (!tableId && !sessionId) {
+      return;
+    }
+
+    console.log('⏰ 15 dakikalık oturum timer\'ı başlatıldı');
+
+    const timer = setTimeout(() => {
+      console.log('⏰ 15 dakika doldu - masa/session bilgisi temizleniyor');
+      // State'leri temizle
+      setTableId(null);
+      setTableName(null);
+      setIsSelfService(false);
+      setSessionId(null);
+      // Cookie'leri temizle
+      deleteCookie('isSelfService');
+      deleteCookie('selfServiceSessionId');
+      deleteCookie('tableId');
+      deleteCookie('tableCode');
+      // localStorage temizle
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('currentTableName');
+      }
+    }, 15 * 60 * 1000); // 15 dakika
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [tableId, sessionId]);
 
   /**
    * Validate session from API
@@ -158,12 +224,15 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
   /**
    * Set table info with cookie (normal table mode) - internal use
    */
-  const setTableInfoWithCookie = (table: string, name: string) => {
+  const setTableInfoWithCookie = (table: string, name: string, customerCode?: string) => {
     setTableId(table);
     setTableName(name);
     setIsSelfService(false);
     setSessionId(null);
     setCookie('tableId', table, 15 / 60); // 15 dakika (QR geçerlilik süresi)
+    if (customerCode) {
+      setCookie('tableCustomerCode', customerCode, 15 / 60); // 🔐 Masa hangi müşteriye ait
+    }
   };
 
   /**
@@ -201,6 +270,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     deleteCookie('selfServiceSessionId');
     deleteCookie('tableId'); // Table cookie'sini de sil
     deleteCookie('tableCode'); // Middleware'in kullandığı cookie
+    deleteCookie('tableCustomerCode'); // 🔐 Müşteri kodu cookie'sini de sil
 
     // ✅ localStorage'dan masa ismini de sil
     if (typeof window !== 'undefined') {
