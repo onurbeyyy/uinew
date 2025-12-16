@@ -267,7 +267,6 @@ export default function CustomerMenuClient({
                 }
               });
 
-              console.log('🪙 Token settings loaded:', { products: Object.keys(productMap).length, portions: Object.keys(portionMap).length });
               setProductTokenSettings(productMap);
               setPortionTokenSettings(portionMap);
             }

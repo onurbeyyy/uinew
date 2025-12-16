@@ -55,7 +55,6 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
       const now = Date.now();
       const fifteenMinutes = 15 * 60 * 1000;
       if (now - createdTime > fifteenMinutes) {
-        console.log('⏰ Oturum süresi dolmuş (15dk), masa bilgisi temizleniyor');
         deleteCookie('tableId');
         deleteCookie('tableCode');
         deleteCookie('tableCustomerCode');
@@ -70,7 +69,6 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
 
     // 🔐 Farklı müşteriye geçildiyse masa bilgisini temizle
     if (savedTableId && savedCustomerCode && currentCustomerCode && savedCustomerCode !== currentCustomerCode) {
-      console.log(`🔐 Farklı müşteriye geçildi (${savedCustomerCode} → ${currentCustomerCode}), masa bilgisi temizleniyor`);
       deleteCookie('tableId');
       deleteCookie('tableCode');
       deleteCookie('tableCustomerCode');
@@ -86,7 +84,6 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     // 🔐 Masasız QR okutulduysa (code var ama table yok) → eski masa bilgisini temizle
     const codeParam = params.get('code');
     if (codeParam && !tableParam && !sessionParam && savedTableId) {
-      console.log(`🔐 Masasız QR okutuldu (code=${codeParam}), masa bilgisi temizleniyor`);
       deleteCookie('tableId');
       deleteCookie('tableCode');
       deleteCookie('tableCustomerCode');
@@ -161,10 +158,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    console.log('⏰ 15 dakikalık oturum timer\'ı başlatıldı');
-
     const timer = setTimeout(() => {
-      console.log('⏰ 15 dakika doldu - masa/session bilgisi temizleniyor');
       // State'leri temizle
       setTableId(null);
       setTableName(null);
