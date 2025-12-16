@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const response = await fetch(`${API_BASE_URL}/api/WaiterCall/call`, {
+    const response = await fetch(`${API_BASE_URL}/api/tableorders/get-table-orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -14,12 +14,12 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    const result = await response.json();
-    return NextResponse.json(result, { status: response.status });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Waiter call API Error:', error);
+    console.error('Table orders proxy error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to call waiter' },
+      { success: false, error: 'API bağlantı hatası' },
       { status: 500 }
     );
   }

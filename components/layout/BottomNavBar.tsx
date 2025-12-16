@@ -8,6 +8,7 @@ interface BottomNavBarProps {
   onAIClick?: () => void;
   onCartClick?: () => void;
   onWaiterCall?: () => void;
+  onTableOrdersClick?: () => void;
   onGameClick?: () => void;
   onContactClick?: () => void;
   onSuggestionClick?: () => void;
@@ -15,6 +16,7 @@ interface BottomNavBarProps {
   showAIChat?: boolean;
   showCart?: boolean;
   showWaiterCall?: boolean;
+  showTableOrders?: boolean;
   showGame?: boolean;
   showAddresses?: boolean;
   cartItemCount?: number;
@@ -28,6 +30,7 @@ export default function BottomNavBar({
   onAIClick,
   onCartClick,
   onWaiterCall,
+  onTableOrdersClick,
   onGameClick,
   onContactClick,
   onSuggestionClick,
@@ -35,6 +38,7 @@ export default function BottomNavBar({
   showAIChat = true,
   showCart = true,
   showWaiterCall = false,
+  showTableOrders = false,
   showGame = true,
   showAddresses = false,
   cartItemCount = 0,
@@ -177,22 +181,51 @@ export default function BottomNavBar({
           gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
         />
 
-        {/* AI Asistan */}
-        {showAIChat && (
-          <NavButton
-            icon={
-              <svg style={{ width: '18px', height: '18px', fill: 'white' }} viewBox="0 0 24 24">
-                <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+        {/* Masada Ne Var - Profil'in hemen sağında */}
+        {showTableOrders && (
+          <div
+            onClick={onTableOrdersClick}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '12px',
+              position: 'relative',
+            }}
+          >
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '4px',
+                boxShadow: '0 4px 15px rgba(229, 57, 53, 0.4)',
+              }}
+            >
+              <svg style={{ width: '20px', height: '20px', fill: 'white' }} viewBox="0 0 24 24">
+                <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0-3h8v2H8v-2zm0-3h5v2H8V8z"/>
               </svg>
-            }
-            label={t('aiAssistant')}
-            onClick={onAIClick}
-            gradient="linear-gradient(135deg, #3498db 0%, #2980b9 100%)"
-          />
+            </div>
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: '#e53935',
+              }}
+            >
+              Masada Ne Var
+            </span>
+          </div>
         )}
 
-        {/* Garson Çağır (sadece masa ID varsa) */}
-        {showWaiterCall && tableId && (
+        {/* Garson Çağır */}
+        {showWaiterCall && (
           <div
             onClick={handleWaiterClick}
             style={{
@@ -232,6 +265,20 @@ export default function BottomNavBar({
               {t('waiterCall')}
             </span>
           </div>
+        )}
+
+        {/* AI Asistan */}
+        {showAIChat && (
+          <NavButton
+            icon={
+              <svg style={{ width: '18px', height: '18px', fill: 'white' }} viewBox="0 0 24 24">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+              </svg>
+            }
+            label={t('aiAssistant')}
+            onClick={onAIClick}
+            gradient="linear-gradient(135deg, #3498db 0%, #2980b9 100%)"
+          />
         )}
 
         {/* Oyun Butonu - Dikkat Çekici Animasyonlu */}
