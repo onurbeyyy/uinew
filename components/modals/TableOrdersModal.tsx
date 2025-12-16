@@ -95,6 +95,10 @@ export default function TableOrdersModal({
     setBillError(null);
 
     try {
+      // EndUserId'yi localStorage'dan al
+      const userData = localStorage.getItem('userData');
+      const endUserId = userData ? JSON.parse(userData).id : null;
+
       const response = await fetch('/api/waiter-call', {
         method: 'POST',
         headers: {
@@ -105,6 +109,7 @@ export default function TableOrdersModal({
           TableName: tableId,
           CallType: 'Bill',
           Message: 'Hesap isteniyor',
+          EndUserId: endUserId,
         }),
       });
 
