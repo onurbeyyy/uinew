@@ -6,12 +6,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
+    // API'ye PascalCase ile gönder
     const response = await fetch(`${API_BASE_URL}/api/tableorders/get-table-orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        CustomerCode: body.customerCode,
+        TableName: body.tableName,
+        EndUserId: body.endUserId,
+      }),
     });
 
     const data = await response.json();

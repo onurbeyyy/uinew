@@ -21,6 +21,7 @@ import AIChatSidebar from '@/components/ai/AIChatSidebar';
 import SuggestionModal from '@/components/modals/SuggestionModal';
 import EmailVerifiedPopup from '@/components/notifications/EmailVerifiedPopup';
 import WaiterCallRateLimitModal from '@/components/modals/WaiterCallRateLimitModal';
+import TableOrdersModal from '@/components/modals/TableOrdersModal';
 import ImagePreloadContainer from '@/components/common/ImagePreloadContainer';
 import type { MenuDto, CustomerInfoResponse, CategoryDto } from '@/types/api';
 
@@ -96,6 +97,7 @@ export default function CustomerMenuClient({
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
+  const [isTableOrdersModalOpen, setIsTableOrdersModalOpen] = useState(false);
   const [rateLimitModal, setRateLimitModal] = useState<{
     isOpen: boolean;
     errorMessage: string;
@@ -524,9 +526,11 @@ export default function CustomerMenuClient({
             if (customerData?.customer.phone) window.location.href = `tel:${customerData.customer.phone}`;
           }}
           onSuggestionClick={() => setIsSuggestionModalOpen(true)}
+          onTableOrdersClick={() => setIsTableOrdersModalOpen(true)}
           showAIChat={customerData?.customer.showAIChat ?? true}
           showCart={isTableMode && (canUseBasket || !!basketDisabledMessage)}
           showWaiterCall={canCallWaiter}
+          showTableOrders={canCallWaiter}
           tableId={tableId || undefined}
           phone={customerData?.customer.phone}
           cartItemCount={0}
@@ -582,6 +586,13 @@ export default function CustomerMenuClient({
         errorMessage={rateLimitModal.errorMessage}
         remainingSeconds={rateLimitModal.remainingSeconds}
         isRegistered={rateLimitModal.isRegistered}
+      />
+
+      <TableOrdersModal
+        isOpen={isTableOrdersModalOpen}
+        onClose={() => setIsTableOrdersModalOpen(false)}
+        customerCode={code}
+        tableId={tableId || ''}
       />
     </>
   );

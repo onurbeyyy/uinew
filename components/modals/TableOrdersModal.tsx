@@ -62,6 +62,10 @@ export default function TableOrdersModal({
     setOrderData(null);
 
     try {
+      // EndUserId'yi localStorage'dan al
+      const userData = localStorage.getItem('userData');
+      const endUserId = userData ? JSON.parse(userData).id : null;
+
       const response = await fetch('/api/table-orders', {
         method: 'POST',
         headers: {
@@ -70,6 +74,7 @@ export default function TableOrdersModal({
         body: JSON.stringify({
           customerCode,
           tableName: tableId,
+          endUserId,
         }),
       });
 
