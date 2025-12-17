@@ -169,7 +169,10 @@ export default function TableOrdersModal({
         <div className="modal-header">
           <div className="header-info">
             <h2>Masada Ne Var?</h2>
-            <span className="table-name">{displayTableName}</span>
+            {/* Masa ismini sadece API'den geldiyse göster (kod değilse) */}
+            {displayTableName && displayTableName !== tableId && (
+              <span className="table-name">{displayTableName}</span>
+            )}
           </div>
           <button className="close-btn" onClick={onClose}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
