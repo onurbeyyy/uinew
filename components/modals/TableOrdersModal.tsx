@@ -36,10 +36,8 @@ export default function TableOrdersModal({
   tableId,
   onRequestBill,
 }: TableOrdersModalProps) {
-  // Display name icin localStorage'dan al (varsa)
-  const displayTableName = typeof window !== 'undefined'
-    ? localStorage.getItem('currentTableName') || tableId
-    : tableId;
+  // Display name: API'den gelen tableName veya fallback olarak tableId
+  const [displayTableName, setDisplayTableName] = useState<string>(tableId);
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +46,11 @@ export default function TableOrdersModal({
   const [billRequesting, setBillRequesting] = useState(false);
   const [billError, setBillError] = useState<string | null>(null);
   const [billSuccess, setBillSuccess] = useState(false);
+
+  // tableId değiştiğinde displayTableName'i resetle
+  useEffect(() => {
+    setDisplayTableName(tableId);
+  }, [tableId]);
 
   // Modal acildiginda siparisleri cek
   useEffect(() => {
@@ -79,6 +82,13 @@ export default function TableOrdersModal({
       });
 
       const result = await response.json();
+
+      // API'den gelen masa ismini her durumda göster
+      if (result.tableName) {
+        setDisplayTableName(result.tableName);
+      } else if (result.data?.length > 0 && result.data[0].tableName) {
+        setDisplayTableName(result.data[0].tableName);
+      }
 
       if (result.success && result.data) {
         setOrderData(result.data);
