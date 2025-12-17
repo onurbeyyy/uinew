@@ -14,19 +14,19 @@ export function middleware(request: NextRequest) {
     const table = searchParams.get('table');
 
     if (code) {
-      // 🔒 GÜVENLİK: Masa kodunu cookie'ye kaydet ve URL'den gizle
+      // 🔒 GÜVENLİK: Masa kodunu cookie'ye kaydet ve URL'den TAMAMEN gizle
       const url = request.nextUrl.clone();
       url.pathname = `/${code}`;
 
-      // code parametresini kaldır
+      // 🔒 ÖNCELİKLE tüm parametreleri URL'den kaldır (tarayıcı geçmişinde görünmesin!)
       url.searchParams.delete('code');
+      url.searchParams.delete('table');
 
-      // table parametresini cookie'ye kaydet ve URL'den kaldır
-      const response = NextResponse.rewrite(url);
+      // 🔒 Redirect kullan - tarayıcı geçmişinde temiz URL görünsün
+      const response = NextResponse.redirect(url);
 
       if (table) {
-        // 🔒 Yeni masa kodu geldiğinde eski cookie'yi sil ve yenisini yaz
-        // Bu şekilde farklı müşteriler karışmaz
+        // 🔒 Masa kodunu cookie'ye kaydet (sadece backend bilsin)
         response.cookies.set('tableCode', table, {
           httpOnly: false, // Frontend'den okunabilir olmalı (sipariş gönderirken gerekli)
           secure: process.env.NODE_ENV === 'production',
@@ -34,9 +34,6 @@ export function middleware(request: NextRequest) {
           maxAge: 60 * 15, // 15 dakika geçerli
           path: '/'
         });
-
-        // Table parametresini URL'den kaldır (kullanıcı görmeyecek)
-        url.searchParams.delete('table');
       } else {
         // Table parametresi yoksa eski cookie'yi temizle
         // (Başka bir QR kod okutulmuş olabilir)

@@ -35,9 +35,12 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     }
 
     const params = new URLSearchParams(window.location.search);
-    const tableParam = params.get('table');
+    const tableParam = params.get('table'); // Artık middleware redirect yaptığı için bu boş olacak
     const sessionParam = params.get('session');
     const pathname = window.location.pathname;
+
+    // 🔒 Masa kodu artık cookie'den okunuyor (middleware tarafından set ediliyor)
+    const tableFromCookie = getCookie('tableCode');
 
     // 🔐 Mevcut customer code'u URL'den al
     const pathParts = pathname.split('/').filter(Boolean);
@@ -82,8 +85,9 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 🔐 Masasız QR okutulduysa (code var ama table yok) → eski masa bilgisini temizle
+    // Not: tableFromCookie middleware tarafından yeni set edilmiş olabilir
     const codeParam = params.get('code');
-    if (codeParam && !tableParam && !sessionParam && savedTableId) {
+    if (codeParam && !tableFromCookie && !sessionParam && savedTableId) {
       deleteCookie('tableId');
       deleteCookie('tableCode');
       deleteCookie('tableCustomerCode');
@@ -109,33 +113,26 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     } else if (savedSessionId && selfServiceCookie && isSelfServicePage) {
       // 🔧 URL'de session yok ama cookie'de var VE selfservice sayfasındayız - geri yükle (login sonrası)
       setSelfServiceMode(savedSessionId);
-    } else if (tableParam) {
-      // URL'de table var - kaydet ve URL'den gizle
-      setTableInfoWithCookie(tableParam, tableParam, currentCustomerCode);
+    } else if (savedTableId) {
+      // 🔒 Cookie'de table var (middleware set etmiş veya önceden vardı) - state'e yükle
+      // Not: tableCreatedAt yoksa yeni oluştur (eski cookie için geriye uyumluluk)
+      if (!tableCreatedAt) {
+        setCookie('tableCreatedAt', Date.now().toString(), 15 / 60);
+      }
+      if (!savedCustomerCode && currentCustomerCode) {
+        setCookie('tableCustomerCode', currentCustomerCode, 15 / 60);
+      }
+
+      setTableId(savedTableId);
+      setTableName(savedTableId); // 🔒 Masa kodu state'te kalır ama UI'da gösterilmez
+      setIsSelfService(false);
+      setSessionId(null);
 
       // Self-service cookie'lerini temizle
       if (selfServiceCookie) {
         deleteCookie('isSelfService');
         deleteCookie('selfServiceSessionId');
       }
-
-      // ✅ Table ID'yi URL'den gizle (güvenlik için)
-      // setTimeout ile hydration sonrası çalıştır
-      setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          const url = new URL(window.location.href);
-          if (url.searchParams.has('table')) {
-            url.searchParams.delete('table');
-            window.history.replaceState({}, '', url.toString());
-          }
-        }
-      }, 100);
-    } else if (savedTableId) {
-      // 🔧 URL'de table yok ama cookie'de var - geri yükle (login sonrası)
-      setTableId(savedTableId);
-      setTableName(savedTableId);
-      setIsSelfService(false);
-      setSessionId(null);
     } else {
       // Hiçbir şey yok - temizle
       if (selfServiceCookie) {

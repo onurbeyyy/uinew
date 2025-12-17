@@ -1092,9 +1092,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
                               </div>
                             )}
 
-                            <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '8px' }}>
-                              🍽️ {order.tableName || 'Masa bilgisi yok'}
-                            </div>
+{/* Masa kodu gizlendi - güvenlik için gösterilmiyor */}
 
                             {order.items && order.items.length > 0 && (
                               <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f0f0f0' }}>
