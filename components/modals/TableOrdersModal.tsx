@@ -36,8 +36,8 @@ export default function TableOrdersModal({
   tableId,
   onRequestBill,
 }: TableOrdersModalProps) {
-  // Display name: API'den gelen tableName veya fallback olarak tableId
-  const [displayTableName, setDisplayTableName] = useState<string>(tableId);
+  // Display name: localStorage veya API'den gelen tableName
+  const [displayTableName, setDisplayTableName] = useState<string>('');
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +47,12 @@ export default function TableOrdersModal({
   const [billError, setBillError] = useState<string | null>(null);
   const [billSuccess, setBillSuccess] = useState(false);
 
-  // tableId değiştiğinde displayTableName'i resetle
+  // tableId değiştiğinde localStorage'dan masa ismini oku
   useEffect(() => {
-    setDisplayTableName(tableId);
+    if (typeof window !== 'undefined') {
+      const savedName = localStorage.getItem('currentTableName');
+      setDisplayTableName(savedName || '');
+    }
   }, [tableId]);
 
   // Modal acildiginda siparisleri cek
@@ -83,11 +86,13 @@ export default function TableOrdersModal({
 
       const result = await response.json();
 
-      // API'den gelen masa ismini her durumda göster
+      // API'den gelen masa ismini göster ve localStorage'a kaydet
       if (result.tableName) {
         setDisplayTableName(result.tableName);
+        localStorage.setItem('currentTableName', result.tableName);
       } else if (result.data?.length > 0 && result.data[0].tableName) {
         setDisplayTableName(result.data[0].tableName);
+        localStorage.setItem('currentTableName', result.data[0].tableName);
       }
 
       if (result.success && result.data) {
@@ -169,8 +174,8 @@ export default function TableOrdersModal({
         <div className="modal-header">
           <div className="header-info">
             <h2>Masada Ne Var?</h2>
-            {/* Masa ismini sadece API'den geldiyse göster (kod değilse) */}
-            {displayTableName && displayTableName !== tableId && (
+            {/* Masa ismini göster (localStorage veya API'den) */}
+            {displayTableName && (
               <span className="table-name">{displayTableName}</span>
             )}
           </div>

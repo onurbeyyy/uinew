@@ -164,6 +164,35 @@ export default function CustomerMenu() {
     isRegistered: false,
   });
 
+  // 🪑 Masa ismi - cookie'den gelen tableId için sorgulanır
+  useEffect(() => {
+    const loadTableName = async () => {
+      // tableContextId varsa ve localStorage'da masa ismi yoksa sorgula
+      if (!tableContextId || !customerData?.customer?.id) return;
+
+      const savedTableName = localStorage.getItem('currentTableName');
+      if (savedTableName) return; // Zaten var
+
+      try {
+        const tablesResponse = await fetch(`/api/tables/${customerData.customer.id}`);
+        if (tablesResponse.ok) {
+          const tables = await tablesResponse.json();
+          const matchedTable = tables.find(
+            (t: { secureId?: string }) => t.secureId?.toLowerCase() === tableContextId.toLowerCase()
+          );
+          if (matchedTable) {
+            const tableName = matchedTable.name || matchedTable.tableName || tableContextId;
+            localStorage.setItem('currentTableName', tableName);
+          }
+        }
+      } catch {
+        // Sessizce başarısız ol
+      }
+    };
+
+    loadTableName();
+  }, [tableContextId, customerData]);
+
   // 📊 Ziyaret kaydı fonksiyonu (30 dk içinde tekrar sayma)
   const trackVisit = (customerId: number) => {
     try {
