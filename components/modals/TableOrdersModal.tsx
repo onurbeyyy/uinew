@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+interface OrderState {
+  stateName: string;
+  state: string;
+}
+
 interface OrderItem {
   name: string;
   quantity: number;
@@ -10,6 +15,7 @@ interface OrderItem {
   total: number;
   portion?: string;
   state?: string;
+  states?: OrderState[];  // Tüm state'ler (GStatus dahil)
 }
 
 interface TableOrderData {
@@ -164,8 +170,61 @@ export default function TableOrdersModal({
 
   if (!isOpen) return null;
 
-  const totalAmount = orderData?.reduce((sum, ticket) => sum + ticket.totalAmount, 0) || 0;
-  const totalItems = orderData?.reduce((sum, ticket) => sum + ticket.orders.length, 0) || 0;
+  // GStatus'tan özel durumu kontrol et (İade, İkram vb.)
+  const getGStatus = (item: OrderItem): string | null => {
+    const gStatus = item.states?.find(s => s.stateName === 'GStatus');
+    return gStatus?.state || null;
+  };
+
+  // İade olanları filtrele, İkram'ları göster
+  const getActiveOrders = (orders: OrderItem[]) => {
+    return orders.filter(item => {
+      const gStatus = getGStatus(item);
+      // İade olanları gizle
+      if (gStatus === 'İade') return false;
+      // Eski kontroller de kalsın (void, cancelled vb.)
+      const state = (item.state || '').toLowerCase();
+      return state !== 'void' && state !== 'cancelled' && state !== 'refunded';
+    });
+  };
+
+  // Ürünün İkram olup olmadığını kontrol et
+  const isGift = (item: OrderItem): boolean => {
+    const gStatus = getGStatus(item);
+    return gStatus === 'İkram';
+  };
+
+  // Aktif siparişleri grupla (İkram olanları ayrı grupla)
+  const getGroupedOrders = (orders: OrderItem[]) => {
+    const activeOrders = getActiveOrders(orders);
+    return Object.values(activeOrders.reduce((acc, item) => {
+      // İkram olanları ayrı grupla (İkram|CAY|Normal vs Normal|CAY|Normal)
+      const giftPrefix = isGift(item) ? 'gift' : 'normal';
+      const key = `${giftPrefix}|${item.name}|${item.portion || ''}`;
+      if (!acc[key]) {
+        acc[key] = { ...item, quantity: 0, total: 0 };
+      }
+      acc[key].quantity += item.quantity;
+      acc[key].total += item.total;
+      return acc;
+    }, {} as Record<string, OrderItem>));
+  };
+
+  // Toplam tutarı aktif siparişlerden hesapla (İkramlar hariç)
+  const totalAmount = orderData?.reduce((sum, ticket) => {
+    const activeOrders = getActiveOrders(ticket.orders);
+    // İkram olan ürünleri toplama ekleme
+    return sum + activeOrders.reduce((s, item) => {
+      if (isGift(item)) return s;
+      return s + item.total;
+    }, 0);
+  }, 0) || 0;
+
+  // Toplam ürün sayısını aktif siparişlerden hesapla
+  const totalItems = orderData?.reduce((sum, ticket) => {
+    const activeOrders = getActiveOrders(ticket.orders);
+    return sum + activeOrders.reduce((s, item) => s + item.quantity, 0);
+  }, 0) || 0;
 
   return (
     <div className="table-orders-modal-overlay" onClick={onClose}>
@@ -232,41 +291,46 @@ export default function TableOrdersModal({
                 <>
                   {/* Orders List */}
                   <div className="orders-list">
-                    {orderData.map((ticket, ticketIndex) => (
-                      <div key={ticket.ticketId} className="ticket-card">
-                        <div className="ticket-header">
-                          <span className="ticket-number">Adisyon #{ticket.ticketNumber}</span>
-                          <span className="ticket-total">{ticket.totalAmount.toFixed(2)} TL</span>
-                        </div>
-                        <div className="order-items">
-                          {(() => {
-                            // Aynı ürün + porsiyon olanları grupla
-                            const grouped = ticket.orders.reduce((acc, item) => {
-                              const key = `${item.name}|${item.portion || ''}`;
-                              if (!acc[key]) {
-                                acc[key] = { ...item, quantity: 0, total: 0 };
-                              }
-                              acc[key].quantity += item.quantity;
-                              acc[key].total += item.total;
-                              return acc;
-                            }, {} as Record<string, OrderItem>);
+                    {orderData.map((ticket) => {
+                      const groupedOrders = getGroupedOrders(ticket.orders);
+                      // İkram olan ürünleri toplama ekleme
+                      const ticketTotal = groupedOrders.reduce((sum, item) => {
+                        if (isGift(item)) return sum;
+                        return sum + item.total;
+                      }, 0);
 
-                            return Object.values(grouped).map((item, itemIndex) => (
-                              <div key={itemIndex} className="order-item">
-                                <div className="item-info">
-                                  <span className="item-name">
-                                    {item.name}
-                                    {item.portion && item.portion !== 'Normal' && <span className="item-portion">({item.portion})</span>}
+                      // Aktif sipariş yoksa bu ticket'ı gösterme
+                      if (groupedOrders.length === 0) return null;
+
+                      return (
+                        <div key={ticket.ticketId} className="ticket-card">
+                          <div className="ticket-header">
+                            <span className="ticket-number">Adisyon #{ticket.ticketNumber}</span>
+                            <span className="ticket-total">{ticketTotal.toFixed(2)} TL</span>
+                          </div>
+                          <div className="order-items">
+                            {groupedOrders.map((item, itemIndex) => {
+                              const itemIsGift = isGift(item);
+                              return (
+                                <div key={itemIndex} className={`order-item ${itemIsGift ? 'gift-item' : ''}`}>
+                                  <div className="item-info">
+                                    <span className="item-name">
+                                      {itemIsGift && <span className="gift-icon">❤️</span>}
+                                      {item.name}
+                                      {item.portion && item.portion !== 'Normal' && <span className="item-portion">({item.portion})</span>}
+                                    </span>
+                                    <span className="item-qty">x{item.quantity}</span>
+                                  </div>
+                                  <span className={`item-price ${itemIsGift ? 'gift-price' : ''}`}>
+                                    {itemIsGift ? 'İkram' : `${item.total.toFixed(2)} TL`}
                                   </span>
-                                  <span className="item-qty">x{item.quantity}</span>
                                 </div>
-                                <span className="item-price">{item.total.toFixed(2)} TL</span>
-                              </div>
-                            ));
-                          })()}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Summary */}
@@ -533,6 +597,27 @@ export default function TableOrdersModal({
         .item-price {
           color: #4a5568;
           font-weight: 600;
+        }
+
+        /* İkram ürünleri için stiller */
+        .gift-item {
+          background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+          border-radius: 8px;
+          padding: 8px !important;
+          margin: 4px 0;
+        }
+
+        .gift-icon {
+          margin-right: 6px;
+        }
+
+        .gift-price {
+          color: #ec4899;
+          font-weight: 700;
+          background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .summary-section {
