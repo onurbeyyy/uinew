@@ -534,12 +534,36 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
       }
     }
 
-    // 🔐 Giriş kontrolü - Sipariş vermek için giriş şart
+    // 👤 Misafir siparişi - Giriş zorunluluğu yok, 1 saat limit
+    let guestId = '';
     if (!isAuthenticated) {
-      alert('Sipariş vermek için giriş yapmalısınız.');
-      onClose();
-      setTimeout(() => openProfile(), 300);
-      return;
+      // Cookie'den son sipariş zamanını kontrol et
+      const guestOrderCookie = document.cookie.split(';').find(c => c.trim().startsWith('guestOrderTime='));
+      if (guestOrderCookie) {
+        const lastOrderTime = parseInt(guestOrderCookie.split('=')[1], 10);
+        const now = Date.now();
+        const oneHour = 60 * 60 * 1000; // 1 saat (ms)
+        const remaining = oneHour - (now - lastOrderTime);
+
+        if (remaining > 0) {
+          const minutes = Math.ceil(remaining / 60000);
+          alert(`⏰ Misafir olarak 1 saatte 1 sipariş verebilirsiniz.\n\n${minutes} dakika sonra tekrar sipariş verebilirsiniz.\n\n💡 Üye girişi yaparak sınırsız sipariş verebilirsiniz!`);
+          return;
+        }
+      }
+
+      // Misafir ID'si al veya oluştur (kalıcı cookie)
+      const guestIdCookie = document.cookie.split(';').find(c => c.trim().startsWith('guestId='));
+      if (guestIdCookie) {
+        guestId = guestIdCookie.split('=')[1];
+      } else {
+        // Yeni benzersiz ID oluştur (8 karakter)
+        guestId = Math.random().toString(36).substring(2, 10).toUpperCase();
+        // 1 yıl geçerli cookie
+        const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+        document.cookie = `guestId=${guestId}; expires=${expires}; path=/`;
+      }
+      console.log('👤 Misafir olarak sipariş veriliyor - ID:', guestId);
     }
 
     // Show confirmation modal
@@ -588,6 +612,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         customerCode: customerCode,
         tableName: orderTableName,
         endUserId: endUserId, // Logged in user ID (for token deduction)
+        guestId: guestId || null, // Misafir ID (engellenebilir)
         Source: 'UI',
         isSelfService: actualIsSelfService,
         isDelivery: isDelivery,
@@ -671,6 +696,13 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
             setIsSubmitting(false);
             return;
           }
+        }
+
+        // 👤 Misafir sipariş limiti - Cookie kaydet (1 saat geçerli, tüm sitede)
+        if (!isAuthenticated) {
+          const expires = new Date(Date.now() + 60 * 60 * 1000).toUTCString(); // 1 saat
+          document.cookie = `guestOrderTime=${Date.now()}; expires=${expires}; path=/`;
+          console.log('⏰ Misafir sipariş cookie kaydedildi - 1 saat limit başladı');
         }
 
         // Sepeti temizle
@@ -1307,6 +1339,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
           </div>
         )}
       </div>
+
     </>
   );
 }
