@@ -563,7 +563,6 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
         document.cookie = `guestId=${guestId}; expires=${expires}; path=/`;
       }
-      console.log('👤 Misafir olarak sipariş veriliyor - ID:', guestId);
     }
 
     // Show confirmation modal
@@ -702,7 +701,6 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         if (!isAuthenticated) {
           const expires = new Date(Date.now() + 60 * 60 * 1000).toUTCString(); // 1 saat
           document.cookie = `guestOrderTime=${Date.now()}; expires=${expires}; path=/`;
-          console.log('⏰ Misafir sipariş cookie kaydedildi - 1 saat limit başladı');
         }
 
         // Sepeti temizle

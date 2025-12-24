@@ -153,7 +153,7 @@ function SelfServiceContent() {
             }
           } else {
             // Session'ı kullanıldı olarak işaretle
-            fetch('/api/selfservice/use', {
+            fetch('/api/self-service/use', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ sessionId: session })
@@ -274,7 +274,7 @@ function SelfServiceContent() {
       if (lastVisit) {
         const lastTime = parseInt(lastVisit, 10);
         const diffMinutes = (now - lastTime) / (1000 * 60);
-        if (diffMinutes < 30) return;
+        if (diffMinutes < 5) return;
       }
 
       let visitSessionId = localStorage.getItem('menuSessionId');
@@ -366,8 +366,6 @@ function SelfServiceContent() {
         const customerResponse = await fetch(`/api/customer/${code}`);
 
         if (!customerResponse.ok) {
-          const errorText = await customerResponse.text();
-          console.error('❌ Customer API hatası:', errorText);
           throw new Error('Müşteri bilgisi yüklenemedi');
         }
 

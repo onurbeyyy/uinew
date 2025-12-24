@@ -200,12 +200,12 @@ export default function CustomerMenu() {
       const lastVisit = localStorage.getItem(storageKey);
       const now = Date.now();
 
-      // Son 30 dakika içinde ziyaret varsa tekrar sayma
+      // Son 5 dakika içinde ziyaret varsa tekrar sayma
       if (lastVisit) {
         const lastTime = parseInt(lastVisit, 10);
         const diffMinutes = (now - lastTime) / (1000 * 60);
-        if (diffMinutes < 30) {
-          return; // 30 dk geçmemiş, sayma
+        if (diffMinutes < 5) {
+          return; // 5 dk geçmemiş, sayma
         }
       }
 

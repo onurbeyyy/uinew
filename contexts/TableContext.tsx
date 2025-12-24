@@ -186,7 +186,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
    */
   const validateSession = async (session: string) => {
     try {
-      const response = await fetch(`/api/selfservice/validate?sessionId=${session}`);
+      const response = await fetch(`/api/self-service/validate?sessionId=${session}`);
       const data = await response.json();
 
       if (data.success) {
@@ -200,7 +200,6 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
           window.history.replaceState({}, '', url.toString());
         }
       } else {
-        console.error('❌ Self-servis session geçersiz:', data.message);
         if (typeof window !== 'undefined') {
           const url = new URL(window.location.href);
           url.searchParams.delete('session');
@@ -208,7 +207,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error('❌ Session validation error:', error);
+      // Session validation failed silently
     }
   };
 
@@ -219,7 +218,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
     try {
       const userAgent = navigator.userAgent;
 
-      await fetch('/api/selfservice/use', {
+      await fetch('/api/self-service/use', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,7 +231,7 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
         }),
       });
     } catch (error) {
-      console.error('❌ UseSession error:', error);
+      // UseSession failed silently
     }
   };
 

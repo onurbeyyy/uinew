@@ -102,9 +102,6 @@ export default function ProductDetailModal() {
   const handleAddToCart = () => {
     if (!selectedProduct || !isTableMode || !cartKey || !customerCode) return;
 
-    // Not: Login kontrolü kaldırıldı - WiFi sisteminde herkes sepete ekleyebilir
-    // Sipariş verirken WiFi veya login kontrolü yapılacak (CartSidebar'da)
-
     let cartItems = loadCart(cartKey, customerCode);
 
     // Porsiyon varsa porsiyon ID'sini, yoksa ürün ID'sini kullan

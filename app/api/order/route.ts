@@ -6,10 +6,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Not: endUserId kontrolü kaldırıldı - WiFi sisteminde backend kontrol ediyor
-    // Backend'de WiFi'deyse misafir sipariş kabul, değilse login zorunlu
-
-    // Client IP'yi backend'e ilet (WiFi kontrolü için)
     const forwardedFor = request.headers.get('x-forwarded-for');
     const realIp = request.headers.get('x-real-ip');
 

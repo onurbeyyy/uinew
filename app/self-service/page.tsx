@@ -293,11 +293,9 @@ export default function SelfServicePage() {
 
         // Session kontrolünü başlat
         startSessionCheck(sessionId, code, custId);
-      } else {
-        console.error('❌ Session oluşturulamadı:', data.message);
       }
     } catch (error: any) {
-      console.error('❌ API hatası:', error);
+      // API error - silently handled
     }
   };
 

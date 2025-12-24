@@ -164,7 +164,7 @@ export default function DeliveryPage() {
       if (lastVisit) {
         const lastTime = parseInt(lastVisit, 10);
         const diffMinutes = (now - lastTime) / (1000 * 60);
-        if (diffMinutes < 30) return;
+        if (diffMinutes < 5) return;
       }
 
       let visitSessionId = localStorage.getItem('menuSessionId');

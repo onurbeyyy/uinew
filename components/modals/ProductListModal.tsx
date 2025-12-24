@@ -82,9 +82,6 @@ export default function ProductListModal() {
     e.stopPropagation();
     if (!isTableMode || !cartKey || !menuData) return;
 
-    // Not: Login kontrolü kaldırıldı - WiFi sisteminde herkes sepete ekleyebilir
-    // Sipariş verirken WiFi veya login kontrolü yapılacak (CartSidebar'da)
-
     if (!customerCode) return;
     let items = loadCartFromStorage(cartKey, customerCode);
 

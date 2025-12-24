@@ -100,7 +100,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           // Sadece 401 hatalarında logout yap
           validateToken(token, true);
         } catch (e) {
-          console.error('❌ Failed to parse user data:', e);
           localStorage.removeItem('userData');
         }
       } else if (token) {
@@ -109,7 +108,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         await validateToken(token, true);
       }
     } catch (error) {
-      console.error('❌ Session check error:', error);
+      // Session check failed silently
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +130,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) {
         // Sadece 401 (Unauthorized) hatalarında logout yap
         if (response.status === 401 && shouldLogoutOnError) {
-          console.warn('⚠️ Token geçersiz, çıkış yapılıyor...');
           logout();
         }
         return false;
@@ -144,7 +142,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       return true;
     } catch (error) {
       // Ağ hataları (network error, timeout vb.) kullanıcıyı logout etmemeli
-      console.warn('⚠️ Token doğrulama hatası (ağ sorunu olabilir):', error);
       return false;
     }
   };
@@ -181,7 +178,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       return { success: true };
     } catch (error) {
-      console.error('❌ Login error:', error);
       return {
         success: false,
         error: 'Bağlantı hatası. Lütfen tekrar deneyin.'
@@ -237,7 +233,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       return { success: true };
     } catch (error) {
-      console.error('❌ Registration error:', error);
       return {
         success: false,
         error: 'Bağlantı hatası. Lütfen tekrar deneyin.'
@@ -277,7 +272,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('userData', JSON.stringify(cleanUser));
       }
     } catch (error) {
-      console.error('❌ Profile refresh error:', error);
+      // Profile refresh failed silently
     }
   };
 
