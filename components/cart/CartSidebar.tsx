@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useMenu } from '@/contexts/MenuContext';
 import { useAuth } from '@/contexts/UserContext';
 import { useTable } from '@/contexts/TableContext';
+import { useLocationVerification } from '@/hooks/useLocationVerification';
 import { saveCart as saveCartToStorage, loadCart as loadCartFromStorage, clearCart as clearCartFromStorage } from '@/utils/cartUtils';
 import ProductSuggestions from './ProductSuggestions';
 
@@ -48,12 +49,13 @@ interface CartSidebarProps {
 }
 
 export default function CartSidebar({ isOpen, onClose, tableId, customerCode, deliveryInfo, isSelfService: isSelfServiceProp }: CartSidebarProps) {
-  const { customerData, productTokenSettings, portionTokenSettings, getTokenSettingsForItem, cartKey: menuCartKey, isSelfService: isSelfServiceContext, sessionId, openProfile } = useMenu();
+  const { customerData, menuData, productTokenSettings, portionTokenSettings, getTokenSettingsForItem, cartKey: menuCartKey, isSelfService: isSelfServiceContext, sessionId, openProfile } = useMenu();
   // Prop değeri varsa onu kullan (delivery sayfasından gelen), yoksa context'ten al
   const isSelfService = isSelfServiceProp ?? isSelfServiceContext;
   const isDelivery = !!deliveryInfo && !isSelfService; // Self-service modunda delivery gibi davranma
   const { isAuthenticated, currentUser, refreshUserProfile } = useAuth();
   const { clearTableInfo } = useTable();
+  const { verifyLocation, isLoading: isLocationLoading } = useLocationVerification();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerNote, setCustomerNote] = useState('');
@@ -530,6 +532,21 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
 
       if (!cookieTableId && !sessionId) {
         alert(isSelfService ? 'Oturum bilgisi bulunamadı.' : 'Masa bilgisi bulunamadı. Lütfen QR kodu tekrar okutun.');
+        return;
+      }
+    }
+
+    // 📍 Konum doğrulama (sadece masa siparişlerinde, delivery ve self-service hariç)
+    if (!isDelivery && !isSelfService && menuData?.requireLocationVerification) {
+      const locationResult = await verifyLocation({
+        latitude: menuData.latitude ?? null,
+        longitude: menuData.longitude ?? null,
+        requireLocationVerification: menuData.requireLocationVerification,
+        locationToleranceMeters: menuData.locationToleranceMeters ?? 150,
+      });
+
+      if (!locationResult.isWithinRange) {
+        alert(locationResult.error || 'Sipariş vermek için restoranda olmalısınız.');
         return;
       }
     }

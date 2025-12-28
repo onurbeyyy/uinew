@@ -150,6 +150,11 @@ export interface MenuDto {
     productFont?: string;
   };
   screenType?: number;
+  // 📍 Konum doğrulama
+  latitude?: number | null;
+  longitude?: number | null;
+  requireLocationVerification?: boolean;
+  locationToleranceMeters?: number;
 }
 
 // Menu listesi içindeki kategori yapısı
