@@ -191,6 +191,11 @@ export default function GameModal() {
     openProfile();
   };
 
+  // Modal kapalıyken hiçbir şey render etme (gamehub bağlantısını önler)
+  if (!isGameModalOpen && !isClosing) {
+    return null;
+  }
+
   return (
     <>
       {/* Modal Container */}
