@@ -28,9 +28,14 @@ export default function ProductDetailModal() {
 
   // Mevcut kategorideki ürünler
   const currentProducts: Product[] = selectedCategory?.products || [];
-  const currentProductIndex = currentProducts.findIndex(
-    (p) => (p.id ?? p.Id) === (selectedProduct?.id ?? selectedProduct?.Id)
-  );
+  const currentProductIndex = currentProducts.findIndex((p) => {
+    const pId = p.id ?? p.Id;
+    const pSambaId = p.sambaId ?? p.SambaId;
+    const selectedId = selectedProduct?.id ?? selectedProduct?.Id;
+    const selectedSambaId = selectedProduct?.sambaId ?? selectedProduct?.SambaId;
+    // Önce id ile karşılaştır, eşleşmezse sambaId ile dene
+    return pId === selectedId || (pSambaId && pSambaId === selectedSambaId);
+  });
 
   // Porsiyonları al (API'den gelen Portions veya portions)
   const portions: ProductPortion[] = selectedProduct?.Portions ?? selectedProduct?.portions ?? [];

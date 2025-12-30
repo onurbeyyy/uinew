@@ -27,6 +27,7 @@ export default function ProductListModal() {
     customerCode,
     categoriesData,
     selectedCategory,
+    setSelectedCategory,
     isProductListModalOpen,
     closeProductListModal,
     openProductDetailModal,
@@ -214,6 +215,10 @@ export default function ProductListModal() {
 
   const switchCategory = (newCategory: typeof activeCategory) => {
     setActiveCategory(newCategory);
+    // Context'i de güncelle - ProductDetailModal navigasyonu için
+    if (newCategory) {
+      setSelectedCategory(newCategory);
+    }
   };
 
   const getImageUrl = (picture?: string, fallbackLogo?: string) => {

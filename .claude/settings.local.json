@@ -113,7 +113,8 @@
       "Bash(/mnt/c/Windows/System32/cmd.exe /c \"cd /d C:\\\\Users\\\\Onue\\\\Desktop\\\\canli menu\\\\samba\\\\uinew && git push\")",
       "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"journalctl -u menupark-api -n 100 --no-pager | grep -i ''gamehub\\\\|signalr\\\\|hub\\\\|error'' | tail -30\")",
       "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"journalctl -u menupark-api -n 50 --no-pager\")",
-      "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"cat /etc/nginx/sites-available/menupark-api | grep -A 20 ''gamehub\\\\|signalr\\\\|location''\")"
+      "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"cat /etc/nginx/sites-available/menupark-api | grep -A 20 ''gamehub\\\\|signalr\\\\|location''\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nÜrün kartları ve modal iyileştirmeleri\n\n- Ürün kartlarına okunabilir koyu arka plan eklendi\n- ProductDetailModal içerik alanına koyu arka plan eklendi\n- Kategori değişiminde selectedCategory context güncelleniyor\n- Ürün navigasyonu için sambaId karşılaştırması eklendi\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ],
     "deny": [],
     "ask": []
