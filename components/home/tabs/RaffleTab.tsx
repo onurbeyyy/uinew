@@ -3,13 +3,31 @@
 import { useState } from 'react';
 import type { Advertisement } from '@/types/api';
 import RaffleModal from '@/components/modals/RaffleModal';
+import { useAuth } from '@/contexts/UserContext';
+import { useMenu } from '@/contexts/MenuContext';
 
 interface RaffleTabProps {
   tab: Advertisement;
 }
 
 export default function RaffleTab({ tab }: RaffleTabProps) {
+  const { currentUser } = useAuth();
+  const { openProfile } = useMenu();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  const handleClick = () => {
+    if (!currentUser) {
+      setShowLoginPrompt(true);
+    } else {
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleLoginClick = () => {
+    setShowLoginPrompt(false);
+    openProfile();
+  };
 
   // Görsel URL'sini düzenle
   const getImageUrl = (url?: string) => {
@@ -32,7 +50,7 @@ export default function RaffleTab({ tab }: RaffleTabProps) {
   return (
     <>
       <div
-        onClick={() => setIsModalOpen(true)}
+        onClick={handleClick}
         style={{
           width: '100%',
           height: '100%',
@@ -104,6 +122,79 @@ export default function RaffleTab({ tab }: RaffleTabProps) {
         prizeDescription={prizeDescription}
         prizeImage={prizeImage || undefined}
       />
+
+      {/* Kayıt Ol Uyarı Modalı */}
+      {showLoginPrompt && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '20px',
+          }}
+          onClick={() => setShowLoginPrompt(false)}
+        >
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+              borderRadius: '20px',
+              padding: '30px',
+              maxWidth: '350px',
+              width: '100%',
+              textAlign: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '48px', marginBottom: '15px' }}>🎯</div>
+            <h3 style={{ color: 'white', fontSize: '20px', marginBottom: '10px' }}>
+              Kayıt Olmalısınız
+            </h3>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', marginBottom: '25px' }}>
+              Çekilişe katılmak için önce kayıt olmanız gerekmektedir.
+            </p>
+            <button
+              onClick={handleLoginClick}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '16px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                marginBottom: '10px',
+              }}
+            >
+              Kayıt Ol / Giriş Yap
+            </button>
+            <button
+              onClick={() => setShowLoginPrompt(false)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'transparent',
+                color: 'rgba(255,255,255,0.6)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '12px',
+                fontSize: '14px',
+                cursor: 'pointer',
+              }}
+            >
+              Vazgeç
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
