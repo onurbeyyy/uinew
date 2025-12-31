@@ -22,6 +22,7 @@ import SuggestionModal from '@/components/modals/SuggestionModal';
 import EmailVerifiedPopup from '@/components/notifications/EmailVerifiedPopup';
 import WaiterCallRateLimitModal from '@/components/modals/WaiterCallRateLimitModal';
 import TableOrdersModal from '@/components/modals/TableOrdersModal';
+import PhoneNumberModal from '@/components/modals/PhoneNumberModal';
 import ImagePreloadContainer from '@/components/common/ImagePreloadContainer';
 import type { MenuDto, CustomerInfoResponse, CategoryDto } from '@/types/api';
 
@@ -109,6 +110,27 @@ export default function CustomerMenuClient({
     remainingSeconds: 0,
     isRegistered: false,
   });
+
+  // Telefon numarası eksik modal
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneModalDismissed, setPhoneModalDismissed] = useState(false);
+
+  // Telefon numarası kontrolü - giriş yapan kullanıcıda numara yoksa modal göster
+  useEffect(() => {
+    if (currentUser && !phoneModalDismissed) {
+      const phoneNumber = currentUser.phoneNumber;
+      // Telefon numarası yok veya TEMP_ ile başlıyor (Google kayıt)
+      const needsPhone = !phoneNumber || phoneNumber.startsWith('TEMP_');
+
+      if (needsPhone) {
+        // 1 saniye bekle, sayfa yüklendikten sonra göster
+        const timer = setTimeout(() => {
+          setShowPhoneModal(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentUser, phoneModalDismissed]);
 
   // Table context -> Menu context senkronizasyonu
   useEffect(() => {
@@ -593,6 +615,20 @@ export default function CustomerMenuClient({
         customerCode={code}
         tableId={tableId || ''}
       />
+
+      {/* Telefon Numarası Eksik Modal */}
+      {showPhoneModal && (
+        <PhoneNumberModal
+          onClose={() => {
+            setShowPhoneModal(false);
+            setPhoneModalDismissed(true);
+          }}
+          onSuccess={() => {
+            setShowPhoneModal(false);
+            setPhoneModalDismissed(true);
+          }}
+        />
+      )}
     </>
   );
 }
