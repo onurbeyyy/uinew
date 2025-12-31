@@ -23,6 +23,7 @@ import SuggestionModal from '@/components/modals/SuggestionModal';
 import EmailVerifiedPopup from '@/components/notifications/EmailVerifiedPopup';
 import WaiterCallRateLimitModal from '@/components/modals/WaiterCallRateLimitModal';
 import TableOrdersModal from '@/components/modals/TableOrdersModal';
+import PhoneNumberModal from '@/components/modals/PhoneNumberModal';
 import ImagePreloadContainer from '@/components/common/ImagePreloadContainer';
 import type { MenuDto, CustomerInfoResponse, CategoryDto, Advertisement } from '@/types/api';
 
@@ -37,7 +38,7 @@ export default function CustomerMenu() {
 
   const { isTableMode, isSelfService, canCallWaiter, tableId: tableContextId } = useTable();
   const { language } = useLanguage();
-  const { currentUser } = useAuth();
+  const { currentUser, isLoading: authLoading } = useAuth();
 
   const {
     setMenuData,
@@ -163,6 +164,27 @@ export default function CustomerMenu() {
     remainingSeconds: 0,
     isRegistered: false,
   });
+
+  // Telefon numarası eksik modal
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneModalDismissed, setPhoneModalDismissed] = useState(false);
+
+  // Telefon numarası kontrolü - giriş yapan kullanıcıda numara yoksa modal göster
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (currentUser && !phoneModalDismissed) {
+      const phoneNumber = currentUser.phoneNumber;
+      const needsPhone = !phoneNumber || phoneNumber === '' || phoneNumber.startsWith('TEMP_');
+
+      if (needsPhone) {
+        const timer = setTimeout(() => {
+          setShowPhoneModal(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentUser, phoneModalDismissed, authLoading]);
 
   // 🪑 Masa ismi - cookie'den gelen tableId için sorgulanır
   useEffect(() => {
@@ -883,6 +905,20 @@ export default function CustomerMenu() {
         customerCode={code}
         tableId={tableId || ''}
       />
+
+      {/* Telefon Numarası Eksik Modal */}
+      {showPhoneModal && (
+        <PhoneNumberModal
+          onClose={() => {
+            setShowPhoneModal(false);
+            setPhoneModalDismissed(true);
+          }}
+          onSuccess={() => {
+            setShowPhoneModal(false);
+            setPhoneModalDismissed(true);
+          }}
+        />
+      )}
     </>
   );
 }

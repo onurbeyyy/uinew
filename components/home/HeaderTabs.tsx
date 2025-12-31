@@ -6,6 +6,7 @@ import ImageSliderTab from './tabs/ImageSliderTab';
 import VideoTab from './tabs/VideoTab';
 import CampaignTab from './tabs/CampaignTab';
 import ProductsTab from './tabs/ProductsTab';
+import RaffleTab from './tabs/RaffleTab';
 
 interface HeaderTabsProps {
   customerCode: string;
@@ -173,6 +174,7 @@ export default function HeaderTabs({ customerCode, fallbackLogoUrl, advertisemen
               {(tab.tabType === 'FavoriteProducts' || tab.tabType === 'BestSellingProducts') && (
                 <ProductsTab tab={tab} />
               )}
+              {tab.tabType === 'Raffle' && <RaffleTab tab={tab} />}
             </div>
           ))}
         </div>

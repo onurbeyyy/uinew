@@ -57,10 +57,11 @@ export interface CustomerEntity {
 // Header Tabs / Advertisements Types
 export interface Advertisement {
   id: number;
-  tabType: 'Image' | 'Video' | 'Campaign' | 'FavoriteProducts' | 'BestSellingProducts';
+  tabType: 'Image' | 'Video' | 'Campaign' | 'FavoriteProducts' | 'BestSellingProducts' | 'Raffle';
+  title?: string; // Tab başlığı
   imageUrl?: string; // Comma-separated URLs for Image type
   videoUrl?: string; // For Video type
-  campaignText?: string; // JSON string for Campaign type
+  campaignText?: string; // JSON string for Campaign type, Raffle için ödül açıklaması
   selectedProductIds?: string; // JSON array string for Products types
   sliderInterval?: number; // Auto-rotation interval in milliseconds
   orderNo: number;

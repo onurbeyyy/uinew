@@ -1688,7 +1688,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
                     )}
 
                     {/* Telefon Numarası */}
-                    <div style={{ marginBottom: '15px', display: currentUser.phoneNumber ? 'none' : 'block' }}>
+                    <div style={{ marginBottom: '15px', display: (currentUser.phoneNumber && !currentUser.phoneNumber.startsWith('TEMP_')) ? 'none' : 'block' }}>
                       <label style={{
                         display: 'block',
                         fontSize: '13px',
@@ -1716,7 +1716,7 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
                         11 hane, 05 ile başlamalı
                       </div>
                     </div>
-                    {currentUser.phoneNumber && (
+                    {currentUser.phoneNumber && !currentUser.phoneNumber.startsWith('TEMP_') && (
                       <div style={{ marginBottom: '15px' }}>
                         <label style={{
                           display: 'block',

@@ -47,7 +47,7 @@ export default function CustomerMenuClient({
 
   const { isTableMode, isSelfService, canCallWaiter, tableId: tableContextId } = useTable();
   const { language } = useLanguage();
-  const { currentUser } = useAuth();
+  const { currentUser, isLoading: authLoading } = useAuth();
 
   const {
     setMenuData,
@@ -117,20 +117,20 @@ export default function CustomerMenuClient({
 
   // Telefon numarası kontrolü - giriş yapan kullanıcıda numara yoksa modal göster
   useEffect(() => {
+    if (authLoading) return;
+
     if (currentUser && !phoneModalDismissed) {
       const phoneNumber = currentUser.phoneNumber;
-      // Telefon numarası yok veya TEMP_ ile başlıyor (Google kayıt)
-      const needsPhone = !phoneNumber || phoneNumber.startsWith('TEMP_');
+      const needsPhone = !phoneNumber || phoneNumber === '' || phoneNumber.startsWith('TEMP_');
 
       if (needsPhone) {
-        // 1 saniye bekle, sayfa yüklendikten sonra göster
         const timer = setTimeout(() => {
           setShowPhoneModal(true);
         }, 1000);
         return () => clearTimeout(timer);
       }
     }
-  }, [currentUser, phoneModalDismissed]);
+  }, [currentUser, phoneModalDismissed, authLoading]);
 
   // Table context -> Menu context senkronizasyonu
   useEffect(() => {
