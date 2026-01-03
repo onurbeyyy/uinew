@@ -194,8 +194,6 @@ export default function RegisterPage() {
 
   return (
     <>
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=AW-17674614141"
         strategy="afterInteractive"
@@ -715,33 +713,6 @@ export default function RegisterPage() {
         </div>
       )}
 
-      <style jsx global>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(50px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes scaleIn {
-          0% { transform: scale(0); }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); }
-        }
-
-        @media (max-width: 576px) {
-          .register-header {
-            padding: 30px 20px !important;
-          }
-          .register-body {
-            padding: 30px 20px !important;
-          }
-        }
-      `}</style>
     </>
   );
 }

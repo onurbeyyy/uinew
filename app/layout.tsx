@@ -82,7 +82,9 @@ export default function RootLayout({
         {/* Google Sign-In SDK - doğrudan head'e eklendi */}
         <script src="https://accounts.google.com/gsi/client" async defer></script>
         {/* PWA - iOS için tam ekran desteği */}
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        {/* Font Awesome */}
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Canlı Menü" />
       </head>
