@@ -94,6 +94,40 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const [userTokenBalance, setUserTokenBalance] = useState(0);
   const [popularProductIds, setPopularProductIds] = useState<Set<number>>(new Set());
 
+  // 📱 Android geri tuşu desteği - popstate event listener
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      // Modal durumlarını kontrol et ve uygun olanı kapat
+      if (isProductDetailModalOpen) {
+        setIsProductDetailModalOpen(false);
+        document.body.style.overflow = '';
+        setTimeout(() => setSelectedProduct(null), 300);
+        return;
+      }
+      if (isProductListModalOpen) {
+        setIsProductListModalOpen(false);
+        document.body.style.overflow = '';
+        setTimeout(() => setSelectedCategory(null), 300);
+        return;
+      }
+      if (isGameModalOpen) {
+        setIsGameModalOpen(false);
+        setActiveGame(null);
+        document.body.style.overflow = '';
+        setTimeout(() => setSelectedGame(null), 300);
+        return;
+      }
+      if (isProfileOpen) {
+        setIsProfileOpen(false);
+        document.body.style.overflow = '';
+        return;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isProductDetailModalOpen, isProductListModalOpen, isGameModalOpen, isProfileOpen]);
+
   // Helper: Porsiyon veya ürün için token ayarlarını getir
   const getTokenSettingsForItem = (sambaProductId: number, sambaPortionId?: number): ProductTokenSetting | undefined => {
     // Önce porsiyon bazlı kontrol et
@@ -149,6 +183,9 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     setSelectedCategory(category);
     setIsProductListModalOpen(true);
     document.body.style.overflow = 'hidden';
+
+    // 📱 Android geri tuşu için history'ye kayıt ekle
+    window.history.pushState({ modal: 'productList' }, '');
   };
 
   const closeProductListModal = () => {
@@ -167,6 +204,9 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     setSelectedProduct(product);
     setIsProductDetailModalOpen(true);
     document.body.style.overflow = 'hidden';
+
+    // 📱 Android geri tuşu için history'ye kayıt ekle
+    window.history.pushState({ modal: 'productDetail' }, '');
   };
 
   const closeProductDetailModal = () => {
@@ -187,6 +227,9 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     setSelectedGame(game || null);
     setIsGameModalOpen(true);
     document.body.style.overflow = 'hidden';
+
+    // 📱 Android geri tuşu için history'ye kayıt ekle
+    window.history.pushState({ modal: 'game' }, '');
   };
 
   const closeGameModal = () => {
@@ -208,6 +251,9 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     // Profili aç
     setIsProfileOpen(true);
     document.body.style.overflow = 'hidden';
+
+    // 📱 Android geri tuşu için history'ye kayıt ekle
+    window.history.pushState({ modal: 'profile' }, '');
   };
 
   const closeProfile = () => {

@@ -118,7 +118,22 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nTelefon numarası eksik kullanıcılara modal eklendi\n\n- PhoneNumberModal komponenti oluşturuldu\n- Google ile kayıt olan \\(TEMP_ prefix\\) kullanıcılara modal gösteriliyor\n- Kullanıcı numarasını girebilir veya daha sonra diyebilir\n- Session boyunca bir kez gösteriliyor\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(sqlcmd -S 94.73.145.8,1433 -U u2503900_canli -P 'PR7Yvj5@A-qa3=4:' -d u2503900_canli -Q \"\nCREATE TABLE [dbo].[RaffleParticipants] \\(\n    [Id] INT IDENTITY\\(1,1\\) PRIMARY KEY,\n    [AdvertisementTabId] INT NOT NULL,\n    [EndUserId] INT NOT NULL,\n    [JoinDate] DATETIME NOT NULL DEFAULT GETDATE\\(\\),\n    [IsWinner] BIT NOT NULL DEFAULT 0,\n    [Status] INT NOT NULL DEFAULT 1\n\\);\n\")",
       "Bash(sqlcmd -S 94.73.145.8,1433 -U u2503900_canli -P 'PR7Yvj5@A-qa3=4:' -d u2503900_canli -Q \"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ''RaffleParticipants'';\")",
-      "Bash(sqlcmd:*)"
+      "Bash(sqlcmd:*)",
+      "Bash(sqlcmd -S 94.73.145.8,1433 -U u2503900_canli -P 'PR7Yvj5@A-qa3=4:' -d u2503900_canli -Q \"SELECT Id, Name, Code FROM Customers WHERE Name LIKE ''%Barinaz%'' OR Name LIKE ''%Özlüce%'' OR Name LIKE ''%barinaz%''\" -s \"|\" -W)",
+      "Bash(sqlcmd -S 94.73.145.8,1433 -U u2503900_canli -P 'PR7Yvj5@A-qa3=4:' -d u2503900_canli -Q \"SELECT Id, Name, Code FROM Customers WHERE Name LIKE ''%barinaq%''\" -s \"|\" -W)",
+      "Bash(ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no root@apicanlimenu.online \"ls -la /var/www/Uploads/23/Menu/Products/ | head -20\")",
+      "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"ls -la /var/www/Uploads/23/Menu/Products/ | head -20\")",
+      "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"find /var/www -name ''Uploads'' -type d 2>/dev/null | head -5\")",
+      "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"ls -la /var/www/\")",
+      "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"ls -la /var/www/menupark-api/\")",
+      "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"ls -la /var/www/menupark-api/Uploads/ | grep -E ''^d.*23|^d.*25''\")",
+      "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"echo ''=== Müşteri 23 \\(özlüce\\) ==='' && ls -la /var/www/menupark-api/Uploads/23/Menu/ && echo '''' && echo ''=== Müşteri 25 \\(kükürtlü\\) ==='' && ls -la /var/www/menupark-api/Uploads/25/Menu/ 2>/dev/null || echo ''Menu klasörü yok''\")",
+      "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"mkdir -p /var/www/menupark-api/Uploads/25/Menu/Products /var/www/menupark-api/Uploads/25/Menu/Categories && chown -R www-data:www-data /var/www/menupark-api/Uploads/25/Menu && echo ''Klasörler oluşturuldu''\")",
+      "Bash(sshpass -p 'KCILpMCVubZf4PMO' ssh -o StrictHostKeyChecking=no root@46.224.32.229 \"cp -r /var/www/menupark-api/Uploads/23/Menu/Products/* /var/www/menupark-api/Uploads/25/Menu/Products/ && cp -r /var/www/menupark-api/Uploads/23/Menu/Categories/* /var/www/menupark-api/Uploads/25/Menu/Categories/ && chown -R www-data:www-data /var/www/menupark-api/Uploads/25/Menu && echo ''Dosyalar kopyalandı'' && echo ''Products:'' && ls /var/www/menupark-api/Uploads/25/Menu/Products/ | wc -l && echo ''Categories:'' && ls /var/www/menupark-api/Uploads/25/Menu/Categories/ | wc -l\")",
+      "Bash(npm run build:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix React hydration error on register page\n\n- Removed inline Font Awesome link from register page \\(moved to layout\\)\n- Removed style jsx global from register page \\(moved animations to globals.css\\)\n- Fixed deprecated apple-mobile-web-app-capable meta tag\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git remote set-url:*)",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\Onue\\\\Desktop\\\\canli menu\\\\samba\\\\uinew && git push\")"
     ],
     "deny": [],
     "ask": []
