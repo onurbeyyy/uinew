@@ -904,6 +904,7 @@ export default function CustomerMenu() {
         onClose={() => setIsTableOrdersModalOpen(false)}
         customerCode={code}
         tableId={tableId || ''}
+        canRequestBill={canUseBasket}
       />
 
       {/* Telefon Numarası Eksik Modal */}
