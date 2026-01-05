@@ -927,42 +927,6 @@ export default function DeliveryPage() {
       <div style={{
         background: 'white',
       }}>
-        {/* Left fade/arrow indicator */}
-        <div style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: '40px',
-          background: 'linear-gradient(to right, white 50%, transparent)',
-          zIndex: 2,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          paddingLeft: '5px',
-          pointerEvents: 'none',
-        }}>
-          <span style={{ fontSize: '16px', color: '#999' }}>‹</span>
-        </div>
-
-        {/* Right fade/arrow indicator */}
-        <div style={{
-          position: 'absolute',
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: '40px',
-          background: 'linear-gradient(to left, white 50%, transparent)',
-          zIndex: 2,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          paddingRight: '5px',
-          pointerEvents: 'none',
-        }}>
-          <span style={{ fontSize: '16px', color: '#999' }}>›</span>
-        </div>
-
         <div
           ref={categoryTabsRef}
           style={{
