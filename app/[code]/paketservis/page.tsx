@@ -789,14 +789,17 @@ export default function DeliveryPage() {
       background: '#f5f5f5',
       paddingBottom: totalItems > 0 ? '180px' : '100px', // Navbar (80px) + Cart bar
     }}>
+      {/* Sticky Header + Category Tabs Wrapper */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
       {/* Header */}
       <div style={{
         background: '#ff6b00',
         color: 'white',
         padding: '15px 20px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
       }}>
         <div style={{
           display: 'flex',
@@ -899,7 +902,7 @@ export default function DeliveryPage() {
           </div>
       </div>
 
-      {/* Kapalı Banner */}
+      {/* Kapalı Banner - Sticky içinde */}
       {isStoreClosed && (
         <div style={{
           background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
@@ -916,11 +919,8 @@ export default function DeliveryPage() {
         </div>
       )}
 
-      {/* Category Tabs */}
+      {/* Category Tabs - Sticky wrapper içinde */}
       <div style={{
-        position: 'sticky',
-        top: isStoreClosed ? '118px' : '118px',
-        zIndex: 99,
         background: 'white',
       }}>
         {/* Left fade/arrow indicator */}
@@ -992,6 +992,7 @@ export default function DeliveryPage() {
           ))}
         </div>
       </div>
+      </div>{/* End Sticky Header + Category Tabs Wrapper */}
 
       {/* Products List */}
       <div style={{ padding: '15px' }}>
