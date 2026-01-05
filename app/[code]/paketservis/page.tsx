@@ -793,6 +793,9 @@ export default function DeliveryPage() {
       <div style={{
         position: 'sticky',
         top: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
         zIndex: 100,
         background: '#ff6b00',
       }}>
