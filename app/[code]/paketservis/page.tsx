@@ -1002,22 +1002,24 @@ export default function DeliveryPage() {
                   >
                     <div style={{
                       display: 'flex',
-                      alignItems: 'stretch',
+                      alignItems: 'flex-start',
                     }}>
-                    {/* Product Image */}
+                    {/* Product Image - Sabit 1:1 oran */}
                     {imageUrl && (
                       <div style={{
                         width: '70px',
-                        minHeight: '70px',
+                        height: '70px',
                         flexShrink: 0,
                         background: '#f5f5f5',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
                       }}>
                         <img
                           src={imageUrl}
                           alt={productTitle}
                           style={{
-                            width: '100%',
-                            height: '100%',
+                            width: '70px',
+                            height: '70px',
                             objectFit: 'cover',
                           }}
                           onError={(e) => {
