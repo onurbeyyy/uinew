@@ -794,6 +794,7 @@ export default function DeliveryPage() {
         position: 'sticky',
         top: 0,
         zIndex: 100,
+        background: '#ff6b00',
       }}>
       {/* Header */}
       <div style={{
