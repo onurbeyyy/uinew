@@ -28,8 +28,8 @@ export function TableProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 🚚 Delivery sayfasında table/session yükleme - delivery bağımsız çalışır
-    const isDeliveryPage = window.location.pathname.includes('/delivery');
+    // 🚚 Paket servis sayfasında table/session yükleme - paket servis bağımsız çalışır
+    const isDeliveryPage = window.location.pathname.includes('/paketservis');
     if (isDeliveryPage) {
       return;
     }

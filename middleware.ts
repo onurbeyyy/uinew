@@ -97,7 +97,7 @@ export function middleware(request: NextRequest) {
       existingTableCode &&
       existingCustomerCode &&
       existingCustomerCode !== currentCustomerCode &&
-      !pathname.includes('/delivery') &&
+      !pathname.includes('/paketservis') &&
       !pathname.includes('/self')) {
     // Farklı müşteriye geçildi - eski masa bilgisini sil
     const response = NextResponse.next();
