@@ -137,6 +137,16 @@ export default function DeliveryPage() {
     isEnabled: false,
   });
 
+  // Mahalle bazlı teslimat bölgeleri (Admin Panel'den)
+  interface DeliveryZone {
+    city: string;
+    district: string;
+    neighborhood: string;
+    minOrderAmount: number;
+  }
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  const [zoneNotFound, setZoneNotFound] = useState(false); // Teslimat yapılmayan bölge
+
   // Restoran kapalı mı? (müşteri tarafından kapatıldıysa)
   const [isStoreClosed, setIsStoreClosed] = useState(false);
 
@@ -287,6 +297,21 @@ export default function DeliveryPage() {
             estimatedDeliveryTime: c.estimatedDeliveryTime ?? c.EstimatedDeliveryTime ?? 30,
             isEnabled: isEnabled,
           });
+
+          // Mahalle bazlı teslimat bölgelerini parse et
+          const zonesJson = c.deliveryZones ?? c.DeliveryZones;
+          if (zonesJson) {
+            try {
+              const parsedZones = typeof zonesJson === 'string'
+                ? JSON.parse(zonesJson)
+                : zonesJson;
+              if (Array.isArray(parsedZones)) {
+                setDeliveryZones(parsedZones);
+              }
+            } catch (e) {
+              console.error('DeliveryZones parse hatası:', e);
+            }
+          }
         } else {
           // Customer bilgisi yoksa da yönlendir
           router.replace(`/${code}`);
@@ -402,9 +427,56 @@ export default function DeliveryPage() {
     return deliverySettings.deliveryFee;
   };
 
+  // Mahalle bazlı minimum sipariş tutarını hesapla (useMemo ile)
+  const currentMinOrderAmount = useMemo((): number => {
+    // Eğer mahalle bazlı bölge tanımlı değilse, global limiti döndür
+    if (deliveryZones.length === 0) {
+      return deliverySettings.minOrderAmount;
+    }
+
+    // Seçili mahalleyi kontrol et
+    if (!deliveryAddress.neighborhood) {
+      return deliverySettings.minOrderAmount;
+    }
+
+    // Mahalle eşleşmesi ara (büyük/küçük harf duyarsız)
+    const matchedZone = deliveryZones.find(zone =>
+      zone.neighborhood?.toLowerCase().trim() === deliveryAddress.neighborhood?.toLowerCase().trim()
+    );
+
+    if (matchedZone) {
+      return matchedZone.minOrderAmount;
+    }
+
+    // Mahalle bulunamadı - global limiti döndür
+    return deliverySettings.minOrderAmount;
+  }, [deliveryZones, deliveryAddress.neighborhood, deliverySettings.minOrderAmount]);
+
+  // Teslimat bölgesi kontrolü (ayrı useEffect ile)
+  useEffect(() => {
+    // Eğer bölge tanımı yoksa, zoneNotFound false
+    if (deliveryZones.length === 0) {
+      setZoneNotFound(false);
+      return;
+    }
+
+    // Mahalle seçilmemişse, zoneNotFound false
+    if (!deliveryAddress.neighborhood) {
+      setZoneNotFound(false);
+      return;
+    }
+
+    // Mahalle eşleşmesi ara
+    const matchedZone = deliveryZones.find(zone =>
+      zone.neighborhood?.toLowerCase().trim() === deliveryAddress.neighborhood?.toLowerCase().trim()
+    );
+
+    setZoneNotFound(!matchedZone);
+  }, [deliveryZones, deliveryAddress.neighborhood]);
+
   // Minimum sipariş kontrolü
   const isMinOrderReached = (): boolean => {
-    return getTotalPrice() >= deliverySettings.minOrderAmount;
+    return getTotalPrice() >= currentMinOrderAmount;
   };
 
   // Sepette ürün miktarını bul (tüm porsiyonlar dahil)
@@ -1206,8 +1278,23 @@ export default function DeliveryPage() {
           boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
           zIndex: 1000,
         }}>
+          {/* Teslimat yapılmayan bölge uyarısı */}
+          {zoneNotFound && deliveryZones.length > 0 && deliveryAddress.neighborhood && (
+            <div style={{
+              background: '#fef2f2',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              marginBottom: '10px',
+              fontSize: '13px',
+              color: '#dc2626',
+              border: '1px solid #fecaca',
+            }}>
+              🚫 Seçtiğiniz mahalle ({deliveryAddress.neighborhood}) teslimat bölgemiz dışında. Lütfen farklı bir adres seçin.
+            </div>
+          )}
+
           {/* Minimum order warning */}
-          {!isMinOrderReached() && (
+          {!isMinOrderReached() && !zoneNotFound && (
             <div style={{
               background: '#fff5f0',
               padding: '8px 12px',
@@ -1216,7 +1303,12 @@ export default function DeliveryPage() {
               fontSize: '13px',
               color: '#ff6b00',
             }}>
-              💡 {(deliverySettings.minOrderAmount - totalPrice).toFixed(2)}₺ daha ekleyin, minimum tutara ulaşın!
+              💡 {(currentMinOrderAmount - totalPrice).toFixed(2)}₺ daha ekleyin, minimum tutara ulaşın!
+              {deliveryZones.length > 0 && deliveryAddress.neighborhood && (
+                <span style={{ display: 'block', fontSize: '11px', marginTop: '3px', opacity: 0.8 }}>
+                  ({deliveryAddress.neighborhood} için min. {currentMinOrderAmount.toFixed(2)}₺)
+                </span>
+              )}
             </div>
           )}
 
@@ -1255,19 +1347,19 @@ export default function DeliveryPage() {
 
             <button
               onClick={handleOpenCart}
-              disabled={!isMinOrderReached()}
+              disabled={!isMinOrderReached() || zoneNotFound}
               style={{
-                background: isMinOrderReached() ? '#ff6b00' : '#ccc',
+                background: (isMinOrderReached() && !zoneNotFound) ? '#ff6b00' : '#ccc',
                 color: 'white',
                 border: 'none',
                 borderRadius: '12px',
                 padding: '14px 28px',
                 fontSize: '16px',
                 fontWeight: 600,
-                cursor: isMinOrderReached() ? 'pointer' : 'not-allowed',
+                cursor: (isMinOrderReached() && !zoneNotFound) ? 'pointer' : 'not-allowed',
               }}
             >
-              Sepete Git →
+              {zoneNotFound ? '🚫 Bölge Dışı' : 'Sepete Git →'}
             </button>
           </div>
         </div>
@@ -1337,21 +1429,31 @@ export default function DeliveryPage() {
                     </div>
                   ) : currentUser && savedAddresses.length > 0 ? (
                     <>
-                      {savedAddresses.map((address) => (
+                      {savedAddresses.map((address) => {
+                        // Bu adres teslimat bölgesinde mi kontrol et
+                        const isAddressInZone = deliveryZones.length === 0 || deliveryZones.some(zone =>
+                          zone.neighborhood?.toLowerCase().trim() === address.neighborhood?.toLowerCase().trim()
+                        );
+                        const addressMinAmount = deliveryZones.find(zone =>
+                          zone.neighborhood?.toLowerCase().trim() === address.neighborhood?.toLowerCase().trim()
+                        )?.minOrderAmount ?? deliverySettings.minOrderAmount;
+
+                        return (
                         <div
                           key={address.id}
                           onClick={() => handleSelectAddress(address)}
                           style={{
                             padding: '15px',
                             marginBottom: '10px',
-                            border: selectedAddressId === address.id ? '2px solid #ff6b00' : '1px solid #eee',
+                            border: selectedAddressId === address.id ? '2px solid #ff6b00' : (!isAddressInZone && deliveryZones.length > 0) ? '1px solid #fecaca' : '1px solid #eee',
                             borderRadius: '12px',
                             cursor: 'pointer',
-                            background: selectedAddressId === address.id ? '#fff8f5' : 'white',
+                            background: selectedAddressId === address.id ? '#fff8f5' : (!isAddressInZone && deliveryZones.length > 0) ? '#fef2f2' : 'white',
                             position: 'relative',
+                            opacity: (!isAddressInZone && deliveryZones.length > 0) ? 0.7 : 1,
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 600, fontSize: '15px' }}>
                               {address.title || 'Adresim'}
                             </span>
@@ -1364,6 +1466,18 @@ export default function DeliveryPage() {
                                 borderRadius: '4px',
                               }}>
                                 Varsayılan
+                              </span>
+                            )}
+                            {/* Teslimat bölgesi durumu */}
+                            {deliveryZones.length > 0 && (
+                              <span style={{
+                                fontSize: '10px',
+                                background: isAddressInZone ? '#dcfce7' : '#fecaca',
+                                color: isAddressInZone ? '#16a34a' : '#dc2626',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                              }}>
+                                {isAddressInZone ? `Min. ${addressMinAmount}₺` : '🚫 Bölge dışı'}
                               </span>
                             )}
                           </div>
@@ -1410,7 +1524,8 @@ export default function DeliveryPage() {
                             </button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </>
                   ) : currentUser ? (
                     <div style={{ textAlign: 'center', padding: '30px', color: '#666' }}>
@@ -1542,6 +1657,25 @@ export default function DeliveryPage() {
                     </div>
                   </div>
 
+                  {/* Teslimat bölgesi durumu */}
+                  {deliveryZones.length > 0 && deliveryAddress.neighborhood && (
+                    <div style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      marginBottom: '15px',
+                      fontSize: '13px',
+                      background: zoneNotFound ? '#fef2f2' : '#f0fdf4',
+                      color: zoneNotFound ? '#dc2626' : '#16a34a',
+                      border: `1px solid ${zoneNotFound ? '#fecaca' : '#bbf7d0'}`,
+                    }}>
+                      {zoneNotFound ? (
+                        <>🚫 Bu mahalle teslimat bölgemiz dışında</>
+                      ) : (
+                        <>✅ Bu mahalleye teslimat yapılıyor (min. {currentMinOrderAmount.toFixed(2)}₺)</>
+                      )}
+                    </div>
+                  )}
+
                   {/* Sokak */}
                   <div style={{ marginBottom: '15px' }}>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '5px', color: '#555' }}>Sokak / Cadde *</label>
@@ -1650,7 +1784,7 @@ export default function DeliveryPage() {
         deliveryInfo={{
           address: deliveryAddress,
           deliveryFee: deliverySettings.deliveryFee,
-          minOrderAmount: deliverySettings.minOrderAmount,
+          minOrderAmount: currentMinOrderAmount, // Mahalle bazlı minimum tutar
           freeDeliveryThreshold: deliverySettings.freeDeliveryThreshold,
         }}
       />
