@@ -147,6 +147,11 @@ export default function DeliveryPage() {
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
   const [zoneNotFound, setZoneNotFound] = useState(false); // Teslimat yapılmayan bölge
 
+  // İleri saatli sipariş
+  const [deliveryTimeMode, setDeliveryTimeMode] = useState<'now' | 'scheduled'>('now');
+  const [scheduledTime, setScheduledTime] = useState<string>(''); // "HH:mm" formatında
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
+
   // Restoran kapalı mı? (müşteri tarafından kapatıldıysa)
   const [isStoreClosed, setIsStoreClosed] = useState(false);
 
@@ -392,17 +397,20 @@ export default function DeliveryPage() {
     }
   };
 
-  // Ürün görseli URL'i
+  // Ürün görseli URL'i (cache-busting ile)
   const getProductImageUrl = (product: Product): string => {
     const picture = product.picture || product.Picture;
+    const pictureId = (product as any).pictureId || (product as any).PictureId;
+    const cacheBuster = pictureId ? `?v=${pictureId}` : '';
+
     if (picture) {
       if (picture.startsWith('http')) {
-        return picture.replace('http://', 'https://');
+        return picture.replace('http://', 'https://') + cacheBuster;
       }
       const picturePath = picture.startsWith('Uploads/')
         ? picture.substring('Uploads/'.length)
         : picture;
-      return `https://apicanlimenu.online/Uploads/${picturePath}`;
+      return `https://apicanlimenu.online/Uploads/${picturePath}${cacheBuster}`;
     }
     return '';
   };
@@ -473,6 +481,43 @@ export default function DeliveryPage() {
 
     setZoneNotFound(!matchedZone);
   }, [deliveryZones, deliveryAddress.neighborhood]);
+
+  // Müsait teslimat saatlerini oluştur
+  useEffect(() => {
+    const generateTimeSlots = () => {
+      const slots: string[] = [];
+      const now = new Date();
+      const prepTime = deliverySettings.estimatedDeliveryTime || 30; // dakika
+
+      // En erken teslimat: şu an + hazırlık süresi (30 dk'ya yuvarla)
+      const earliest = new Date(now.getTime() + prepTime * 60000);
+      earliest.setMinutes(Math.ceil(earliest.getMinutes() / 30) * 30, 0, 0);
+
+      // Gece 23:00'e kadar slot oluştur
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 0, 0, 0);
+
+      let current = new Date(earliest);
+      while (current <= endOfDay) {
+        const timeStr = current.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        slots.push(timeStr);
+        current.setMinutes(current.getMinutes() + 30);
+      }
+
+      setAvailableTimeSlots(slots);
+
+      // Varsayılan olarak ilk slot'u seç
+      if (slots.length > 0 && !scheduledTime) {
+        setScheduledTime(slots[0]);
+      }
+    };
+
+    generateTimeSlots();
+
+    // Her dakika güncelle
+    const interval = setInterval(generateTimeSlots, 60000);
+    return () => clearInterval(interval);
+  }, [deliverySettings.estimatedDeliveryTime, scheduledTime]);
 
   // Minimum sipariş kontrolü
   const isMinOrderReached = (): boolean => {
@@ -1326,6 +1371,66 @@ export default function DeliveryPage() {
             </div>
           )}
 
+          {/* Teslimat Zamanı Seçimi */}
+          {isMinOrderReached() && !zoneNotFound && (
+            <div style={{
+              background: '#f8f9fa',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              marginBottom: '10px',
+            }}>
+              <div style={{ fontSize: '12px', color: '#666', marginBottom: '6px' }}>
+                ⏰ Teslimat Zamanı
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setDeliveryTimeMode('now')}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    border: deliveryTimeMode === 'now' ? '2px solid #ff6b00' : '1px solid #ddd',
+                    borderRadius: '8px',
+                    background: deliveryTimeMode === 'now' ? '#fff8f5' : 'white',
+                    color: deliveryTimeMode === 'now' ? '#ff6b00' : '#333',
+                    fontWeight: deliveryTimeMode === 'now' ? 600 : 400,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🚀 Hemen ({deliverySettings.estimatedDeliveryTime} dk)
+                </button>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <select
+                    value={deliveryTimeMode === 'scheduled' ? scheduledTime : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setDeliveryTimeMode('scheduled');
+                        setScheduledTime(e.target.value);
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: deliveryTimeMode === 'scheduled' ? '2px solid #ff6b00' : '1px solid #ddd',
+                      borderRadius: '8px',
+                      background: deliveryTimeMode === 'scheduled' ? '#fff8f5' : 'white',
+                      color: deliveryTimeMode === 'scheduled' ? '#ff6b00' : '#333',
+                      fontWeight: deliveryTimeMode === 'scheduled' ? 600 : 400,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      appearance: 'none',
+                    }}
+                  >
+                    <option value="">📅 İleri Saat</option>
+                    {availableTimeSlots.map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -1333,7 +1438,7 @@ export default function DeliveryPage() {
           }}>
             <div onClick={handleOpenCart} style={{ cursor: 'pointer' }}>
               <div style={{ fontSize: '13px', color: '#666' }}>
-                {totalItems} ürün
+                {totalItems} ürün {deliveryTimeMode === 'scheduled' && scheduledTime && `• ${scheduledTime}`}
               </div>
               <div style={{ fontSize: '18px', fontWeight: 700, color: '#333' }}>
                 {totalPrice.toFixed(2)} ₺
@@ -1786,6 +1891,7 @@ export default function DeliveryPage() {
           deliveryFee: deliverySettings.deliveryFee,
           minOrderAmount: currentMinOrderAmount, // Mahalle bazlı minimum tutar
           freeDeliveryThreshold: deliverySettings.freeDeliveryThreshold,
+          scheduledDeliveryTime: deliveryTimeMode === 'scheduled' ? scheduledTime : undefined,
         }}
       />
 

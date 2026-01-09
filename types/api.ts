@@ -81,6 +81,7 @@ export interface Category {
   titleEn?: string; // API'dan gelen titleEn field'ı
   orderNo: number;
   picture?: string;
+  pictureId?: number; // Cache-busting için görsel ID'si
   products: Product[];
 }
 
@@ -95,6 +96,7 @@ export interface Product {
   detail?: string; // API'de description yerine detail kullanılıyor
   detailEn?: string;
   picture?: string;
+  pictureId?: number; // Cache-busting için görsel ID'si
   categoryId: number;
   orderNo: number;
   portions?: ProductPortion[];
@@ -178,6 +180,7 @@ export interface CategoryDto {
     isActive: boolean;
   };
   picture: string;
+  pictureId?: number; // Cache-busting için görsel ID'si
   customerLogo: string;
   status: boolean;
   products?: Product[];

@@ -93,7 +93,7 @@ export default function ProductListModal() {
     if (existingItemIndex >= 0) {
       items[existingItemIndex].quantity += 1;
     } else {
-      const productImageUrl = getImageUrl(product.picture, customerLogo);
+      const productImageUrl = getImageUrl(product.picture, customerLogo, product.pictureId);
       const productName = getTitle(product, language);
       items.push({
         id: Date.now(),
@@ -221,15 +221,17 @@ export default function ProductListModal() {
     }
   };
 
-  const getImageUrl = (picture?: string, fallbackLogo?: string) => {
+  const getImageUrl = (picture?: string, fallbackLogo?: string, pictureId?: number) => {
     if (!picture) {
       return fallbackLogo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23e0e0e0" width="300" height="300"/%3E%3C/svg%3E';
     }
+    // Cache-busting parametresi
+    const cacheBuster = pictureId ? `?v=${pictureId}` : '';
     if (picture.startsWith('http')) {
-      return picture.replace('http://', 'https://');
+      return picture.replace('http://', 'https://') + cacheBuster;
     }
     const cleanPath = picture.startsWith('Uploads/') ? picture.substring(8) : picture;
-    return 'https://apicanlimenu.online/Uploads/' + cleanPath;
+    return 'https://apicanlimenu.online/Uploads/' + cleanPath + cacheBuster;
   };
 
   const customerLogo = menuData?.customerLogo ? getImageUrl(menuData.customerLogo) : undefined;
@@ -317,13 +319,14 @@ export default function ProductListModal() {
                   if (categoryWithPicture && categoryWithPicture.picture) {
                     // Picture varsa URL'i oluştur
                     const picture = categoryWithPicture.picture;
+                    const cacheBuster = categoryWithPicture.pictureId ? `?v=${categoryWithPicture.pictureId}` : '';
                     if (picture.startsWith('http')) {
-                      categoryImageUrl = picture.replace('http://', 'https://');
+                      categoryImageUrl = picture.replace('http://', 'https://') + cacheBuster;
                     } else {
                       const picturePath = picture.startsWith('Uploads/')
                         ? picture.substring('Uploads/'.length)
                         : picture;
-                      categoryImageUrl = `https://apicanlimenu.online/Uploads/${picturePath}`;
+                      categoryImageUrl = `https://apicanlimenu.online/Uploads/${picturePath}${cacheBuster}`;
                     }
                   } else if (customerLogo) {
                     // Picture yoksa logo kullan
@@ -406,7 +409,7 @@ export default function ProductListModal() {
 
                       // Ürün kartı render fonksiyonu
                       const renderProductCard = (product: any) => {
-                    const productImageUrl = getImageUrl(product.picture, customerLogo);
+                    const productImageUrl = getImageUrl(product.picture, customerLogo, product.pictureId);
                     const productTitle = getTitle(product, language);
                     const productDetail = getDescription(product, language);
 

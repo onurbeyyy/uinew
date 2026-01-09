@@ -153,7 +153,9 @@ export default function ProductDetailModal() {
 
   if (!isProductDetailModalOpen || !selectedProduct) return null;
 
-  const getImageUrl = (picture?: string) => {
+  const getImageUrl = (picture?: string, pictureId?: number) => {
+    const cacheBuster = pictureId ? `?v=${pictureId}` : '';
+
     // Boş string veya undefined ise logo kullan
     if (!picture || picture.trim() === '') {
       const customerLogo = menuData?.customerLogo;
@@ -167,13 +169,14 @@ export default function ProductDetailModal() {
       return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="600"%3E%3Crect fill="%231a1a2e" width="800" height="600"/%3E%3C/svg%3E';
     }
     if (picture.startsWith('http')) {
-      return picture.replace('http://', 'https://');
+      return picture.replace('http://', 'https://') + cacheBuster;
     }
     const cleanPath = picture.startsWith('Uploads/') ? picture.substring(8) : picture;
-    return `https://apicanlimenu.online/Uploads/${cleanPath}`;
+    return `https://apicanlimenu.online/Uploads/${cleanPath}${cacheBuster}`;
   };
 
-  const productImageUrl = getImageUrl(selectedProduct.Picture ?? selectedProduct.picture);
+  const productPictureId = (selectedProduct as any).pictureId ?? (selectedProduct as any).PictureId;
+  const productImageUrl = getImageUrl(selectedProduct.Picture ?? selectedProduct.picture, productPictureId);
   const productTitle = getTitle(selectedProduct, language);
   const productDescription = getDescription(selectedProduct, language);
 

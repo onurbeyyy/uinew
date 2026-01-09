@@ -37,6 +37,7 @@ interface DeliveryInfo {
   deliveryFee: number;
   minOrderAmount: number;
   freeDeliveryThreshold: number;
+  scheduledDeliveryTime?: string; // "HH:mm" formatında ileri saat (undefined = hemen)
 }
 
 interface CartSidebarProps {
@@ -372,6 +373,12 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
                     </div>
                   </div>
                 </div>
+                ${deliveryInfo?.scheduledDeliveryTime ? `
+                <div style="border-top: 1px dashed #ffd699; padding-top: 8px; margin-top: 8px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">⏰ Planlanan Teslimat Saati</div>
+                  <div style="font-size: 18px; color: #ff6b00; font-weight: 700;">${deliveryInfo.scheduledDeliveryTime}</div>
+                </div>
+                ` : ''}
               </div>
               ` : `
               <div style="display: flex; justify-content: space-between;">
@@ -687,6 +694,18 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
         // Adres, telefon ve ödeme bilgisini Notes alanına da ekle (her zaman görünsün)
         orderData.customerNote = `📍 Adres: ${fullAddress}${addr.directions ? `\n🗺️ Tarif: ${addr.directions}` : ''}${userPhone ? `\n📞 Tel: ${userPhone}` : ''}\n💳 Ödeme: Kapıda ${paymentMethodText}${customerNote ? `\n📝 Not: ${customerNote}` : ''}`;
         orderData.notificationMessage = `📍 Paket Servis - ${addr.district}/${addr.city}${userPhone ? ` - Tel: ${userPhone}` : ''}\n💳 Ödeme: Kapıda ${paymentMethodText}`;
+
+        // İleri saatli sipariş
+        if (deliveryInfo.scheduledDeliveryTime) {
+          // HH:mm string'ini bugünün tarihiyle DateTime'a çevir
+          const [hours, minutes] = deliveryInfo.scheduledDeliveryTime.split(':').map(Number);
+          const scheduledDate = new Date();
+          scheduledDate.setHours(hours, minutes, 0, 0);
+          orderData.scheduledDeliveryTime = scheduledDate.toISOString();
+          // Note ve notification'a da ekle
+          orderData.customerNote += `\n⏰ İleri Saat: ${deliveryInfo.scheduledDeliveryTime}`;
+          orderData.notificationMessage += `\n⏰ İleri Saat: ${deliveryInfo.scheduledDeliveryTime}`;
+        }
       }
 
       const response = await fetch('/api/order', {
