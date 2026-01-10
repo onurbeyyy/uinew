@@ -414,6 +414,16 @@ export default function CustomerMenu() {
         setCustomerData(customerInfo);
         setCustomerDataContext(customerInfo);
 
+        // 🔄 Redirect kontrolü: SADECE masa QR'larında (?table=xxx) uygula
+        // Normal menü erişiminde (table yok) redirect uygulanmaz
+        const isRedirected = customerInfo.isRedirected && tableParam;
+        const effectiveCode = isRedirected ? (customerInfo.customer?.code || code) : code;
+
+        // Eğer redirect olduysa, context'i de güncelle
+        if (isRedirected && effectiveCode !== code) {
+          setCustomerCode(effectiveCode);
+        }
+
         // ═══════════════════════════════════════════════════════════
         // AŞAMA 2: Kategoriler + Reklamları al
         // ═══════════════════════════════════════════════════════════
@@ -426,8 +436,8 @@ export default function CustomerMenu() {
         };
 
         const [categoriesResponse, adsResponse] = await Promise.all([
-          fetch(`/api/categories/${code}`),
-          fetch(`/api/advertisements/${code}`)
+          fetch(`/api/categories/${effectiveCode}`),
+          fetch(`/api/advertisements/${effectiveCode}`)
         ]);
 
         let categoriesInfo: CategoryDto[] = [];
@@ -558,7 +568,7 @@ export default function CustomerMenu() {
 
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
-            menuResponse = await fetch(`/api/menu/${code}`);
+            menuResponse = await fetch(`/api/menu/${effectiveCode}`);
             if (menuResponse.ok) break;
           } catch {
             // Retry on error
@@ -578,7 +588,7 @@ export default function CustomerMenu() {
         // Token settings
         if (tableParam) {
           try {
-            const tokenResponse = await fetch(`/api/token-settings/${code}`);
+            const tokenResponse = await fetch(`/api/token-settings/${effectiveCode}`);
             if (tokenResponse.ok) {
               const tokenData = await tokenResponse.json();
               const productMap: Record<number, any> = {};
@@ -839,8 +849,8 @@ export default function CustomerMenu() {
           onSuggestionClick={() => setIsSuggestionModalOpen(true)}
           onTableOrdersClick={() => setIsTableOrdersModalOpen(true)}
           showAIChat={customerData?.customer.showAIChat ?? true}
-          showCart={isTableMode && (canUseBasket || !!basketDisabledMessage)}
-          showWaiterCall={canCallWaiter}
+          showCart={isTableMode && canUseBasket && !basketDisabledMessage}
+          showWaiterCall={canCallWaiter && !basketDisabledMessage}
           showTableOrders={isTableMode && (canUseBasket || !!basketDisabledMessage)}
           tableId={tableId || undefined}
           phone={customerData?.customer.phone}

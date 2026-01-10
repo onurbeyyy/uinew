@@ -8,7 +8,8 @@ import { getTitle, getDescription } from '@/utils/language';
 import { saveCart, loadCart } from '@/utils/cartUtils';
 import AllergenWarning from '@/components/common/AllergenWarning';
 import { useToast } from '@/components/ui/Toast';
-import type { ProductPortion, Product } from '@/types/api';
+import FeatureSelectionModal from '@/components/modals/FeatureSelectionModal';
+import type { ProductPortion, Product, FeatureGroup } from '@/types/api';
 
 export default function ProductDetailModal() {
   const { menuData, customerData, customerCode, selectedProduct, selectedCategory, isProductDetailModalOpen, closeProductDetailModal, openProductDetailModal, isTableMode, canUseBasket, cartKey, getTokenSettingsForItem, openProfile, canOrderProduct, todayHappyHourTimeRange } = useMenu();
@@ -18,6 +19,9 @@ export default function ProductDetailModal() {
   const [quantity, setQuantity] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedPortion, setSelectedPortion] = useState<ProductPortion | null>(null);
+  const [isFeatureModalOpen, setIsFeatureModalOpen] = useState(false);
+  const [productFeatures, setProductFeatures] = useState<FeatureGroup[]>([]);
+  const [checkingFeatures, setCheckingFeatures] = useState(false);
 
   // Swipe navigation için
   const touchStartX = useRef<number>(0);
@@ -104,8 +108,66 @@ export default function ProductDetailModal() {
     return () => document.removeEventListener('keydown', handleEsc);
   }, [isProductDetailModalOpen, closeProductDetailModal]);
 
-  const handleAddToCart = () => {
-    if (!selectedProduct || !isTableMode || !cartKey || !customerCode) return;
+  // Ürünün özelliklerini kontrol et
+  const checkProductFeatures = async () => {
+    if (!selectedProduct || !customerData?.customer?.id) return null;
+
+    try {
+      const productId = selectedProduct.id ?? selectedProduct.Id;
+      const sambaProductId = selectedProduct.sambaId ?? selectedProduct.SambaId;
+      const categoryId = selectedProduct.categoryId ?? selectedProduct.CategoryId ?? selectedCategory?.sambaId ?? (selectedCategory as any)?.Id;
+      const categorySambaId = selectedCategory?.sambaId ?? (selectedCategory as any)?.SambaId;
+      const customerId = customerData.customer.id;
+
+      // API'ye hem productId hem sambaProductId gönder (ID eşleşmesi için)
+      let url = `https://apicanlimenu.online/api/menu/product-features?customerId=${customerId}`;
+      if (productId) url += `&productId=${productId}`;
+      if (sambaProductId) url += `&sambaProductId=${sambaProductId}`;
+      if (categoryId) url += `&categoryId=${categoryId}`;
+      if (categorySambaId) url += `&categorySambaId=${categorySambaId}`;
+
+      console.log('🔍 Feature check URL:', url);
+
+      const response = await fetch(url);
+
+      const data = await response.json();
+      console.log('🔍 Feature check response:', data);
+
+      if (data.success && data.features && data.features.length > 0) {
+        return data.features as FeatureGroup[];
+      }
+      return null;
+    } catch (err) {
+      console.error('Feature check error:', err);
+      return null;
+    }
+  };
+
+  const handleAddToCart = async () => {
+    console.log('🛒 handleAddToCart called', { selectedProduct: !!selectedProduct, isTableMode, cartKey, customerCode });
+    if (!selectedProduct || !isTableMode || !cartKey || !customerCode) {
+      console.log('🛒 Early return - missing:', { selectedProduct: !selectedProduct, isTableMode: !isTableMode, cartKey: !cartKey, customerCode: !customerCode });
+      return;
+    }
+
+    // Önce özellikleri kontrol et
+    setCheckingFeatures(true);
+    const features = await checkProductFeatures();
+    setCheckingFeatures(false);
+
+    if (features && features.length > 0) {
+      // Özellikler varsa modal aç
+      setProductFeatures(features);
+      setIsFeatureModalOpen(true);
+      return;
+    }
+
+    // Özellik yoksa doğrudan sepete ekle
+    addToCartDirectly();
+  };
+
+  const addToCartDirectly = () => {
+    if (!selectedProduct || !cartKey || !customerCode) return;
 
     let cartItems = loadCart(cartKey, customerCode);
 
@@ -113,9 +175,9 @@ export default function ProductDetailModal() {
     const productId = selectedPortion?.id ?? selectedProduct.Id ?? selectedProduct.id;
     const portionName = selectedPortion?.name || '';
 
-    // Aynı ürün + aynı porsiyon kombinasyonunu bul
+    // Aynı ürün + aynı porsiyon kombinasyonunu bul (özellikleri olmayanlar)
     const existingItemIndex = cartItems.findIndex(
-      (item: any) => item.productId === productId && item.portionName === portionName
+      (item: any) => item.productId === productId && item.portionName === portionName && !item.features?.length
     );
 
     if (existingItemIndex >= 0) {
@@ -261,8 +323,8 @@ export default function ProductDetailModal() {
             {productTitle}
           </h1>
 
-          {/* Açıklama - porsiyon yoksa göster (porsiyon varsa description zaten porsiyon adı) */}
-          {productDescription && !hasPortions && (
+          {/* Açıklama */}
+          {productDescription && (
             <p className="pdm-description" style={{ fontFamily: productFont }}>
               {productDescription}
             </p>
@@ -340,9 +402,23 @@ export default function ProductDetailModal() {
               </div>
 
               {/* Sepete Ekle Butonu */}
-              <button className="pdm-add-btn" onClick={handleAddToCart}>
-                <span className="pdm-add-btn-text">{t('addToCart')}</span>
-                <span className="pdm-add-btn-price">{totalPrice.toFixed(2)} TL</span>
+              <button
+                className="pdm-add-btn"
+                onClick={handleAddToCart}
+                disabled={checkingFeatures}
+                style={{ opacity: checkingFeatures ? 0.7 : 1 }}
+              >
+                {checkingFeatures ? (
+                  <span className="pdm-add-btn-text">
+                    <i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                    Yükleniyor...
+                  </span>
+                ) : (
+                  <>
+                    <span className="pdm-add-btn-text">{t('addToCart')}</span>
+                    <span className="pdm-add-btn-price">{totalPrice.toFixed(2)} TL</span>
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -366,6 +442,16 @@ export default function ProductDetailModal() {
           )}
         </div>
       </div>
+
+      {/* Feature Selection Modal */}
+      <FeatureSelectionModal
+        isOpen={isFeatureModalOpen}
+        onClose={() => setIsFeatureModalOpen(false)}
+        product={selectedProduct}
+        portion={selectedPortion}
+        quantity={quantity}
+        onAddToCart={() => closeProductDetailModal()}
+      />
     </div>
   );
 }

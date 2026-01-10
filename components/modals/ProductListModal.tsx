@@ -8,6 +8,8 @@ import { getTitle, getDescription } from '@/utils/language';
 import AllergenWarning from '@/components/common/AllergenWarning';
 import { useToast } from '@/components/ui/Toast';
 import { saveCart as saveCartToStorage, loadCart as loadCartFromStorage } from '@/utils/cartUtils';
+import FeatureSelectionModal from '@/components/modals/FeatureSelectionModal';
+import type { FeatureGroup } from '@/types/api';
 
 // Kategori ismini "/" ile alt alta göster
 const formatCategoryName = (name: string) => {
@@ -47,6 +49,9 @@ export default function ProductListModal() {
   const [activeCategory, setActiveCategory] = useState(selectedCategory);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [activeSubTab, setActiveSubTab] = useState<string>(''); // SubCategoryTag için aktif tab
+  const [isFeatureModalOpen, setIsFeatureModalOpen] = useState(false);
+  const [selectedProductForFeature, setSelectedProductForFeature] = useState<any>(null);
+  const [checkingFeatures, setCheckingFeatures] = useState<number | null>(null); // hangi ürün için kontrol ediliyor
   const sliderRef = useRef<HTMLDivElement>(null);
   const productListRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number>(0);
@@ -79,15 +84,68 @@ export default function ProductListModal() {
     return item ? item.quantity : 0;
   };
 
-  const handleAddToCart = (product: any, e: React.MouseEvent) => {
+  // Ürün özelliklerini kontrol et
+  const checkProductFeatures = async (product: any): Promise<FeatureGroup[] | null> => {
+    if (!product || !customerData?.customer?.id) return null;
+
+    try {
+      const productId = product.id ?? product.Id;
+      const sambaProductId = product.sambaId ?? product.SambaId;
+      const categoryId = product.categoryId ?? product.CategoryId ?? activeCategory?.sambaId ?? (activeCategory as any)?.Id;
+      const categorySambaId = activeCategory?.sambaId ?? (activeCategory as any)?.SambaId;
+      const customerId = customerData.customer.id;
+
+      let url = `https://apicanlimenu.online/api/menu/product-features?customerId=${customerId}`;
+      if (productId) url += `&productId=${productId}`;
+      if (sambaProductId) url += `&sambaProductId=${sambaProductId}`;
+      if (categoryId) url += `&categoryId=${categoryId}`;
+      if (categorySambaId) url += `&categorySambaId=${categorySambaId}`;
+
+      console.log('🔍 Feature check URL:', url);
+
+      const response = await fetch(url);
+      const data = await response.json();
+      console.log('🔍 Feature check response:', data);
+
+      if (data.success && data.features && data.features.length > 0) {
+        return data.features as FeatureGroup[];
+      }
+      return null;
+    } catch (err) {
+      console.error('Feature check error:', err);
+      return null;
+    }
+  };
+
+  const handleAddToCart = async (product: any, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isTableMode || !cartKey || !menuData) return;
-
     if (!customerCode) return;
+
+    // Özellik kontrolü yap
+    const productId = product.id ?? product.Id;
+    setCheckingFeatures(productId);
+    const features = await checkProductFeatures(product);
+    setCheckingFeatures(null);
+
+    if (features && features.length > 0) {
+      // Özellikler varsa modal aç
+      setSelectedProductForFeature(product);
+      setIsFeatureModalOpen(true);
+      return;
+    }
+
+    // Özellik yoksa doğrudan sepete ekle
+    addToCartDirectly(product, e);
+  };
+
+  const addToCartDirectly = (product: any, e?: React.MouseEvent) => {
+    if (!customerCode || !cartKey) return;
+
     let items = loadCartFromStorage(cartKey, customerCode);
 
     const existingItemIndex = items.findIndex(
-      (item: any) => item.productId === product.id
+      (item: any) => item.productId === product.id && !item.features?.length
     );
 
     if (existingItemIndex >= 0) {
@@ -120,6 +178,7 @@ export default function ProductListModal() {
     });
 
     // Button feedback
+    if (!e) return;
     const btn = e.currentTarget as HTMLButtonElement;
     const originalHTML = btn.innerHTML;
     const originalBg = btn.style.background;
@@ -630,8 +689,8 @@ export default function ProductListModal() {
                                 ) : null;
                               }
                             })()}
-                            {/* Porsiyon yoksa detail göster (porsiyonlu ürünlerde description zaten porsiyon adı) */}
-                            {productDetail && !((product.Portions || product.portions || []).length > 1) && (
+                            {/* Ürün açıklaması */}
+                            {productDetail && (
                               <p className="product-detail" data-detail-tr={product.detail} data-detail-en={product.detailEn || product.DetailEn || product.detail} style={descriptionStyle}>
                                 {productDetail}
                               </p>
@@ -667,9 +726,19 @@ export default function ProductListModal() {
                                   justifyContent: 'center',
                                   gap: '6px',
                                 }}
+                                disabled={checkingFeatures === product.id}
                               >
-                                <i className="fas fa-shopping-cart"></i>
-                                {t('addToCart')}
+                                {checkingFeatures === product.id ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i>
+                                    Yükleniyor...
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="fas fa-shopping-cart"></i>
+                                    {t('addToCart')}
+                                  </>
+                                )}
                               </button>
                             )}
                             {/* HH dışında HH ürünleri için mesaj */}
@@ -797,6 +866,22 @@ export default function ProductListModal() {
           </div>
         </div>
       </div>
+
+      {/* Feature Selection Modal */}
+      <FeatureSelectionModal
+        isOpen={isFeatureModalOpen}
+        onClose={() => {
+          setIsFeatureModalOpen(false);
+          setSelectedProductForFeature(null);
+        }}
+        product={selectedProductForFeature}
+        portion={null}
+        quantity={1}
+        onAddToCart={() => {
+          setIsFeatureModalOpen(false);
+          setSelectedProductForFeature(null);
+        }}
+      />
     </>
   );
 }

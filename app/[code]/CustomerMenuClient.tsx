@@ -549,9 +549,9 @@ export default function CustomerMenuClient({
           onSuggestionClick={() => setIsSuggestionModalOpen(true)}
           onTableOrdersClick={() => setIsTableOrdersModalOpen(true)}
           showAIChat={customerData?.customer.showAIChat ?? true}
-          showCart={isTableMode && (canUseBasket || !!basketDisabledMessage)}
-          showWaiterCall={canCallWaiter}
-          showTableOrders={canCallWaiter}
+          showCart={isTableMode && canUseBasket && !basketDisabledMessage}
+          showWaiterCall={canCallWaiter && !basketDisabledMessage}
+          showTableOrders={canCallWaiter && !basketDisabledMessage}
           tableId={tableId || undefined}
           phone={customerData?.customer.phone}
           cartItemCount={0}
