@@ -270,3 +270,47 @@ export interface HappyHourSettings {
   saturday: DayHappyHour;
   sunday: DayHappyHour;
 }
+
+// Product Features (OrderTags) Types
+export interface Feature {
+  id: number;
+  name: string;
+  price: number;
+  sambaTagId?: number;
+}
+
+export interface FeatureGroup {
+  id: number;
+  name: string;
+  isRequired: boolean;
+  minSelection: number;
+  maxSelection: number;
+  features: Feature[];
+}
+
+export interface FeatureGroupWithMappings extends FeatureGroup {
+  sambaGroupId?: number;
+  mappings: {
+    categoryId?: number;
+    productId?: number;
+  }[];
+}
+
+export interface ProductFeaturesResponse {
+  success: boolean;
+  features: FeatureGroup[];
+}
+
+export interface AllFeaturesResponse {
+  success: boolean;
+  data: FeatureGroupWithMappings[];
+}
+
+// Cart item with features
+export interface CartItemFeature {
+  featureId: number;
+  featureGroupId: number;
+  name: string;
+  price: number;
+  sambaTagId?: number;
+}
