@@ -36,6 +36,15 @@ export default function CustomerMenu() {
   const joinRoomParam = searchParams.get('joinRoom');
   const joinBackgammonParam = searchParams.get('joinBackgammon');
 
+  // Cookie'den table okuma fonksiyonu (middleware table'ı cookie'ye koyuyor)
+  const getTableFromCookie = (): string | null => {
+    if (typeof document === 'undefined') return null;
+    const value = `; ${document.cookie}`;
+    const parts = value.split('; tableCode=');
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+    return null;
+  };
+
   const { isTableMode, isSelfService, canCallWaiter, tableId: tableContextId } = useTable();
   const { language } = useLanguage();
   const { currentUser, isLoading: authLoading } = useAuth();
@@ -394,13 +403,16 @@ export default function CustomerMenu() {
         let customerResponse: Response | null = null;
         let lastError: Error | null = null;
 
+        // Table: önce URL'den, yoksa cookie'den al (middleware URL'den silip cookie'ye koyuyor)
+        const effectiveTableId = tableParam || getTableFromCookie();
+
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
             // Table parametresini API'ye gönder - sadece masa QR'larında redirect yapılacak
-        const customerUrl = tableParam
-          ? `/api/customer/${code}?table=${tableParam}`
-          : `/api/customer/${code}`;
-        customerResponse = await fetch(customerUrl);
+            const customerUrl = effectiveTableId
+              ? `/api/customer/${code}?table=${effectiveTableId}`
+              : `/api/customer/${code}`;
+            customerResponse = await fetch(customerUrl);
             if (customerResponse.ok) break;
             lastError = new Error('Müşteri bilgisi yüklenemedi');
           } catch (err) {
@@ -418,9 +430,9 @@ export default function CustomerMenu() {
         setCustomerData(customerInfo);
         setCustomerDataContext(customerInfo);
 
-        // 🔄 Redirect kontrolü: SADECE masa QR'larında (?table=xxx) uygula
+        // 🔄 Redirect kontrolü: SADECE masa QR'larında (table varsa) uygula
         // Normal menü erişiminde (table yok) redirect uygulanmaz
-        const isRedirected = customerInfo.isRedirected === true && !!tableParam;
+        const isRedirected = customerInfo.isRedirected === true && !!effectiveTableId;
         const effectiveCode = isRedirected && customerInfo.customer?.code
           ? customerInfo.customer.code
           : code;
@@ -428,6 +440,7 @@ export default function CustomerMenu() {
         console.log('🔄 Redirect Debug:', {
           originalCode: code,
           tableParam,
+          effectiveTableId,
           apiIsRedirected: customerInfo.isRedirected,
           customerCode: customerInfo.customer?.code,
           effectiveCode,
@@ -558,12 +571,12 @@ export default function CustomerMenu() {
         }
 
         // Table doğrulama
-        if (tableParam && customerInfo.customer.id) {
+        if (effectiveTableId && customerInfo.customer.id) {
           const tablesResponse = await fetch(`/api/tables/${customerInfo.customer.id}`);
           if (tablesResponse.ok) {
             const tables = await tablesResponse.json();
             const matchedTable = tables.find(
-              (t: any) => t.secureId?.toLowerCase() === tableParam.toLowerCase()
+              (t: any) => t.secureId?.toLowerCase() === effectiveTableId.toLowerCase()
             );
 
             if (!matchedTable) {
@@ -571,7 +584,7 @@ export default function CustomerMenu() {
               return;
             }
 
-            const tableName = matchedTable.name || matchedTable.tableName || tableParam;
+            const tableName = matchedTable.name || matchedTable.tableName || effectiveTableId;
             localStorage.setItem('currentTableName', tableName);
           }
         }
@@ -601,7 +614,7 @@ export default function CustomerMenu() {
         setMenuData(menuData);
 
         // Token settings
-        if (tableParam) {
+        if (effectiveTableId) {
           try {
             const tokenResponse = await fetch(`/api/token-settings/${effectiveCode}`);
             if (tokenResponse.ok) {
