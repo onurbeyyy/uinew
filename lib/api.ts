@@ -91,8 +91,10 @@ class ApiClient {
   }
 
   // Customer API
-  async getCustomer(customerCode: string): Promise<CustomerInfoResponse> {
-    return this.request<CustomerInfoResponse>(`/api/Customer/CustomerInfoByCode?code=${customerCode}`);
+  async getCustomer(customerCode: string, table?: string): Promise<CustomerInfoResponse> {
+    const params = new URLSearchParams({ code: customerCode });
+    if (table) params.append('table', table);
+    return this.request<CustomerInfoResponse>(`/api/Customer/CustomerInfoByCode?${params.toString()}`);
   }
 
   // Menu API

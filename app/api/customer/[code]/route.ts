@@ -11,9 +11,11 @@ export async function GET(
 ) {
   try {
     const { code } = await params;
+    const searchParams = request.nextUrl.searchParams;
+    const table = searchParams.get('table') || undefined;
 
     const api = createServerApiClient();
-    const customerData = await api.getCustomer(code);
+    const customerData = await api.getCustomer(code, table);
 
     return NextResponse.json(customerData, {
       headers: {

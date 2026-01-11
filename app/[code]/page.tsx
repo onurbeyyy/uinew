@@ -396,7 +396,11 @@ export default function CustomerMenu() {
 
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
-            customerResponse = await fetch(`/api/customer/${code}`);
+            // Table parametresini API'ye gönder - sadece masa QR'larında redirect yapılacak
+        const customerUrl = tableParam
+          ? `/api/customer/${code}?table=${tableParam}`
+          : `/api/customer/${code}`;
+        customerResponse = await fetch(customerUrl);
             if (customerResponse.ok) break;
             lastError = new Error('Müşteri bilgisi yüklenemedi');
           } catch (err) {

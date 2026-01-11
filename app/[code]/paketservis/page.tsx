@@ -1168,7 +1168,7 @@ export default function DeliveryPage() {
                               }}>
                                 {productTitle}
                               </h3>
-                              {productDetail && portions.length <= 1 && (
+                              {productDetail && (
                                 <p style={{
                                   fontSize: '10px',
                                   color: '#999',

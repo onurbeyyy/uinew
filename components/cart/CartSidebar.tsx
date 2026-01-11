@@ -8,6 +8,14 @@ import { useLocationVerification } from '@/hooks/useLocationVerification';
 import { saveCart as saveCartToStorage, loadCart as loadCartFromStorage, clearCart as clearCartFromStorage } from '@/utils/cartUtils';
 import ProductSuggestions from './ProductSuggestions';
 
+interface CartItemFeature {
+  featureId: number;
+  featureGroupId: number;
+  name: string;
+  price: number;
+  sambaTagId?: number;
+}
+
 interface CartItem {
   id: number;
   productId: number;
@@ -21,6 +29,7 @@ interface CartItem {
   portionName?: string;
   sambaPortionId?: number;
   linkedProductId?: number; // Happy Hour bağlı ürün ID'si
+  features?: CartItemFeature[]; // Seçilen özellikler (OrderTags)
 }
 
 interface DeliveryInfo {
@@ -647,6 +656,13 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
           // 🍺 Happy Hour: Bağlı ürün varsa onu kullan (sipariş sistemine normal ürün gider)
           const effectiveProductId = item.linkedProductId || item.sambaId || item.productId;
 
+          // OrderTag: Özellikler + Not birleştir
+          const featureTags = item.features?.map(f => f.name).join(', ') || '';
+          const orderTagParts: string[] = [];
+          if (featureTags) orderTagParts.push(featureTags);
+          if (item.note) orderTagParts.push(item.note);
+          const combinedOrderTag = orderTagParts.join(' | ');
+
           return {
             productId: effectiveProductId, // SambaProductId (HH varsa bağlı ürün)
             actualProductId: item.productId, // Gerçek ID (UI'daki ürün)
@@ -656,7 +672,13 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
             productName: item.name,
             quantity: item.quantity,
             price: item.price,
-            orderTag: item.note || '',
+            orderTag: combinedOrderTag,
+            // SambaPOS OrderTag ID'leri (API tarafında işlenecek)
+            orderTags: item.features?.map(f => ({
+              tagId: f.sambaTagId,
+              name: f.name,
+              price: f.price
+            })) || [],
             tokenQuantity: tokenQty, // Jeton ile alınan miktar
             tokensPerItem: tokenSettings?.redeemTokens || 0 // Her bir ürün/porsiyon için gereken jeton
           };
@@ -1063,6 +1085,35 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
                       }
                       return null;
                     })()}
+
+                    {/* Selected Features */}
+                    {item.features && item.features.length > 0 && (
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '4px',
+                        marginBottom: '6px',
+                      }}>
+                        {item.features.map((f, idx) => (
+                          <span
+                            key={idx}
+                            style={{
+                              fontSize: '11px',
+                              padding: '2px 6px',
+                              background: '#e8f5e9',
+                              color: '#2e7d32',
+                              borderRadius: '4px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                            }}
+                          >
+                            {f.name}
+                            {f.price > 0 && <span style={{ color: '#1b5e20' }}>+{f.price.toFixed(2)}₺</span>}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Item Note */}
                     <input
