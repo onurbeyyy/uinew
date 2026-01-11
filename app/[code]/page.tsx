@@ -414,11 +414,21 @@ export default function CustomerMenu() {
         setCustomerData(customerInfo);
         setCustomerDataContext(customerInfo);
 
-        // 🔄 Redirect kontrolü: API redirect yaptıysa hedef müşteri kodunu kullan
-        const isRedirected = customerInfo.isRedirected === true;
+        // 🔄 Redirect kontrolü: SADECE masa QR'larında (?table=xxx) uygula
+        // Normal menü erişiminde (table yok) redirect uygulanmaz
+        const isRedirected = customerInfo.isRedirected === true && !!tableParam;
         const effectiveCode = isRedirected && customerInfo.customer?.code
           ? customerInfo.customer.code
           : code;
+
+        console.log('🔄 Redirect Debug:', {
+          originalCode: code,
+          tableParam,
+          apiIsRedirected: customerInfo.isRedirected,
+          customerCode: customerInfo.customer?.code,
+          effectiveCode,
+          isRedirected
+        });
 
         // Eğer redirect olduysa, context'i de güncelle
         if (isRedirected && effectiveCode !== code) {
