@@ -493,6 +493,9 @@ export default function ProductListModal() {
                       const categoryId = (category as any)?.id ?? (category as any)?.Id;
                       const tagOrderList = categoryId ? subCategoryTagOrders[categoryId] : [];
 
+                      // Debug log
+                      console.log('🔍 SubCategory sıralama:', { categoryId, tagOrderList, allOrders: subCategoryTagOrders });
+
                       let uniqueTags: string[];
                       if (tagOrderList && tagOrderList.length > 0) {
                         // Veritabanındaki sıralamaya göre sırala
