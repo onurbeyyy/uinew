@@ -490,7 +490,9 @@ export default function ProductListModal() {
                       });
 
                       // SubCategoryTag sıralamasına göre sırala
-                      const categoryId = (category as any)?.id ?? (category as any)?.Id;
+                      // Debug: kategori objesini logla
+                      console.log('🔍 Category object:', category);
+                      const categoryId = (category as any)?.id ?? (category as any)?.Id ?? (category as any)?.sambaId ?? (category as any)?.SambaId;
                       const tagOrderList = categoryId ? subCategoryTagOrders[categoryId] : [];
 
                       // Debug log
