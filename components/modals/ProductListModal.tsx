@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { saveCart as saveCartToStorage, loadCart as loadCartFromStorage } from '@/utils/cartUtils';
 import FeatureSelectionModal from '@/components/modals/FeatureSelectionModal';
 import type { FeatureGroup } from '@/types/api';
+import { api } from '@/lib/api';
 
 // Kategori ismini "/" ile alt alta göster
 const formatCategoryName = (name: string) => {
@@ -52,6 +53,7 @@ export default function ProductListModal() {
   const [isFeatureModalOpen, setIsFeatureModalOpen] = useState(false);
   const [selectedProductForFeature, setSelectedProductForFeature] = useState<any>(null);
   const [checkingFeatures, setCheckingFeatures] = useState<number | null>(null); // hangi ürün için kontrol ediliyor
+  const [subCategoryTagOrders, setSubCategoryTagOrders] = useState<{ [categoryId: number]: string[] }>({}); // Kategori bazlı SubCategoryTag sıralaması
   const sliderRef = useRef<HTMLDivElement>(null);
   const productListRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number>(0);
@@ -78,6 +80,32 @@ export default function ProductListModal() {
     window.addEventListener('cartUpdated', handleCartUpdate);
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
   }, [isTableMode, cartKey, menuData]);
+
+  // SubCategoryTag sıralamasını al (kategori değiştiğinde)
+  useEffect(() => {
+    const fetchSubCategoryTagOrder = async () => {
+      if (!activeCategory) return;
+
+      // Kategori ID'sini bul (sambaId değil, gerçek id)
+      const categoryId = (activeCategory as any)?.id ?? (activeCategory as any)?.Id;
+      if (!categoryId || subCategoryTagOrders[categoryId]) return; // Zaten varsa tekrar çekme
+
+      try {
+        const response = await api.getSubCategoryTagOrders(categoryId);
+        if (response.success && response.data) {
+          const orderedTags = response.data.map(item => item.tagName);
+          setSubCategoryTagOrders(prev => ({
+            ...prev,
+            [categoryId]: orderedTags
+          }));
+        }
+      } catch (error) {
+        console.warn('SubCategoryTag sıralaması alınamadı:', error);
+      }
+    };
+
+    fetchSubCategoryTagOrder();
+  }, [activeCategory]);
 
   const getCartQuantity = (productId: number) => {
     const item = cartItems.find((item: any) => item.productId === productId);
@@ -461,7 +489,27 @@ export default function ProductListModal() {
                         }
                       });
 
-                      const uniqueTags = Object.keys(groupedProducts).sort();
+                      // SubCategoryTag sıralamasına göre sırala
+                      const categoryId = (category as any)?.id ?? (category as any)?.Id;
+                      const tagOrderList = categoryId ? subCategoryTagOrders[categoryId] : [];
+
+                      let uniqueTags: string[];
+                      if (tagOrderList && tagOrderList.length > 0) {
+                        // Veritabanındaki sıralamaya göre sırala
+                        uniqueTags = Object.keys(groupedProducts).sort((a, b) => {
+                          const indexA = tagOrderList.indexOf(a);
+                          const indexB = tagOrderList.indexOf(b);
+                          // Sıralanmamış olanlar sona
+                          if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                          if (indexA === -1) return 1;
+                          if (indexB === -1) return -1;
+                          return indexA - indexB;
+                        });
+                      } else {
+                        // Sıralama yoksa alfabetik
+                        uniqueTags = Object.keys(groupedProducts).sort();
+                      }
+
                       const hasTags = uniqueTags.length > 0;
                       const hasUngrouped = ungroupedProducts.length > 0;
                       const currentActiveTab = activeSubTab || (hasTags ? uniqueTags[0] : 'ungrouped');

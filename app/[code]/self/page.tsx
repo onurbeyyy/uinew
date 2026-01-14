@@ -283,7 +283,18 @@ function SelfServiceContent() {
         localStorage.setItem('menuSessionId', visitSessionId);
       }
 
-      fetch(`/api/visit?customerId=${customerId}&sessionId=${visitSessionId}`)
+      // Kullanıcı giriş yapmışsa endUserId'yi al
+      let endUserId: number | null = null;
+      try {
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          endUserId = parsed.id || parsed.userId || null;
+        }
+      } catch {}
+
+      const visitUrl = `/api/visit?customerId=${customerId}&sessionId=${visitSessionId}${endUserId ? `&endUserId=${endUserId}` : ''}`;
+      fetch(visitUrl)
         .then(() => localStorage.setItem(storageKey, now.toString()))
         .catch(() => {});
     } catch {}

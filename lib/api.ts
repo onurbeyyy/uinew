@@ -146,6 +146,11 @@ class ApiClient {
   async getUserTokenBalance(userId: number, customerCode: string): Promise<{ balance: UserTokenBalance }> {
     return this.request<{ balance: UserTokenBalance }>(`/api/UserTokens/by-code?userId=${userId}&customerCode=${customerCode}`);
   }
+
+  // SubCategoryTag sıralaması API
+  async getSubCategoryTagOrders(categoryId: number): Promise<{ success: boolean; data: { tagName: string; orderNo: number }[]; categoryId: number }> {
+    return this.request<{ success: boolean; data: { tagName: string; orderNo: number }[]; categoryId: number }>(`/api/Menu/GetSubCategoryTagOrders/${categoryId}`);
+  }
 }
 
 // Export singleton instance

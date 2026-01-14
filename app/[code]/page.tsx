@@ -247,8 +247,21 @@ export default function CustomerMenu() {
         localStorage.setItem('menuSessionId', sessionId);
       }
 
+      // Kullanıcı giriş yapmışsa endUserId'yi al
+      let endUserId: number | null = null;
+      try {
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          endUserId = parsed.id || parsed.userId || null;
+        }
+      } catch {
+        // userData parse hatası olursa devam et
+      }
+
       // Arka planda API'ye gönder (beklemeden)
-      fetch(`/api/visit?customerId=${customerId}&sessionId=${sessionId}`)
+      const visitUrl = `/api/visit?customerId=${customerId}&sessionId=${sessionId}${endUserId ? `&endUserId=${endUserId}` : ''}`;
+      fetch(visitUrl)
         .then(() => {
           // Başarılı olursa son ziyaret zamanını kaydet
           localStorage.setItem(storageKey, now.toString());

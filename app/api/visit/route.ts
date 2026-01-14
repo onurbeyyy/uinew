@@ -7,6 +7,12 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const customerId = searchParams.get('customerId');
     const sessionId = searchParams.get('sessionId');
+    const endUserId = searchParams.get('endUserId');
+    const userAgent = request.headers.get('user-agent') || '';
+
+    // IP adresini al
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const ipAddress = forwardedFor ? forwardedFor.split(',')[0].trim() : request.headers.get('x-real-ip') || '';
 
     if (!customerId) {
       return NextResponse.json(
@@ -16,8 +22,17 @@ export async function GET(request: NextRequest) {
     }
 
     // API'ye ziyaret kaydı gönder
+    const params = new URLSearchParams({
+      customerId: customerId,
+      sessionId: sessionId || '',
+    });
+
+    if (endUserId) params.append('endUserId', endUserId);
+    if (userAgent) params.append('userAgent', userAgent.substring(0, 500));
+    if (ipAddress) params.append('ipAddress', ipAddress);
+
     const response = await fetch(
-      `${API_BASE_URL}/api/Customer/CountUnique?customerId=${customerId}&sessionId=${sessionId || ''}`,
+      `${API_BASE_URL}/api/Customer/CountUnique?${params.toString()}`,
       {
         method: 'GET',
         headers: {
