@@ -53,7 +53,7 @@ export default function ProductListModal() {
   const [isFeatureModalOpen, setIsFeatureModalOpen] = useState(false);
   const [selectedProductForFeature, setSelectedProductForFeature] = useState<any>(null);
   const [checkingFeatures, setCheckingFeatures] = useState<number | null>(null); // hangi ürün için kontrol ediliyor
-  const [subCategoryTagOrders, setSubCategoryTagOrders] = useState<{ [categoryId: number]: string[] }>({}); // Kategori bazlı SubCategoryTag sıralaması
+  // SubCategoryTagOrder artık menü verisiyle birlikte geliyor (category.subCategoryTagOrder)
   const sliderRef = useRef<HTMLDivElement>(null);
   const productListRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number>(0);
@@ -81,33 +81,7 @@ export default function ProductListModal() {
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
   }, [isTableMode, cartKey, menuData]);
 
-  // SubCategoryTag sıralamasını al (kategori değiştiğinde)
-  useEffect(() => {
-    const fetchSubCategoryTagOrder = async () => {
-      if (!activeCategory) return;
-
-      // Kategori ID'sini bul (sambaId veya id - API her ikisini de destekliyor)
-      const categoryId = (activeCategory as any)?.sambaId ?? (activeCategory as any)?.SambaId ?? (activeCategory as any)?.id ?? (activeCategory as any)?.Id;
-      if (!categoryId || subCategoryTagOrders[categoryId]) return; // Zaten varsa tekrar çekme
-
-      try {
-        const response = await api.getSubCategoryTagOrders(categoryId);
-        if (response.success && response.data && response.data.length > 0) {
-          const orderedTags = response.data.map(item => item.tagName);
-          setSubCategoryTagOrders(prev => ({
-            ...prev,
-            [categoryId]: orderedTags
-          }));
-          // Sıralama yüklendikten sonra ilk tag'ı seç (veritabanı sıralamasına göre)
-          setActiveSubTab(orderedTags[0]);
-        }
-      } catch (error) {
-        console.warn('SubCategoryTag sıralaması alınamadı:', error);
-      }
-    };
-
-    fetchSubCategoryTagOrder();
-  }, [activeCategory]);
+  // SubCategoryTag sıralaması artık menü verisiyle birlikte geliyor (category.subCategoryTagOrder)
 
   const getCartQuantity = (productId: number) => {
     const item = cartItems.find((item: any) => item.productId === productId);
@@ -131,11 +105,8 @@ export default function ProductListModal() {
       if (categoryId) url += `&categoryId=${categoryId}`;
       if (categorySambaId) url += `&categorySambaId=${categorySambaId}`;
 
-      console.log('🔍 Feature check URL:', url);
-
       const response = await fetch(url);
       const data = await response.json();
-      console.log('🔍 Feature check response:', data);
 
       if (data.success && data.features && data.features.length > 0) {
         return data.features as FeatureGroup[];
@@ -224,20 +195,10 @@ export default function ProductListModal() {
   useEffect(() => {
     if (selectedCategory) {
       setActiveCategory(selectedCategory);
-      // Kategori değişince subTab'ı ayarla
-      const categoryId = (selectedCategory as any)?.sambaId ?? (selectedCategory as any)?.SambaId ?? (selectedCategory as any)?.id ?? (selectedCategory as any)?.Id;
-      const cachedOrder = categoryId ? subCategoryTagOrders[categoryId] : null;
-
-      if (cachedOrder && cachedOrder.length > 0) {
-        // Cache'te sıralama varsa onu kullan
-        setActiveSubTab(cachedOrder[0]);
-      } else {
-        // Cache yoksa, API yüklenene kadar boş bırak (API useEffect'i dolduracak)
-        // Eğer API sıralaması yoksa alfabetik fallback render'da yapılıyor
-        setActiveSubTab('');
-      }
+      // Kategori değişince subTab'ı sıfırla - API useEffect'i veya render fallback doğru tag'ı seçecek
+      setActiveSubTab('');
     }
-  }, [selectedCategory, subCategoryTagOrders]);
+  }, [selectedCategory]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -495,9 +456,8 @@ export default function ProductListModal() {
                         }
                       });
 
-                      // SubCategoryTag sıralamasına göre sırala
-                      const categoryId = (category as any)?.sambaId ?? (category as any)?.SambaId ?? (category as any)?.id ?? (category as any)?.Id;
-                      const tagOrderList = categoryId ? subCategoryTagOrders[categoryId] : [];
+                      // SubCategoryTag sıralamasına göre sırala (menü verisiyle birlikte geliyor)
+                      const tagOrderList = (category as any)?.subCategoryTagOrder || (category as any)?.SubCategoryTagOrder || [];
 
                       let uniqueTags: string[];
                       if (tagOrderList && tagOrderList.length > 0) {
@@ -518,19 +478,27 @@ export default function ProductListModal() {
 
                       const hasTags = uniqueTags.length > 0;
                       const hasUngrouped = ungroupedProducts.length > 0;
-                      const currentActiveTab = activeSubTab || (hasTags ? uniqueTags[0] : 'ungrouped');
+                      // activeSubTab bu kategorinin tag'lerinde yoksa ilk tag'ı kullan
+                      const isValidTab = activeSubTab && (uniqueTags.includes(activeSubTab) || (activeSubTab === 'ungrouped' && hasUngrouped));
+                      const currentActiveTab = isValidTab ? activeSubTab : (hasTags ? uniqueTags[0] : 'ungrouped');
 
                       // Ürün kartı render fonksiyonu
-                      const renderProductCard = (product: any) => {
+                      const renderProductCard = (product: any, index: number) => {
                     const productImageUrl = getImageUrl(product.picture, customerLogo, product.pictureId);
                     const productTitle = getTitle(product, language);
                     const productDetail = getDescription(product, language);
+                    // Kademeli animasyon delay (her kart 50ms sonra başlar, max 500ms)
+                    const animationDelay = Math.min(index * 50, 500);
 
                     return (
                       <div
-                        key={product.id}
-                        className="product-card product-item"
-                        style={{ cursor: 'pointer', position: 'relative' }}
+                        key={`${product.id}-${currentActiveTab}`}
+                        className="product-card product-item product-animate"
+                        style={{
+                          cursor: 'pointer',
+                          position: 'relative',
+                          animationDelay: `${animationDelay}ms`,
+                        }}
                         data-product-id={product.id}
                         data-samba-product-id={product.sambaId}
                         onClick={() => openProductDetailModal(product)}
@@ -828,20 +796,12 @@ export default function ProductListModal() {
                                 className="product-tab-nav"
                                 style={{
                                   display: 'flex',
-                                  gap: '8px',
-                                  overflowX: 'scroll',
-                                  overflowY: 'hidden',
-                                  paddingBottom: '12px',
-                                  marginBottom: '12px',
-                                  marginTop: '-10px',
+                                  gap: '4px',
+                                  paddingBottom: '10px',
+                                  marginBottom: '10px',
+                                  marginTop: '-8px',
                                   borderBottom: '1px solid rgba(255,255,255,0.2)',
-                                  WebkitOverflowScrolling: 'touch',
-                                  scrollbarWidth: 'none',
-                                  msOverflowStyle: 'none',
-                                  touchAction: 'pan-x',
                                 } as React.CSSProperties}
-                                onTouchStart={(e) => e.stopPropagation()}
-                                onTouchEnd={(e) => e.stopPropagation()}
                               >
                                 {uniqueTags.map((tag) => (
                                   <button
@@ -849,18 +809,32 @@ export default function ProductListModal() {
                                     className={`product-tab-btn ${currentActiveTab === tag ? 'active' : ''}`}
                                     onClick={() => setActiveSubTab(tag)}
                                     style={{
-                                      padding: '6px 12px',
-                                      borderRadius: '16px',
-                                      border: 'none',
+                                      flex: 1,
+                                      padding: '6px 4px',
+                                      borderRadius: '12px',
+                                      border: currentActiveTab === tag
+                                        ? '2px solid rgba(255,255,255,0.5)'
+                                        : '1px solid rgba(255,255,255,0.25)',
                                       background: currentActiveTab === tag
                                         ? 'linear-gradient(135deg, #f39c12, #e67e22)'
-                                        : 'rgba(255,255,255,0.15)',
+                                        : 'rgba(0,0,0,0.5)',
                                       color: 'white',
-                                      fontSize: '12px',
-                                      fontWeight: 600,
+                                      fontSize: '10px',
+                                      fontWeight: 700,
                                       cursor: 'pointer',
-                                      whiteSpace: 'nowrap',
-                                      transition: 'all 0.2s ease',
+                                      textAlign: 'center',
+                                      transition: 'background 0.2s ease, border-color 0.2s ease',
+                                      boxShadow: currentActiveTab === tag
+                                        ? '0 3px 10px rgba(243, 156, 18, 0.5)'
+                                        : 'none',
+                                      minWidth: 0,
+                                      overflow: 'hidden',
+                                      lineHeight: '1.2',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      minHeight: '36px',
+                                      wordBreak: 'break-word',
                                     }}
                                   >
                                     {tag}
@@ -871,18 +845,32 @@ export default function ProductListModal() {
                                     className={`product-tab-btn ${currentActiveTab === 'ungrouped' ? 'active' : ''}`}
                                     onClick={() => setActiveSubTab('ungrouped')}
                                     style={{
-                                      padding: '6px 12px',
-                                      borderRadius: '16px',
-                                      border: 'none',
+                                      flex: 1,
+                                      padding: '6px 4px',
+                                      borderRadius: '12px',
+                                      border: currentActiveTab === 'ungrouped'
+                                        ? '2px solid rgba(255,255,255,0.5)'
+                                        : '1px solid rgba(255,255,255,0.25)',
                                       background: currentActiveTab === 'ungrouped'
                                         ? 'linear-gradient(135deg, #f39c12, #e67e22)'
-                                        : 'rgba(255,255,255,0.15)',
+                                        : 'rgba(0,0,0,0.5)',
                                       color: 'white',
-                                      fontSize: '12px',
-                                      fontWeight: 600,
+                                      fontSize: '10px',
+                                      fontWeight: 700,
                                       cursor: 'pointer',
-                                      whiteSpace: 'nowrap',
-                                      transition: 'all 0.2s ease',
+                                      textAlign: 'center',
+                                      transition: 'background 0.2s ease, border-color 0.2s ease',
+                                      boxShadow: currentActiveTab === 'ungrouped'
+                                        ? '0 3px 10px rgba(243, 156, 18, 0.5)'
+                                        : 'none',
+                                      minWidth: 0,
+                                      overflow: 'hidden',
+                                      lineHeight: '1.2',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      minHeight: '36px',
+                                      wordBreak: 'break-word',
                                     }}
                                   >
                                     Diğer

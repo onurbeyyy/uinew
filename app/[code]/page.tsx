@@ -450,16 +450,6 @@ export default function CustomerMenu() {
           ? customerInfo.customer.code
           : code;
 
-        console.log('🔄 Redirect Debug:', {
-          originalCode: code,
-          tableParam,
-          effectiveTableId,
-          apiIsRedirected: customerInfo.isRedirected,
-          customerCode: customerInfo.customer?.code,
-          effectiveCode,
-          isRedirected
-        });
-
         // Eğer redirect olduysa, context'i de güncelle
         if (isRedirected && effectiveCode !== code) {
           setCustomerCode(effectiveCode);

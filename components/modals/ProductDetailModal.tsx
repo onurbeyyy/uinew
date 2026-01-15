@@ -126,12 +126,8 @@ export default function ProductDetailModal() {
       if (categoryId) url += `&categoryId=${categoryId}`;
       if (categorySambaId) url += `&categorySambaId=${categorySambaId}`;
 
-      console.log('🔍 Feature check URL:', url);
-
       const response = await fetch(url);
-
       const data = await response.json();
-      console.log('🔍 Feature check response:', data);
 
       if (data.success && data.features && data.features.length > 0) {
         return data.features as FeatureGroup[];
@@ -144,9 +140,7 @@ export default function ProductDetailModal() {
   };
 
   const handleAddToCart = async () => {
-    console.log('🛒 handleAddToCart called', { selectedProduct: !!selectedProduct, isTableMode, cartKey, customerCode });
     if (!selectedProduct || !isTableMode || !cartKey || !customerCode) {
-      console.log('🛒 Early return - missing:', { selectedProduct: !selectedProduct, isTableMode: !isTableMode, cartKey: !cartKey, customerCode: !customerCode });
       return;
     }
 
