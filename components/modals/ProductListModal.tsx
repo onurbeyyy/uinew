@@ -86,18 +86,20 @@ export default function ProductListModal() {
     const fetchSubCategoryTagOrder = async () => {
       if (!activeCategory) return;
 
-      // Kategori ID'sini bul (sambaId değil, gerçek id)
-      const categoryId = (activeCategory as any)?.id ?? (activeCategory as any)?.Id;
+      // Kategori ID'sini bul (sambaId veya id - API her ikisini de destekliyor)
+      const categoryId = (activeCategory as any)?.sambaId ?? (activeCategory as any)?.SambaId ?? (activeCategory as any)?.id ?? (activeCategory as any)?.Id;
       if (!categoryId || subCategoryTagOrders[categoryId]) return; // Zaten varsa tekrar çekme
 
       try {
         const response = await api.getSubCategoryTagOrders(categoryId);
-        if (response.success && response.data) {
+        if (response.success && response.data && response.data.length > 0) {
           const orderedTags = response.data.map(item => item.tagName);
           setSubCategoryTagOrders(prev => ({
             ...prev,
             [categoryId]: orderedTags
           }));
+          // Sıralama yüklendikten sonra ilk tag'ı seç (veritabanı sıralamasına göre)
+          setActiveSubTab(orderedTags[0]);
         }
       } catch (error) {
         console.warn('SubCategoryTag sıralaması alınamadı:', error);
@@ -222,16 +224,20 @@ export default function ProductListModal() {
   useEffect(() => {
     if (selectedCategory) {
       setActiveCategory(selectedCategory);
-      // Kategori değişince subTab'ı sıfırla
-      const products = selectedCategory.products || [];
-      const tags = [...new Set(products.map((p: any) => p.subCategoryTag || p.SubCategoryTag || '').filter((t: string) => t))].sort();
-      if (tags.length > 0) {
-        setActiveSubTab(tags[0] as string);
+      // Kategori değişince subTab'ı ayarla
+      const categoryId = (selectedCategory as any)?.sambaId ?? (selectedCategory as any)?.SambaId ?? (selectedCategory as any)?.id ?? (selectedCategory as any)?.Id;
+      const cachedOrder = categoryId ? subCategoryTagOrders[categoryId] : null;
+
+      if (cachedOrder && cachedOrder.length > 0) {
+        // Cache'te sıralama varsa onu kullan
+        setActiveSubTab(cachedOrder[0]);
       } else {
+        // Cache yoksa, API yüklenene kadar boş bırak (API useEffect'i dolduracak)
+        // Eğer API sıralaması yoksa alfabetik fallback render'da yapılıyor
         setActiveSubTab('');
       }
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, subCategoryTagOrders]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -490,13 +496,8 @@ export default function ProductListModal() {
                       });
 
                       // SubCategoryTag sıralamasına göre sırala
-                      // Debug: kategori objesini logla
-                      console.log('🔍 Category object:', category);
-                      const categoryId = (category as any)?.id ?? (category as any)?.Id ?? (category as any)?.sambaId ?? (category as any)?.SambaId;
+                      const categoryId = (category as any)?.sambaId ?? (category as any)?.SambaId ?? (category as any)?.id ?? (category as any)?.Id;
                       const tagOrderList = categoryId ? subCategoryTagOrders[categoryId] : [];
-
-                      // Debug log
-                      console.log('🔍 SubCategory sıralama:', { categoryId, tagOrderList, allOrders: subCategoryTagOrders });
 
                       let uniqueTags: string[];
                       if (tagOrderList && tagOrderList.length > 0) {
