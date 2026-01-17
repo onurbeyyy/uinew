@@ -88,12 +88,13 @@ export default function BottomNavBar({
       className="nav-item"
       onClick={onClick}
       style={{
+        flex: 1,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'center',
         cursor: 'pointer',
-        padding: '8px',
-        borderRadius: '12px',
+        padding: '4px 2px',
         transition: 'all 0.3s ease',
         position: 'relative',
         top,
@@ -139,9 +140,9 @@ export default function BottomNavBar({
       </div>
       <span
         style={{
-          fontSize: top !== '0' ? '11px' : '11px',
-          color: top !== '0' ? '#667eea' : '#666',
-          fontWeight: top !== '0' ? 600 : 500,
+          fontSize: '10px',
+          color: 'rgba(255, 255, 255, 0.9)',
+          fontWeight: 500,
         }}
       >
         {label}
@@ -158,16 +159,17 @@ export default function BottomNavBar({
           bottom: 0,
           left: 0,
           right: 0,
-          height: '70px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)',
-          borderTop: '1px solid rgba(0, 0, 0, 0.1)',
+          height: '54px',
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderRadius: '20px 20px 0 0',
           display: 'flex',
-          justifyContent: 'space-around',
+          justifyContent: 'stretch',
           alignItems: 'center',
           zIndex: 9999,
-          boxShadow: '0 -2px 20px rgba(0, 0, 0, 0.1)',
-          padding: '0 4px',
+          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
+          padding: '0',
         }}
       >
         {/* 1. Profil */}
@@ -187,11 +189,13 @@ export default function BottomNavBar({
           <div
             onClick={onTableOrdersClick}
             style={{
+              flex: 1,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              justifyContent: 'center',
               cursor: 'pointer',
-              padding: '6px',
+              padding: '4px 2px',
             }}
           >
             <div
@@ -211,7 +215,7 @@ export default function BottomNavBar({
                 <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0-3h8v2H8v-2zm0-3h5v2H8V8z"/>
               </svg>
             </div>
-            <span style={{ fontSize: '11px', fontWeight: 600, color: '#e53935' }}>
+            <span style={{ fontSize: '10px', fontWeight: 500, color: 'rgba(255, 255, 255, 0.9)' }}>
               Hesap
             </span>
           </div>
@@ -233,11 +237,13 @@ export default function BottomNavBar({
           <div
             onClick={handleWaiterClick}
             style={{
+              flex: 1,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              justifyContent: 'center',
               cursor: 'pointer',
-              padding: '6px',
+              padding: '4px 2px',
             }}
           >
             <div
@@ -257,7 +263,7 @@ export default function BottomNavBar({
                 <path d="M18.06 23H19.72C20.56 23 21.25 22.35 21.35 21.53L23 5.05H18V1H16.03V5.05H11.06L11.36 7.39C13.07 7.86 14.67 8.71 15.63 9.65C17.07 11.07 18.06 12.54 18.06 14.94V23M1 22V21H16.03V22C16.03 22.54 15.58 23 15.03 23H2C1.45 23 1 22.54 1 22M16.03 15C16.03 7 1 7 1 15H16.03M1 17H16V19H1V17Z" />
               </svg>
             </div>
-            <span style={{ fontSize: '10px', fontWeight: 600, color: '#ff6b00' }}>
+            <span style={{ fontSize: '10px', fontWeight: 500, color: 'rgba(255, 255, 255, 0.9)' }}>
               {t('waiterCall')}
             </span>
           </div>
@@ -266,11 +272,13 @@ export default function BottomNavBar({
             className="game-button"
             onClick={onGameClick}
             style={{
+              flex: 1,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              justifyContent: 'center',
               cursor: 'pointer',
-              padding: '8px',
+              padding: '4px 2px',
               position: 'relative',
             }}
           >
@@ -293,7 +301,7 @@ export default function BottomNavBar({
                 <path d="M7.97,16L5,19C4.67,19.3 4.23,19.5 3.75,19.5A1.75,1.75 0 0,1 2,17.75V17.5L3,10.12C3.21,7.81 5.14,6 7.5,6H16.5C18.86,6 20.79,7.81 21,10.12L22,17.5V17.75A1.75,1.75 0 0,1 20.25,19.5C19.77,19.5 19.33,19.3 19,19L16.03,16H7.97M7.5,8A0.5,0.5 0 0,0 7,8.5A0.5,0.5 0 0,0 7.5,9A0.5,0.5 0 0,0 8,8.5A0.5,0.5 0 0,0 7.5,8M16.5,8A0.5,0.5 0 0,0 16,8.5A0.5,0.5 0 0,0 16.5,9A0.5,0.5 0 0,0 17,8.5A0.5,0.5 0 0,0 16.5,8M8.5,11A1.5,1.5 0 0,0 7,12.5A1.5,1.5 0 0,0 8.5,14A1.5,1.5 0 0,0 10,12.5A1.5,1.5 0 0,0 8.5,11M15.5,11A1.5,1.5 0 0,0 14,12.5A1.5,1.5 0 0,0 15.5,14A1.5,1.5 0 0,0 17,12.5A1.5,1.5 0 0,0 15.5,11M12,13C12.27,13 12.5,13.14 12.65,13.35L15,16H9L11.35,13.35C11.5,13.14 11.73,13 12,13Z" />
               </svg>
             </div>
-            <span className="game-label" style={{ fontSize: '11px', fontWeight: 600, color: '#9c27b0' }}>
+            <span style={{ fontSize: '10px', fontWeight: 500, color: 'rgba(255, 255, 255, 0.9)' }}>
               {t('games')}
             </span>
             <span className="sparkle sparkle-1">✨</span>
@@ -308,11 +316,13 @@ export default function BottomNavBar({
             className="game-button"
             onClick={onGameClick}
             style={{
+              flex: 1,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              justifyContent: 'center',
               cursor: 'pointer',
-              padding: '8px',
+              padding: '4px 2px',
               position: 'relative',
             }}
           >
@@ -335,7 +345,7 @@ export default function BottomNavBar({
                 <path d="M7.97,16L5,19C4.67,19.3 4.23,19.5 3.75,19.5A1.75,1.75 0 0,1 2,17.75V17.5L3,10.12C3.21,7.81 5.14,6 7.5,6H16.5C18.86,6 20.79,7.81 21,10.12L22,17.5V17.75A1.75,1.75 0 0,1 20.25,19.5C19.77,19.5 19.33,19.3 19,19L16.03,16H7.97M7.5,8A0.5,0.5 0 0,0 7,8.5A0.5,0.5 0 0,0 7.5,9A0.5,0.5 0 0,0 8,8.5A0.5,0.5 0 0,0 7.5,8M16.5,8A0.5,0.5 0 0,0 16,8.5A0.5,0.5 0 0,0 16.5,9A0.5,0.5 0 0,0 17,8.5A0.5,0.5 0 0,0 16.5,8M8.5,11A1.5,1.5 0 0,0 7,12.5A1.5,1.5 0 0,0 8.5,14A1.5,1.5 0 0,0 10,12.5A1.5,1.5 0 0,0 8.5,11M15.5,11A1.5,1.5 0 0,0 14,12.5A1.5,1.5 0 0,0 15.5,14A1.5,1.5 0 0,0 17,12.5A1.5,1.5 0 0,0 15.5,11M12,13C12.27,13 12.5,13.14 12.65,13.35L15,16H9L11.35,13.35C11.5,13.14 11.73,13 12,13Z" />
               </svg>
             </div>
-            <span className="game-label" style={{ fontSize: '11px', fontWeight: 600, color: '#9c27b0' }}>
+            <span style={{ fontSize: '10px', fontWeight: 500, color: 'rgba(255, 255, 255, 0.9)' }}>
               {t('games')}
             </span>
             <span className="sparkle sparkle-1">✨</span>
@@ -616,13 +626,6 @@ export default function BottomNavBar({
 
         .game-icon {
           animation: gradientShift 3s ease infinite, glow 2s ease-in-out infinite;
-        }
-
-        .game-label {
-          background: linear-gradient(135deg, #9c27b0, #667eea);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
         }
 
         /* Sparkle Animations */
