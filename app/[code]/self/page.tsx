@@ -72,15 +72,17 @@ function SelfServiceContent() {
   const [showTimeWarning, setShowTimeWarning] = useState(false);
 
   useEffect(() => {
-    // Sadece bir kez kontrol et
-    if (hasCheckedRef.current || sessionValidatedRef.current) {
+    // Code yoksa bekle
+    if (!code) return;
+
+    // Zaten doğrulandıysa tekrar kontrol etme
+    if (sessionValidatedRef.current) {
       return;
     }
-    hasCheckedRef.current = true;
 
-    // URL'den session'ı window.location ile oku (searchParams hydration sorunu için)
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlSession = urlParams.get('session');
+    // URL'den session'ı hem searchParams hem window.location'dan oku (hydration uyumu için)
+    const urlSession = searchParams.get('session') ||
+      (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('session') : null);
 
     const STORAGE_KEY = `selfservice_session_${code}`;
     const TIMESTAMP_KEY = `selfservice_session_time_${code}`;
@@ -122,6 +124,7 @@ function SelfServiceContent() {
       setSessionId(session);
       setSessionValidated(true);
       setSessionCheckDone(true);
+      setSessionError(null); // Önceki hatayı temizle
 
       // Session'ı localStorage'a kaydet
       localStorage.setItem(STORAGE_KEY, session);
@@ -167,12 +170,48 @@ function SelfServiceContent() {
       return;
     }
 
-    // Session yoksa erişim engelle
+    // Session yoksa - hydration tamamlanması için kısa bir süre bekle
+    // İlk kontrolde searchParams boş olabilir
+    if (!hasCheckedRef.current) {
+      hasCheckedRef.current = true;
+      // 100ms sonra tekrar kontrol et (hydration için)
+      setTimeout(() => {
+        // Direkt window.location'dan session kontrolü (closure sorunu için)
+        const retrySession = typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('session')
+          : null;
+
+        if (retrySession) {
+          // Session bulundu, state'leri güncelle
+          sessionValidatedRef.current = true;
+          setSessionId(retrySession);
+          setSessionValidated(true);
+          setSessionCheckDone(true);
+          setSessionError(null);
+
+          // localStorage'a kaydet
+          localStorage.setItem(STORAGE_KEY, retrySession);
+          localStorage.setItem(TIMESTAMP_KEY, Date.now().toString());
+
+          // URL'den temizle
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, '', cleanUrl);
+        } else {
+          // Gerçekten session yok
+          setSessionError('Bu sayfaya erişmek için QR kodu okutmanız gerekiyor.');
+          setSessionCheckDone(true);
+          setLoading(false);
+        }
+      }, 100);
+      return;
+    }
+
+    // Zaten kontrol edildi ve session yok
     setSessionError('Bu sayfaya erişmek için QR kodu okutmanız gerekiyor.');
     setSessionCheckDone(true);
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, searchParams]);
 
   // Session süre takibi - her dakika kontrol et
   useEffect(() => {
