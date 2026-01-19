@@ -35,8 +35,6 @@ export function saveCart(cartKey: string, items: any[], customerCode: string) {
 export function loadCart(cartKey: string, currentCustomerCode: string): any[] {
   try {
     const stored = localStorage.getItem(`cart_${cartKey}`);
-    // 🔍 DEBUG: localStorage'dan okunan ham veri
-    console.log('🔍 loadCart - Key:', `cart_${cartKey}`, '| Stored:', stored ? 'VAR' : 'YOK');
     if (!stored) return [];
 
     const parsed = JSON.parse(stored);
@@ -53,11 +51,9 @@ export function loadCart(cartKey: string, currentCustomerCode: string): any[] {
 
     // 1. CustomerCode kontrolü - başka customer ise temizle (case-insensitive)
     if (cartData.customerCode && cartData.customerCode.toLowerCase() !== currentCustomerCode.toLowerCase()) {
-      console.log('⚠️ CustomerCode uyuşmazlığı! Sepet:', cartData.customerCode, '| Mevcut:', currentCustomerCode, '| TEMİZLENİYOR');
       clearCart(cartKey);
       return [];
     }
-    console.log('✅ CustomerCode eşleşti:', cartData.customerCode, '| Items:', cartData.items?.length || 0);
 
     // 2. Zaman kontrolü - 3 saatten eski ise temizle (sadece timestamp varsa)
     if (cartData.timestamp) {

@@ -79,8 +79,6 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
   const loadCart = useCallback(() => {
     if (!cartKey || !customerCode) return;
     const loadedItems = loadCartFromStorage(cartKey, customerCode);
-    // 🔍 DEBUG: Yüklenen sepet verisi
-    console.log('🛒 Sepet yüklendi - CartKey:', cartKey, '| CustomerCode:', customerCode, '| Items:', loadedItems.map((i: any) => ({ id: i.productId, name: i.name })));
     setItems(loadedItems);
   }, [cartKey, customerCode]);
 
@@ -526,15 +524,6 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
     // Çift tıklama koruması
     if (isSubmitting) return;
     if (items.length === 0) return;
-
-    // 🔍 DEBUG: Gönderilecek ürünleri logla
-    console.log('📦 Sipariş gönderilecek - Items:', items.map(i => ({
-      productId: i.productId,
-      sambaId: i.sambaId,
-      name: i.name,
-      quantity: i.quantity
-    })));
-    console.log('📦 CartKey:', cartKey, '| CustomerCode:', customerCode);
 
     // Delivery mode check
     if (isDelivery) {
