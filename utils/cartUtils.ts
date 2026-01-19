@@ -39,12 +39,12 @@ export function loadCart(cartKey: string, currentCustomerCode: string): any[] {
 
     const parsed = JSON.parse(stored);
 
-    // Eski format desteği: Eğer direkt array ise, yeni formata çevir
+    // Eski format desteği: Eğer direkt array ise TEMİZLE (customerCode doğrulanamaz)
     if (Array.isArray(parsed)) {
-      // Eski format - direkt items array
-      // Yeni formata kaydet ve devam et
-      saveCart(cartKey, parsed, currentCustomerCode);
-      return parsed;
+      // Eski format - customerCode bilgisi yok, güvenli değil
+      // Farklı restorandan ürün içerebilir, temizle
+      clearCart(cartKey);
+      return [];
     }
 
     const cartData: CartData = parsed;
