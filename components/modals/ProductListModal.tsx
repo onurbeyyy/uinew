@@ -179,16 +179,19 @@ export default function ProductListModal() {
     });
 
     // Button feedback
-    if (!e) return;
+    if (!e || !e.currentTarget) return;
     const btn = e.currentTarget as HTMLButtonElement;
+    if (!btn) return;
     const originalHTML = btn.innerHTML;
     const originalBg = btn.style.background;
     btn.innerHTML = '<i class="fas fa-check"></i> Eklendi!';
     btn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
 
     setTimeout(() => {
-      btn.innerHTML = originalHTML;
-      btn.style.background = originalBg;
+      if (btn) {
+        btn.innerHTML = originalHTML;
+        btn.style.background = originalBg;
+      }
     }, 1500);
   };
 
