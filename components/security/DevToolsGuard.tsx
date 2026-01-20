@@ -125,22 +125,78 @@ export default function DevToolsGuard() {
     };
   }, [handleKeyDown, handleContextMenu]);
 
-  // DevTools açık mı kontrolü - SADECE SAYFA AÇILIRKEN
+  // DevTools açık mı kontrolü - SAYFA AÇILIRKEN
   useEffect(() => {
     if (isAuthorized) return;
 
-    const detectDevTools = () => {
+    let detected = false;
+
+    // Yöntem 1: Boyut kontrolü
+    const checkSize = () => {
       const threshold = 160;
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
       const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+      return widthThreshold || heightThreshold;
+    };
 
-      if (widthThreshold || heightThreshold) {
+    // Yöntem 2: console.log getter tuzağı
+    const checkConsole = (): Promise<boolean> => {
+      return new Promise((resolve) => {
+        const element = document.createElement('div');
+        Object.defineProperty(element, 'id', {
+          get: function() {
+            resolve(true);
+            return 'trap';
+          }
+        });
+        console.log(element);
+        console.clear();
+        // 100ms içinde tetiklenmezse DevTools kapalı
+        setTimeout(() => resolve(false), 100);
+      });
+    };
+
+    // Yöntem 3: Debugger zamanlama testi
+    const checkDebugger = (): boolean => {
+      const start = performance.now();
+      // Bu satır DevTools açıkken duraklayacak
+      eval('debugger');
+      const duration = performance.now() - start;
+      // 50ms'den uzun sürdüyse DevTools açık
+      return duration > 50;
+    };
+
+    const runDetection = async () => {
+      if (detected) return;
+
+      // Önce boyut kontrolü
+      if (checkSize()) {
+        detected = true;
         setShowModal(true);
+        return;
+      }
+
+      // Sonra console tuzağı
+      const consoleOpen = await checkConsole();
+      if (consoleOpen && !detected) {
+        detected = true;
+        setShowModal(true);
+        return;
+      }
+
+      // Son olarak debugger testi
+      try {
+        if (checkDebugger() && !detected) {
+          detected = true;
+          setShowModal(true);
+        }
+      } catch (e) {
+        // eval engellenmişse atla
       }
     };
 
-    // Sayfa yüklendiğinde bir kez kontrol et
-    detectDevTools();
+    // Sayfa yüklenince çalıştır
+    runDetection();
   }, [isAuthorized]);
 
   if (!showModal) return null;
