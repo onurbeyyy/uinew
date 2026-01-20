@@ -1,0 +1,268 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+
+const CORRECT_PASSWORD = 'derasew';
+const SESSION_KEY = 'devtools_authorized';
+
+export default function DevToolsGuard() {
+  const [showModal, setShowModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // Session kontrolü
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const authorized = sessionStorage.getItem(SESSION_KEY) === 'true';
+      setIsAuthorized(authorized);
+    }
+  }, []);
+
+  const handlePasswordSubmit = useCallback(() => {
+    if (password === CORRECT_PASSWORD) {
+      setIsAuthorized(true);
+      sessionStorage.setItem(SESSION_KEY, 'true');
+      setShowModal(false);
+      setPassword('');
+      setError('');
+    } else {
+      setError('Yanlış şifre!');
+      setPassword('');
+    }
+  }, [password]);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Zaten yetkili ise engelleme
+    if (isAuthorized) return;
+
+    // F12
+    if (e.key === 'F12') {
+      e.preventDefault();
+      setShowModal(true);
+      return;
+    }
+
+    // Ctrl+Shift+I (DevTools)
+    if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+      e.preventDefault();
+      setShowModal(true);
+      return;
+    }
+
+    // Ctrl+Shift+J (Console)
+    if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+      e.preventDefault();
+      setShowModal(true);
+      return;
+    }
+
+    // Ctrl+Shift+C (Element Inspector)
+    if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+      e.preventDefault();
+      setShowModal(true);
+      return;
+    }
+
+    // Ctrl+U (View Source)
+    if (e.ctrlKey && e.key === 'u') {
+      e.preventDefault();
+      setShowModal(true);
+      return;
+    }
+
+    // Cmd+Option+I (Mac DevTools)
+    if (e.metaKey && e.altKey && e.key === 'i') {
+      e.preventDefault();
+      setShowModal(true);
+      return;
+    }
+
+    // Cmd+Option+J (Mac Console)
+    if (e.metaKey && e.altKey && e.key === 'j') {
+      e.preventDefault();
+      setShowModal(true);
+      return;
+    }
+
+    // Cmd+Option+U (Mac View Source)
+    if (e.metaKey && e.altKey && e.key === 'u') {
+      e.preventDefault();
+      setShowModal(true);
+      return;
+    }
+  }, [isAuthorized]);
+
+  const handleContextMenu = useCallback((e: MouseEvent) => {
+    // Zaten yetkili ise engelleme
+    if (isAuthorized) return;
+
+    e.preventDefault();
+    setShowModal(true);
+  }, [isAuthorized]);
+
+  // Modal içinde Enter tuşu
+  const handleModalKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handlePasswordSubmit();
+    }
+    if (e.key === 'Escape') {
+      setShowModal(false);
+      setPassword('');
+      setError('');
+    }
+  }, [handlePasswordSubmit]);
+
+  useEffect(() => {
+    // Event listener'ları ekle
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('contextmenu', handleContextMenu);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [handleKeyDown, handleContextMenu]);
+
+  // DevTools açık mı kontrolü (ek koruma)
+  useEffect(() => {
+    if (isAuthorized) return;
+
+    const detectDevTools = () => {
+      const threshold = 160;
+      const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+      const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+
+      if (widthThreshold || heightThreshold) {
+        // DevTools açık olabilir - uyarı göster
+        if (!showModal) {
+          setShowModal(true);
+        }
+      }
+    };
+
+    // Her 2 saniyede kontrol et
+    const interval = setInterval(detectDevTools, 2000);
+
+    return () => clearInterval(interval);
+  }, [isAuthorized, showModal]);
+
+  if (!showModal) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 999999,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: '#1a1a2e',
+          borderRadius: '16px',
+          padding: '32px',
+          maxWidth: '400px',
+          width: '90%',
+          textAlign: 'center',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+          border: '1px solid #333',
+        }}
+      >
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
+        <h2 style={{
+          color: '#fff',
+          marginBottom: '8px',
+          fontSize: '24px',
+          fontWeight: 'bold'
+        }}>
+          Geliştirici Araçları
+        </h2>
+        <p style={{
+          color: '#888',
+          marginBottom: '24px',
+          fontSize: '14px'
+        }}>
+          Bu özelliğe erişmek için şifre gereklidir
+        </p>
+
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={handleModalKeyDown}
+          placeholder="Şifre"
+          autoFocus
+          style={{
+            width: '100%',
+            padding: '14px 16px',
+            fontSize: '16px',
+            borderRadius: '8px',
+            border: error ? '2px solid #ff4444' : '2px solid #333',
+            backgroundColor: '#0f0f1a',
+            color: '#fff',
+            outline: 'none',
+            marginBottom: '12px',
+            boxSizing: 'border-box',
+          }}
+        />
+
+        {error && (
+          <p style={{
+            color: '#ff4444',
+            fontSize: '14px',
+            marginBottom: '12px'
+          }}>
+            {error}
+          </p>
+        )}
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => {
+              setShowModal(false);
+              setPassword('');
+              setError('');
+            }}
+            style={{
+              flex: 1,
+              padding: '14px',
+              fontSize: '16px',
+              borderRadius: '8px',
+              border: '1px solid #333',
+              backgroundColor: 'transparent',
+              color: '#888',
+              cursor: 'pointer',
+            }}
+          >
+            İptal
+          </button>
+          <button
+            onClick={handlePasswordSubmit}
+            style={{
+              flex: 1,
+              padding: '14px',
+              fontSize: '16px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: '#4CAF50',
+              color: '#fff',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            Giriş
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
