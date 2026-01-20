@@ -5,12 +5,26 @@ import { useEffect, useState, useCallback } from 'react';
 const CORRECT_PASSWORD = 'derasew';
 const SESSION_KEY = 'devtools_authorized';
 
+// Mobil cihaz kontrolü
+const isMobileDevice = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || ('ontouchstart' in window)
+    || (navigator.maxTouchPoints > 0);
+};
+
 export default function DevToolsGuard() {
   const [showModal, setShowModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false); // Site tamamen engelli mi
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Mobil cihaz kontrolü
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+  }, []);
 
   // Session kontrolü
   useEffect(() => {
@@ -35,8 +49,8 @@ export default function DevToolsGuard() {
   }, [password]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // Zaten yetkili ise engelleme
-    if (isAuthorized) return;
+    // Mobil veya yetkili ise engelleme
+    if (isMobile || isAuthorized) return;
 
     const blockAndShowModal = () => {
       e.preventDefault();
@@ -91,16 +105,16 @@ export default function DevToolsGuard() {
       blockAndShowModal();
       return;
     }
-  }, [isAuthorized]);
+  }, [isMobile, isAuthorized]);
 
   const handleContextMenu = useCallback((e: MouseEvent) => {
-    // Zaten yetkili ise engelleme
-    if (isAuthorized) return;
+    // Mobil veya yetkili ise engelleme
+    if (isMobile || isAuthorized) return;
 
     e.preventDefault();
     setIsBlocked(true);
     setShowModal(true);
-  }, [isAuthorized]);
+  }, [isMobile, isAuthorized]);
 
   // Modal içinde Enter tuşu
   const handleModalKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -126,9 +140,9 @@ export default function DevToolsGuard() {
     };
   }, [handleKeyDown, handleContextMenu]);
 
-  // DevTools açık mı kontrolü - SAYFA AÇILIRKEN
+  // DevTools açık mı kontrolü - SAYFA AÇILIRKEN (sadece desktop)
   useEffect(() => {
-    if (isAuthorized) return;
+    if (isMobile || isAuthorized) return;
 
     let detected = false;
 
@@ -201,7 +215,7 @@ export default function DevToolsGuard() {
 
     // Sayfa yüklenince çalıştır
     runDetection();
-  }, [isAuthorized]);
+  }, [isMobile, isAuthorized]);
 
   // Engellenmiş ama modal kapalıysa - siyah ekran göster
   if (isBlocked && !showModal) {
