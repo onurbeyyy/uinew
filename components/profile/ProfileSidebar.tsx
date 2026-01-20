@@ -539,7 +539,12 @@ export default function ProfileSidebar({ isOpen, onClose, customerCode, isDelive
 
     setOrdersLoading(true);
     try {
-      const response = await fetch(`/api/user/orders/${userId}`);
+      const token = localStorage.getItem('userToken');
+      const response = await fetch(`/api/user/orders/${userId}`, {
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
       const result = await response.json();
 
       if (result.errors) {

@@ -155,7 +155,8 @@
       "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\Onue\\\\Desktop\\\\canli menu\\\\samba\\\\uinew && git push origin main\")",
       "Bash(pgrep:*)",
       "Bash(jq:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(/mnt/c/Program Files/dotnet/dotnet.exe build --no-restore)"
     ],
     "deny": [],
     "ask": []

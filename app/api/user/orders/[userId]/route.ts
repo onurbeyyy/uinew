@@ -10,10 +10,14 @@ export async function GET(
     const params = await context.params;
     const { userId } = params;
 
+    // Get authorization header from request
+    const authHeader = request.headers.get('authorization');
+
     const response = await fetch(`${API_BASE_URL}/api/EndUser/orders/${userId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(authHeader && { 'Authorization': authHeader }),
       },
     });
 
