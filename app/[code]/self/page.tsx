@@ -965,7 +965,9 @@ function SelfServiceContent() {
                             } else {
                               // Logo da yoksa placeholder
                               target.style.display = 'none';
-                              target.parentElement!.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#ccc">🍽️</div>';
+                              if (target.parentElement) {
+                                target.parentElement.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#ccc">🍽️</div>';
+                              }
                             }
                           }}
                         />
