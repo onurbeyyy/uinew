@@ -156,7 +156,9 @@
       "Bash(pgrep:*)",
       "Bash(jq:*)",
       "Bash(node -e:*)",
-      "Bash(/mnt/c/Program Files/dotnet/dotnet.exe build --no-restore)"
+      "Bash(/mnt/c/Program Files/dotnet/dotnet.exe build --no-restore)",
+      "Bash(cmd.exe /c \"git push\")",
+      "WebFetch(domain:canlimenu.com)"
     ],
     "deny": [],
     "ask": []
