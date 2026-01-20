@@ -7,6 +7,7 @@ const SESSION_KEY = 'devtools_authorized';
 
 export default function DevToolsGuard() {
   const [showModal, setShowModal] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false); // Site tamamen engelli mi
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -22,6 +23,7 @@ export default function DevToolsGuard() {
   const handlePasswordSubmit = useCallback(() => {
     if (password === CORRECT_PASSWORD) {
       setIsAuthorized(true);
+      setIsBlocked(false);
       sessionStorage.setItem(SESSION_KEY, 'true');
       setShowModal(false);
       setPassword('');
@@ -36,59 +38,57 @@ export default function DevToolsGuard() {
     // Zaten yetkili ise engelleme
     if (isAuthorized) return;
 
+    const blockAndShowModal = () => {
+      e.preventDefault();
+      setIsBlocked(true);
+      setShowModal(true);
+    };
+
     // F12
     if (e.key === 'F12') {
-      e.preventDefault();
-      setShowModal(true);
+      blockAndShowModal();
       return;
     }
 
     // Ctrl+Shift+I (DevTools)
     if (e.ctrlKey && e.shiftKey && e.key === 'I') {
-      e.preventDefault();
-      setShowModal(true);
+      blockAndShowModal();
       return;
     }
 
     // Ctrl+Shift+J (Console)
     if (e.ctrlKey && e.shiftKey && e.key === 'J') {
-      e.preventDefault();
-      setShowModal(true);
+      blockAndShowModal();
       return;
     }
 
     // Ctrl+Shift+C (Element Inspector)
     if (e.ctrlKey && e.shiftKey && e.key === 'C') {
-      e.preventDefault();
-      setShowModal(true);
+      blockAndShowModal();
       return;
     }
 
     // Ctrl+U (View Source)
     if (e.ctrlKey && e.key === 'u') {
-      e.preventDefault();
-      setShowModal(true);
+      blockAndShowModal();
       return;
     }
 
     // Cmd+Option+I (Mac DevTools)
     if (e.metaKey && e.altKey && e.key === 'i') {
-      e.preventDefault();
-      setShowModal(true);
+      blockAndShowModal();
       return;
     }
 
     // Cmd+Option+J (Mac Console)
     if (e.metaKey && e.altKey && e.key === 'j') {
-      e.preventDefault();
-      setShowModal(true);
+      blockAndShowModal();
       return;
     }
 
     // Cmd+Option+U (Mac View Source)
     if (e.metaKey && e.altKey && e.key === 'u') {
-      e.preventDefault();
-      setShowModal(true);
+      blockAndShowModal();
       return;
     }
   }, [isAuthorized]);
@@ -98,6 +98,7 @@ export default function DevToolsGuard() {
     if (isAuthorized) return;
 
     e.preventDefault();
+    setIsBlocked(true);
     setShowModal(true);
   }, [isAuthorized]);
 
@@ -172,6 +173,7 @@ export default function DevToolsGuard() {
       // Önce boyut kontrolü
       if (checkSize()) {
         detected = true;
+        setIsBlocked(true);
         setShowModal(true);
         return;
       }
@@ -180,6 +182,7 @@ export default function DevToolsGuard() {
       const consoleOpen = await checkConsole();
       if (consoleOpen && !detected) {
         detected = true;
+        setIsBlocked(true);
         setShowModal(true);
         return;
       }
@@ -188,6 +191,7 @@ export default function DevToolsGuard() {
       try {
         if (checkDebugger() && !detected) {
           detected = true;
+          setIsBlocked(true);
           setShowModal(true);
         }
       } catch (e) {
@@ -198,6 +202,51 @@ export default function DevToolsGuard() {
     // Sayfa yüklenince çalıştır
     runDetection();
   }, [isAuthorized]);
+
+  // Engellenmiş ama modal kapalıysa - siyah ekran göster
+  if (isBlocked && !showModal) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: '#000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999999,
+          flexDirection: 'column',
+          gap: '20px',
+        }}
+      >
+        <div style={{ fontSize: '64px' }}>🚫</div>
+        <h2 style={{ color: '#fff', fontSize: '24px', textAlign: 'center' }}>
+          Erişim Engellendi
+        </h2>
+        <p style={{ color: '#888', fontSize: '14px', textAlign: 'center' }}>
+          Geliştirici araçları algılandı
+        </p>
+        <button
+          onClick={() => setShowModal(true)}
+          style={{
+            padding: '14px 32px',
+            fontSize: '16px',
+            borderRadius: '8px',
+            border: 'none',
+            backgroundColor: '#333',
+            color: '#fff',
+            cursor: 'pointer',
+            marginTop: '20px',
+          }}
+        >
+          Şifre Gir
+        </button>
+      </div>
+    );
+  }
 
   if (!showModal) return null;
 
