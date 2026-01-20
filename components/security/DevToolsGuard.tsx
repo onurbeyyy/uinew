@@ -142,11 +142,67 @@ export default function DevToolsGuard() {
       }
     };
 
-    // Her 2 saniyede kontrol et
-    const interval = setInterval(detectDevTools, 2000);
+    // Sayfa yüklendiğinde hemen kontrol et
+    detectDevTools();
+
+    // Her 1 saniyede kontrol et
+    const interval = setInterval(detectDevTools, 1000);
+
+    // Resize olayında da kontrol et
+    window.addEventListener('resize', detectDevTools);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('resize', detectDevTools);
+    };
+  }, [isAuthorized, showModal]);
+
+  // Debugger tuzağı - DevTools açıkken tetiklenir
+  useEffect(() => {
+    if (isAuthorized) return;
+
+    const detectWithDebugger = () => {
+      const start = performance.now();
+      // debugger statement DevTools açıkken yavaşlar
+      // eslint-disable-next-line no-debugger
+      debugger;
+      const end = performance.now();
+
+      // 100ms'den uzun sürdüyse DevTools açık
+      if (end - start > 100) {
+        setShowModal(true);
+      }
+    };
+
+    // Her 3 saniyede debugger kontrolü (çok sık olursa performans düşer)
+    const interval = setInterval(detectWithDebugger, 3000);
 
     return () => clearInterval(interval);
-  }, [isAuthorized, showModal]);
+  }, [isAuthorized]);
+
+  // Console.log tuzağı
+  useEffect(() => {
+    if (isAuthorized) return;
+
+    const element = new Image();
+    Object.defineProperty(element, 'id', {
+      get: function() {
+        setShowModal(true);
+        return 'devtools-trap';
+      }
+    });
+
+    // Console açıkken bu tetiklenir
+    const checkConsole = () => {
+      console.log('%c', element);
+      console.clear();
+    };
+
+    checkConsole();
+    const interval = setInterval(checkConsole, 2000);
+
+    return () => clearInterval(interval);
+  }, [isAuthorized]);
 
   if (!showModal) return null;
 
