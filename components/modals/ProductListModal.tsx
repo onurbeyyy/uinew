@@ -420,6 +420,32 @@ export default function ProductListModal() {
             </div>
           </div>
 
+          {/* 📝 Kategori Açıklaması */}
+          {(() => {
+            const activeCatData = categoriesData.find((c) => c.category.sambaId === activeCategory?.sambaId);
+            const descriptionEn = activeCatData?.category?.descriptionEnglish || activeCatData?.category?.descriptionEn || '';
+            const descriptionTr = activeCatData?.category?.description || activeCategory?.description || '';
+            const categoryDescription = language === 'en' && descriptionEn ? descriptionEn : descriptionTr;
+
+            if (categoryDescription) {
+              return (
+                <div className="container" style={{ paddingTop: '8px', paddingBottom: '0' }}>
+                  <p style={{
+                    color: 'rgba(255,255,255,0.7)',
+                    fontSize: '14px',
+                    textAlign: 'center',
+                    margin: '0',
+                    padding: '8px 16px',
+                    lineHeight: '1.4'
+                  }}>
+                    {categoryDescription}
+                  </p>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           <div className="container" style={{ paddingTop: 0, paddingBottom: '120px' }}>
             <div
               className="serach-area"

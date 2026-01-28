@@ -79,6 +79,8 @@ export interface Category {
   sambaId: number;
   title: string;
   titleEn?: string; // API'dan gelen titleEn field'ı
+  description?: string; // Kategori açıklaması
+  descriptionEn?: string; // Kategori açıklaması (İngilizce)
   orderNo: number;
   picture?: string;
   pictureId?: number; // Cache-busting için görsel ID'si
@@ -175,6 +177,9 @@ export interface CategoryDto {
     sambaId: number;
     title: string;
     titleEnglish?: string;
+    description?: string;
+    descriptionEnglish?: string;
+    descriptionEn?: string; // Alias
     customerId: number;
     orderNo: number;
     isActive: boolean;
