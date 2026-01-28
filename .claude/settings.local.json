@@ -158,7 +158,8 @@
       "Bash(node -e:*)",
       "Bash(/mnt/c/Program Files/dotnet/dotnet.exe build --no-restore)",
       "Bash(cmd.exe /c \"git push\")",
-      "WebFetch(domain:canlimenu.com)"
+      "WebFetch(domain:canlimenu.com)",
+      "Bash(cmd.exe /c \"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -p 43891 root@46.224.32.229 echo test\")"
     ],
     "deny": [],
     "ask": []
