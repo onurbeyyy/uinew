@@ -168,6 +168,8 @@ export interface MenuListDto {
   sambaId: number;
   orderNo: number;
   products: Product[];
+  description?: string;
+  descriptionEnglish?: string;
 }
 
 // Category DTO with Picture (GetCategoriesByCode endpoint)

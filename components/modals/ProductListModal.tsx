@@ -429,38 +429,25 @@ export default function ProductListModal() {
 
             if (categoryDescription) {
               return (
-                <div className="container" style={{ paddingTop: '12px', paddingBottom: '0' }}>
+                <div className="container" style={{ paddingTop: '12px', paddingBottom: '0', marginBottom: '-6px' }}>
                   <div style={{
                     background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
                     backdropFilter: 'blur(10px)',
-                    borderRadius: '12px',
-                    padding: '14px 18px',
+                    borderRadius: '8px',
+                    padding: '6px 12px',
                     margin: '0 4px',
                     border: '1px solid rgba(255,255,255,0.15)',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
                   }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '10px',
+                    <p style={{
+                      color: 'rgba(255,255,255,0.9)',
+                      fontSize: '14px',
+                      textAlign: 'center',
+                      margin: '0',
+                      lineHeight: '1.5',
+                      fontWeight: '400',
                     }}>
-                      <span style={{
-                        fontSize: '18px',
-                        lineHeight: '1.4',
-                      }}>
-                        <i className="fas fa-info-circle" style={{ color: 'rgba(255,255,255,0.8)' }}></i>
-                      </span>
-                      <p style={{
-                        color: 'rgba(255,255,255,0.9)',
-                        fontSize: '14px',
-                        textAlign: 'left',
-                        margin: '0',
-                        lineHeight: '1.5',
-                        fontWeight: '400',
-                      }}>
-                        {categoryDescription}
-                      </p>
-                    </div>
+                      {categoryDescription}
+                    </p>
                   </div>
                 </div>
               );
