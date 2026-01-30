@@ -1,0 +1,27 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 46.224.32.229
+          username: root
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 43891
+          script: |
+            cd /var/www/canlimenu
+            git pull origin main || git pull origin master
+            npm install
+            npm run build
+            pm2 restart canlimenu
+            echo "Deploy completed!"
