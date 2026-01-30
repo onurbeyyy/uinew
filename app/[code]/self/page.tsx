@@ -476,16 +476,9 @@ function SelfServiceContent() {
     if (code && sessionValidated) fetchData();
   }, [code, sessionValidated, setCustomerCode, setCustomerDataContext, setMenuDataContext, setProductTokenSettings, setPortionTokenSettings]);
 
-  // Giriş yapmamış kullanıcılar için otomatik login modalı açma (sadece bir kere)
+  // Giriş yapmamış kullanıcılar için otomatik login modalı açma - DEVRE DIŞI
+  // Misafir olarak sipariş verilebilir (1 saat limit)
   const hasShownLoginRef = useRef(false);
-
-  useEffect(() => {
-    if (!loading && sessionValidated && menuData && !currentUser && !hasShownLoginRef.current) {
-      // Veriler yüklendi ama kullanıcı giriş yapmamış - login modalı aç (sadece 1 kere)
-      hasShownLoginRef.current = true;
-      openProfile();
-    }
-  }, [loading, sessionValidated, menuData, currentUser, openProfile]);
 
   // Kategori tıkla
   const handleCategoryClick = (categoryId: number) => {
@@ -572,13 +565,8 @@ function SelfServiceContent() {
     return '';
   };
 
-  // Sepete ekle
+  // Sepete ekle - Misafir olarak da eklenebilir
   const handleAddToCart = (product: Product, portion?: ProductPortion) => {
-    if (!currentUser) {
-      openProfile();
-      return;
-    }
-
     const portions = (product as any).Portions || (product as any).portions || [];
     if (portions.length > 1 && !portion) {
       setPortionModalProduct(product);
@@ -1124,7 +1112,7 @@ function SelfServiceContent() {
       <BottomNavBar
         onProfileClick={() => { setIsCartOpen(false); isProfileOpen ? closeProfile() : openProfile(); }}
         onAIClick={() => {}}
-        onCartClick={() => { closeProfile(); currentUser ? setIsCartOpen(!isCartOpen) : openProfile(); }}
+        onCartClick={() => { closeProfile(); setIsCartOpen(!isCartOpen); }}
         onWaiterCall={() => {}}
         onGameClick={() => {}}
         onContactClick={() => { if (customerData?.customer.phone) window.location.href = `tel:${customerData.customer.phone}`; }}
@@ -1140,7 +1128,7 @@ function SelfServiceContent() {
       />
 
       {/* Profile Sidebar */}
-      <ProfileSidebar isOpen={isProfileOpen} onClose={closeProfile} customerCode={code} openRegister={!currentUser} />
+      <ProfileSidebar isOpen={isProfileOpen} onClose={closeProfile} customerCode={code} />
 
       <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
     </div>
