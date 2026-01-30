@@ -1,14 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Script from 'next/script';
 
 export default function WelcomePage() {
   const [customers, setCustomers] = useState<any[]>([]);
+  const pathname = usePathname();
 
   useEffect(() => {
+    // Sadece ana sayfada ("/") müşteri logolarını yükle
+    // Bu kontrol, chunk bundling nedeniyle diğer sayfalarda çalışmasını engeller
+    if (pathname !== '/') return;
+
     loadCustomerReferences();
 
     // Intersection Observer for animations
