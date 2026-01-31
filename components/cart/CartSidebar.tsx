@@ -113,6 +113,7 @@ export default function CartSidebar({ isOpen, onClose, tableId, customerCode, de
     return () => window.removeEventListener('tokenBalanceUpdated', handleTokenBalanceUpdate);
   }, []);
 
+  
   // Bildirim gösterme fonksiyonu
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     // Basit toast notification

@@ -321,3 +321,29 @@ export interface CartItemFeature {
   price: number;
   sambaTagId?: number;
 }
+
+// AI Ordering Types
+export type AIOrderActionType = 'ADD_TO_CART' | 'ASK_PORTION' | 'PRODUCT_NOT_FOUND' | 'NOT_TABLE_MODE' | 'CONFIRM_ORDER' | 'ASK_NOTE' | 'VIEW_CART' | 'CLEAR_CART' | 'SUBMIT_ORDER' | 'MULTI_CONFIRM';
+
+export interface AIOrderProduct {
+  id: number;
+  sambaId: number;
+  title: string;
+  price: number;
+  portions?: {
+    id: number;
+    sambaPortionId: number;
+    name: string;
+    price: number;
+  }[];
+}
+
+export interface AIOrderAction {
+  type: AIOrderActionType;
+  product?: AIOrderProduct;
+  quantity?: number;
+  portionName?: string;
+  orderNote?: string;
+  noteOptions?: string[];
+  message?: string;
+}

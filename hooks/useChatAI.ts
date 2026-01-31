@@ -1,17 +1,22 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import type { AIOrderAction } from '@/types/api';
 
 export interface ChatMessage {
   message: string;
   sender: 'user' | 'ai';
   timestamp: string;
   page?: string;
+  action?: AIOrderAction;
 }
 
 interface UseChatAIOptions {
   customerCode: string;
   menuData?: any;
+  tableId?: string;
+  isTableMode?: boolean;
+  userName?: string; // Login olan kullanıcının adı
 }
 
 interface MenuData {
@@ -32,7 +37,7 @@ interface ProductData {
   detail?: string;
 }
 
-export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatAIOptions) {
+export function useChatAI({ customerCode, menuData: externalMenuData, tableId, isTableMode, userName }: UseChatAIOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [remainingMessages, setRemainingMessages] = useState(30);
@@ -89,12 +94,13 @@ export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatA
 
   // Add message to history
   const addMessage = useCallback(
-    (message: string, sender: 'user' | 'ai') => {
+    (message: string, sender: 'user' | 'ai', action?: AIOrderAction) => {
       const newMessage: ChatMessage = {
         message,
         sender,
         timestamp: new Date().toISOString(),
         page: window.location.pathname,
+        action,
       };
 
       setMessages((prev) => {
@@ -110,14 +116,14 @@ export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatA
 
   // Send message to AI
   const sendMessage = useCallback(
-    async (message: string) => {
+    async (message: string): Promise<{ response: string; action?: AIOrderAction } | null> => {
       if (!message.trim() || !customerCode) return null;
 
       // Check remaining messages
       if (remainingMessages <= 0) {
         const errorMsg = 'Günlük 30 mesaj limitinize ulaştınız. Yarın tekrar deneyebilirsiniz. 😊';
         addMessage(errorMsg, 'ai');
-        return errorMsg;
+        return { response: errorMsg };
       }
 
       // Add user message
@@ -127,6 +133,12 @@ export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatA
       try {
         // Send menuData as JSON string (like old code)
         const menuDataStr = menuData ? JSON.stringify(menuData) : '';
+
+        // Son 10 mesajı al (context için)
+        const recentMessages = messages.slice(-10).map(m => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.message
+        }));
 
         // Send directly to backend
         const response = await fetch('/api/ai/chat', {
@@ -140,6 +152,10 @@ export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatA
             sessionId,
             pageUrl: window.location.href,
             menuData: menuDataStr, // JSON string like old code
+            tableId,
+            isTableMode: isTableMode || false,
+            userName: userName || '', // Login olan kullanıcının adı
+            conversationHistory: recentMessages, // Sohbet geçmişi
           }),
         });
 
@@ -151,24 +167,27 @@ export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatA
             setRemainingMessages(data.remainingMessages);
           }
 
-          // Add AI response
-          addMessage(data.response, 'ai');
-          return data.response;
+          // Parse action from response
+          const action: AIOrderAction | undefined = data.action;
+
+          // Add AI response with action
+          addMessage(data.response, 'ai', action);
+          return { response: data.response, action };
         } else {
           const errorMsg = data.error || data.response || 'Bir hata oluştu. Lütfen tekrar deneyin.';
           addMessage(errorMsg, 'ai');
-          return errorMsg;
+          return { response: errorMsg };
         }
       } catch (error) {
         console.error('Send message error:', error);
         const errorMsg = 'Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.';
         addMessage(errorMsg, 'ai');
-        return errorMsg;
+        return { response: errorMsg };
       } finally {
         setIsLoading(false);
       }
     },
-    [customerCode, sessionId, menuData, remainingMessages, addMessage, isLoadingMenu]
+    [customerCode, sessionId, menuData, remainingMessages, addMessage, isLoadingMenu, tableId, isTableMode, userName, messages]
   );
 
   // Clear chat history
@@ -187,5 +206,6 @@ export function useChatAI({ customerCode, menuData: externalMenuData }: UseChatA
     remainingMessages,
     sendMessage,
     clearHistory,
+    addMessage, // AI mesajları manuel eklemek için
   };
 }

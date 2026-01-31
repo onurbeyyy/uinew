@@ -922,6 +922,8 @@ export default function CustomerMenu() {
         isOpen={isAIChatOpen}
         onClose={() => setIsAIChatOpen(false)}
         customerCode={code}
+        tableId={tableId || undefined}
+        isTableMode={isTableMode && canUseBasket} // Sipariş sistemi aktifse sipariş alabilir
         menuData={menuDataLocal ? {
           customerCode: code,
           customerTitle: menuDataLocal.customerTitle,
@@ -929,9 +931,17 @@ export default function CustomerMenu() {
             title: cat.title,
             sambaId: cat.sambaId.toString(),
             products: cat.products.map(p => ({
-              title: p.title,
-              price: p.price,
-              detail: p.detail || p.description || ''
+              id: p.id ?? p.Id ?? 0,
+              sambaId: p.sambaId ?? p.SambaId ?? 0,
+              title: p.title ?? p.Title ?? '',
+              price: p.price ?? p.Price ?? 0,
+              detail: p.detail || p.description || p.Detail || p.Description || '',
+              portions: (p.portions ?? p.Portions ?? []).map(portion => ({
+                id: portion.id,
+                sambaPortionId: portion.sambaPortionId,
+                name: portion.name,
+                price: portion.price
+              }))
             }))
           }))
         } : undefined}

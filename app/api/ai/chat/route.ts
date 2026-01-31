@@ -7,7 +7,7 @@ const BACKEND_API_URL = process.env.API_URL || 'https://apicanlimenu.online';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, customerCode, sessionId, menuData, pageUrl } = body;
+    const { message, customerCode, sessionId, menuData, pageUrl, tableId, isTableMode, conversationHistory } = body;
 
     if (!message || !customerCode) {
       return NextResponse.json(
@@ -109,8 +109,9 @@ export async function POST(request: NextRequest) {
       let context = `Sen bir restoran menü asistanısın.\n`;
 
       if (customerInfoResponse.ok) {
-        const customerInfo = await customerInfoResponse.json();
-        context = `Sen ${customerInfo.name} restoranının menü asistanısın.\n`;
+        const customerInfoData = await customerInfoResponse.json();
+        const customerInfo = customerInfoData.customer || customerInfoData; // nested veya flat yapıyı destekle
+        context = `Sen ${customerInfo.name || 'Restoran'} restoranının menü asistanısın.\n`;
         context += `\n🌍 DİL KURALI (ÇOK ÖNEMLİ!):\n`;
         context += `- Müşteri hangi dilde yazıyorsa, SEN DE O DİLDE CEVAP VER!\n`;
         context += `- İngilizce soru = İngilizce cevap\n`;
@@ -121,23 +122,23 @@ export async function POST(request: NextRequest) {
         context += `- Diğer diller için de aynı kural geçerli!\n`;
         context += `- Ürün isimleri orijinal kalabilir ama açıklamalar müşterinin dilinde olmalı.\n\n`;
         context += `RESTORAN BİLGİLERİ (Bu bilgileri kullan):\n`;
-        context += `- İşletme Adı: ${customerInfo.name}\n`;
+        context += `- İşletme Adı: ${customerInfo.name || 'Belirtilmemiş'}\n`;
         context += `- Telefon: ${customerInfo.phone || 'Belirtilmemiş'}\n`;
         context += `- Adres/Konum: ${customerInfo.location || 'Belirtilmemiş'}\n`;
         context += `- Instagram: ${customerInfo.instagramUrl || 'Belirtilmemiş'}\n`;
         context += `- WhatsApp: ${customerInfo.whatsApp || 'Belirtilmemiş'}\n`;
         context += `- Fiyat Gösterimi: ${customerInfo.showPrices ? 'Evet' : 'Hayır'}\n\n`;
 
-        context += `KONUM/ADRES SORUSU CEVABI: Kullanıcı konum, adres, nerede sorduğunda yukarıdaki Adres/Konum bilgisini ver\n`;
-        context += `INSTAGRAM SORUSU CEVABI: Instagram, sosyal medya sorduğunda yukarıdaki Instagram bilgisini ver\n`;
-        context += `TELEFON SORUSU CEVABI: Telefon, iletişim sorduğunda yukarıdaki Telefon bilgisini ver\n`;
-        context += `REZERVASYON SORUSU CEVABI: Kullanıcı rezervasyon, masa, randevu sorduğunda:\n`;
-        context += `"Rezervasyon için bizi arayabilirsiniz: ${customerInfo.phone || 'Telefon bilgisi bulunamadı'}\n`;
-        context += `📞 Telefon: ${customerInfo.phone || 'Belirtilmemiş'}\n`;
+        context += `[İÇ KURAL - KULLANICIYA GÖSTERME]\n`;
+        context += `Konum/adres sorulursa → "${customerInfo.location || 'Belirtilmemiş'}" bilgisini ver\n`;
+        context += `Instagram sorulursa → "${customerInfo.instagramUrl || 'Belirtilmemiş'}" bilgisini ver\n`;
+        context += `Telefon sorulursa → "📞 ${customerInfo.phone || 'Belirtilmemiş'}" yaz\n`;
+        context += `Rezervasyon sorulursa → "Rezervasyon için: 📞 ${customerInfo.phone || ''}"`;
         if (customerInfo.whatsApp) {
-          context += `📱 WhatsApp: ${customerInfo.whatsApp}\n`;
+          context += ` veya 📱 WhatsApp: ${customerInfo.whatsApp}`;
         }
-        context += `Rezervasyon yapmak istediğiniz tarihi ve kişi sayısını belirterek arayın!" şeklinde cevap ver\n\n`;
+        context += ` yaz\n`;
+        context += `[/İÇ KURAL]\n\n`;
 
         context += `ÖZEL İÇECEK ÖNERİ SİSTEMİ:\n`;
         context += `Kullanıcı "tatlı kokteyl", "tatlı içecek", "kokteyl öner", "ne içsem", "enerji içecek", "redbull" gibi sorular sorduğunda:\n`;
@@ -176,13 +177,22 @@ export async function POST(request: NextRequest) {
         context += `3. Sadece menüdeki gerçek ürünleri kullan\n`;
         context += `4. Format: "• Ürün (Fiyat TL)" ve sonunda "Toplam: X TL"\n\n`;
 
-        context += `KİŞİ SAYISI FİYAT KURALLARI:\n`;
-        context += `Kullanıcı "2 kişi", "3 kişi", "4 kişi" vs. belirttiğinde:\n`;
-        context += `1. Menüdeki fiyatlar TEK KİŞİLİKTİR\n`;
-        context += `2. Kişi sayısı kadar ÇARP: 2 kişi = fiyat x2, 3 kişi = fiyat x3\n`;
-        context += `3. Örnek: "Karışık Meze (120₺)" → 2 kişi için: "Karışık Meze (240₺ - 2 kişi için)"\n`;
-        context += `4. Toplam hesaplarken çarpılmış fiyatları kullan\n`;
-        context += `5. Kişi başı bilgi vermek istersen: "120₺ x 2 kişi = 240₺" şeklinde açıkla\n\n`;
+        context += `⚠️ KİŞİ SAYISI FİYAT KURALLARI (ÇOK ÖNEMLİ!):\n`;
+        context += `Kullanıcı "2 kişi", "3 kişi", "4 kişi" vs. belirttiğinde MUTLAKA UYGULA:\n\n`;
+        context += `PAYLAŞIMLIK ÜRÜNLER (1 porsiyon yeterli):\n`;
+        context += `- Mezeler, salatalar → 1 porsiyon fiyatı yaz\n`;
+        context += `- Tatlılar → paylaşılabilir, 1 porsiyon yeterli\n\n`;
+        context += `KİŞİLİK ÜRÜNLER (her kişi için ayrı hesapla):\n`;
+        context += `- ANA YEMEKLER → Kişi sayısı kadar porsiyon! 2 kişi = 2x fiyat\n`;
+        context += `- İÇECEKLER → Kişi sayısı kadar! 2 kişi = 2x fiyat\n`;
+        context += `- Çorbalar → Kişi sayısı kadar! 2 kişi = 2x fiyat\n\n`;
+        context += `ÖRNEK (2 kişi için öneri):\n`;
+        context += `• Karışık Meze - 120₺ (paylaşımlık)\n`;
+        context += `• Hünkar Beğendi - 185₺ x 2 = 370₺ (2 porsiyon)\n`;
+        context += `• Ayran - 25₺ x 2 = 50₺ (2 adet)\n`;
+        context += `• Künefe - 95₺ (paylaşımlık)\n`;
+        context += `TOPLAM: 635₺\n\n`;
+        context += `FORMAT KURALI: Ana yemek ve içeceklerde "fiyat x kişi sayısı = toplam" yaz!\n\n`;
 
         if (!customerInfo.showPrices) {
           context += `DİKKAT: Fiyatları sadece müşteri özellikle isterse göster.\n\n`;
@@ -195,6 +205,117 @@ export async function POST(request: NextRequest) {
       }
 
       context += `KRİTİK UYARI: ASLA menüde olmayan ürün uydurma! SADECE yukarıdaki gerçek menü verilerini kullan. Eğer ürün yoksa 'Bu ürün menümüzde yok' de!\n\n`;
+
+      // Sipariş algılama prompt'u - sadece masa modunda
+      if (isTableMode && tableId) {
+        context += `\n═══════════════════════════════════════════════════════════\n`;
+        context += `SİPARİŞ ALGILAMA SİSTEMİ (MASA MODU AKTİF - Masa: ${tableId})\n`;
+        context += `═══════════════════════════════════════════════════════════\n\n`;
+
+        context += `🚫 BU SORULAR SİPARİŞ DEĞİL (ACTION EKLEME!):\n`;
+        context += `   - "X var mı?", "X'iniz var mı?" → BİLGİ SORUSU, sadece cevap ver\n`;
+        context += `   - "X ne kadar?", "X kaç TL?", "fiyatı?" → FİYAT SORUSU\n`;
+        context += `   - "X'te ne var?", "X kategorisi" → MENÜ SORUSU\n`;
+        context += `   - "X öneri", "ne önerirsin?" → ÖNERİ İSTEĞİ\n\n`;
+
+        context += `✅ GERÇEK SİPARİŞ NİYETLERİ:\n`;
+        context += `   - "X istiyorum", "X alayım", "X sipariş ediyorum" → SİPARİŞ\n`;
+        context += `   - "X ekle", "X ver", "X getir" → SİPARİŞ\n`;
+        context += `   - "2 tane X", "bir porsiyon X" → SİPARİŞ\n`;
+        context += `   - "evet", "ekle", "tamam" (önceki üründen sonra) → ONAY\n\n`;
+
+        context += `🔢 MİKTAR ALGILAMA (ÇOK ÖNEMLİ!):\n`;
+        context += `   - "2 çay" → quantity: 2\n`;
+        context += `   - "3 tane kahve" → quantity: 3\n`;
+        context += `   - "iki su" → quantity: 2\n`;
+        context += `   - "bir latte" → quantity: 1\n`;
+        context += `   - Miktar belirtilmezse → quantity: 1\n`;
+        context += `   ⚠️ Müşterinin söylediği miktarı MUTLAKA quantity alanına yaz!\n\n`;
+
+        context += `📋 ÇOKLU ÜRÜN SİPARİŞİ:\n`;
+        context += `   "2 çay 1 kahve" gibi siparişlerde:\n`;
+        context += `   - SADECE İLK ürün için CONFIRM_ORDER döndür (quantity ile birlikte)\n`;
+        context += `   - Diğer ürünleri mesajda belirt: "Önce 2 adet Çay için onay alayım, sonra Kahve için soracağım"\n`;
+        context += `   - İlk ürün tamamlandıktan sonra otomatik olarak sonraki ürünü sor\n\n`;
+
+        context += `📋 SİPARİŞ AKIŞI (SIRASI ÖNEMLİ!):\n`;
+        context += `1. Müşteri sipariş niyeti gösterirse → ÖNCE ONAY SOR!\n`;
+        context += `   Örnek: "2 adet Türk Çayı sepetinize eklensin mi? 🛒"\n\n`;
+        context += `2. Müşteri "evet", "ekle", "tamam" derse → NASIL OLSUN SOR!\n`;
+        context += `   Örnek: "Nasıl olsun? (Açık/Koyu, Şekerli/Şekersiz vb.)"\n\n`;
+        context += `3. Müşteri tercihini belirtirse → SEPETE EKLE + ACTION DÖNDÜR\n`;
+        context += `   Not bilgisini orderNote alanına ekle\n\n`;
+
+        context += `⚡ NOT ZATEN VERİLMİŞSE (ÖNEMLİ!):\n`;
+        context += `   "2 çay açık olsun", "1 kahve sade" gibi siparişlerde:\n`;
+        context += `   - Müşteri zaten tercihi belirtmiş (açık, sade, şekersiz vb.)\n`;
+        context += `   - CONFIRM_ORDER action'ına orderNote ekle!\n`;
+        context += `   - Örnek: {"type":"CONFIRM_ORDER","productTitle":"Türk Çayı","quantity":2,"orderNote":"açık"}\n`;
+        context += `   - Mesaj: "2 adet Türk Çayı (açık) sepetinize eklensin mi? 🛒"\n`;
+        context += `   - Onaydan sonra TEKRAR "nasıl olsun" SORMA, direkt ekle!\n\n`;
+
+        context += `⚡ HIZLI SİPARİŞ (not gerektirmeyen ürünler):\n`;
+        context += `   - Su, Kola, Ayran gibi basit içecekler\n`;
+        context += `   - Ana yemekler (genelde not gerekmez)\n`;
+        context += `   Bu ürünler için sadece onay sor, not sorma.\n\n`;
+
+        context += `🍵 NOT GEREKTİREN ÜRÜNLER:\n`;
+        context += `   - Çay (Açık/Koyu, Şekerli/Şekersiz, Demli/Açık)\n`;
+        context += `   - Kahve (Şekerli/Sade/Az Şekerli, Sütlü/Sütsüz)\n`;
+        context += `   - Türk Kahvesi (Sade/Orta/Şekerli)\n`;
+        context += `   - Et yemekleri (Az pişmiş/Orta/İyi pişmiş)\n\n`;
+
+        context += `ACTION FORMAT (SADECE ONAY ALINDIKTAN SONRA!):\n`;
+        context += `|||ACTION|||{"type":"ADD_TO_CART","productTitle":"Türk Çayı","quantity":2,"orderNote":"açık şekersiz"}|||END_ACTION|||\n`;
+        context += `⚠️ quantity değerini müşterinin istediği GERÇEK miktarla doldur!\n\n`;
+
+        context += `ONAY BEKLEME (sepete ekleme önerisi):\n`;
+        context += `|||ACTION|||{"type":"CONFIRM_ORDER","productTitle":"Türk Çayı","quantity":2}|||END_ACTION|||\n`;
+        context += `⚠️ "2 çay" denilince quantity:2 olmalı, "3 kahve" denilince quantity:3 olmalı!\n\n`;
+
+        context += `NOT SORMA:\n`;
+        context += `|||ACTION|||{"type":"ASK_NOTE","productTitle":"Türk Kahvesi","quantity":1,"noteOptions":["Sade","Orta","Şekerli"]}|||END_ACTION|||\n\n`;
+
+        context += `📦 ÇOKLU ÜRÜN EKLEME ("bunları ekle", "hepsini ekle"):\n`;
+        context += `   - Önceki mesajda ürün önerdiysen ve müşteri "bunları ekle" derse:\n`;
+        context += `   - TÜM ürünleri MULTI_CONFIRM action ile döndür!\n`;
+        context += `   - Mesaj: "Tüm ürünleri sırayla ekleyeceğim. İlk olarak Hünkar Beğendi..."\n`;
+        context += `   - Format:\n`;
+        context += `|||ACTION|||{"type":"MULTI_CONFIRM","products":[{"productTitle":"Hünkar Beğendi","quantity":2},{"productTitle":"Karışık Meze","quantity":1},{"productTitle":"Ayran","quantity":2},{"productTitle":"Künefe","quantity":1}]}|||END_ACTION|||\n\n`;
+
+        context += `🛒 SEPET YÖNETİMİ KOMUTLARI (ÇOK ÖNEMLİ!):\n`;
+        context += `   Bu komutlar YENİ SİPARİŞ DEĞİL, mevcut sepeti yönetmek içindir!\n\n`;
+        context += `   - "sepetimde ne var?", "sepeti göster", "sepet" → VIEW_CART\n`;
+        context += `   - "sepeti temizle", "sepeti boşalt" → CLEAR_CART\n`;
+        context += `   - "siparişi gönder", "siparişi onayla", "sipariş ver", "onayla", "gönder" → SUBMIT_ORDER\n\n`;
+        context += `   ⚠️ "siparişi gönder" = Sepetteki ürünleri mutfağa gönder (yeni sipariş DEĞİL!)\n\n`;
+
+        context += `SEPET ACTION FORMATLARI:\n`;
+        context += `|||ACTION|||{"type":"VIEW_CART"}|||END_ACTION|||\n`;
+        context += `Mesaj: "Sepetinizi kontrol ediyorum..."\n\n`;
+        context += `|||ACTION|||{"type":"CLEAR_CART"}|||END_ACTION|||\n`;
+        context += `Mesaj: "Sepetiniz temizleniyor..."\n\n`;
+        context += `|||ACTION|||{"type":"SUBMIT_ORDER"}|||END_ACTION|||\n`;
+        context += `Mesaj: "Siparişiniz hazırlanıyor..."\n\n`;
+
+        context += `⚠️ KRİTİK KURALLAR:\n`;
+        context += `- "var mı?" sorusuna ASLA ACTION ekleme!\n`;
+        context += `- Onay almadan ASLA ADD_TO_CART action'ı döndürme!\n`;
+        context += `- productTitle menüdeki gerçek ürün adıyla TAMAMEN AYNI olmalı\n`;
+        context += `- "siparişi gönder/onayla/ver" = SUBMIT_ORDER action (yeni sipariş DEĞİL!)\n`;
+        context += `═══════════════════════════════════════════════════════════\n\n`;
+      }
+
+      // Sohbet geçmişini ekle (son mesajlar)
+      if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+        context += `\n📜 SON SOHBET GEÇMİŞİ (ÖNCEKİ MESAJLAR):\n`;
+        conversationHistory.forEach((msg: { role: string; content: string }) => {
+          const role = msg.role === 'user' ? 'Müşteri' : 'Sen';
+          context += `${role}: ${msg.content}\n`;
+        });
+        context += `\n⚠️ Yukarıdaki sohbeti HATIRLA! "bunları ekle" denirse önceki önerdiğin ürünleri sepete ekle!\n\n`;
+      }
+
       context += `Müşteri sorusu: ${message}`;
 
       const requestBody = {
@@ -232,7 +353,142 @@ export async function POST(request: NextRequest) {
         throw new Error('Invalid Gemini response structure');
       }
 
-      const aiResponse = geminiData.candidates[0].content.parts[0].text;
+      let aiResponse = geminiData.candidates[0].content.parts[0].text;
+
+      // Parse action from AI response
+      let action = null;
+      const actionMatch = aiResponse.match(/\|\|\|ACTION\|\|\|([\s\S]*?)\|\|\|END_ACTION\|\|\|/);
+      if (actionMatch) {
+        try {
+          const actionData = JSON.parse(actionMatch[1]);
+
+          // Ürün bilgilerini menuData'dan bul (tüm action type'ları için)
+          const findProduct = (productTitle: string) => {
+            if (!menuData || !productTitle) return null;
+            const menuObj = typeof menuData === 'string' ? JSON.parse(menuData) : menuData;
+
+            if (menuObj && menuObj.categories) {
+              for (const cat of menuObj.categories) {
+                const products = cat.products || (cat.subCategories?.[0]?.products) || [];
+                for (const p of products) {
+                  const pTitle = (p.title || p.Title || '').toLowerCase().trim();
+                  const searchTitle = productTitle.toLowerCase().trim();
+
+                  if (pTitle === searchTitle || pTitle.includes(searchTitle) || searchTitle.includes(pTitle)) {
+                    return {
+                      id: p.id || p.Id || 0,
+                      sambaId: p.sambaId || p.SambaId || 0,
+                      title: p.title || p.Title || productTitle,
+                      price: p.price || p.Price || 0,
+                      portions: (p.portions || p.Portions || []).map((por: any) => ({
+                        id: por.id,
+                        sambaPortionId: por.sambaPortionId,
+                        name: por.name,
+                        price: por.price
+                      }))
+                    };
+                  }
+                }
+              }
+            }
+            return null;
+          };
+
+          // Action type'a göre işle
+          if (actionData.type === 'ADD_TO_CART' && actionData.productTitle) {
+            const foundProduct = findProduct(actionData.productTitle);
+
+            if (foundProduct) {
+              // Birden fazla porsiyon varsa ASK_PORTION action'ı oluştur
+              if (foundProduct.portions && foundProduct.portions.length > 1 && !actionData.portionName) {
+                action = {
+                  type: 'ASK_PORTION',
+                  product: foundProduct,
+                  quantity: actionData.quantity || 1,
+                  orderNote: actionData.orderNote
+                };
+              } else {
+                action = {
+                  type: 'ADD_TO_CART',
+                  product: foundProduct,
+                  quantity: actionData.quantity || 1,
+                  portionName: actionData.portionName,
+                  orderNote: actionData.orderNote
+                };
+              }
+            } else {
+              action = {
+                type: 'PRODUCT_NOT_FOUND',
+                message: `"${actionData.productTitle}" menüde bulunamadı.`
+              };
+            }
+          } else if (actionData.type === 'CONFIRM_ORDER' && actionData.productTitle) {
+            // Onay bekleme - ürünü bul ve CONFIRM_ORDER olarak döndür
+            const foundProduct = findProduct(actionData.productTitle);
+            if (foundProduct) {
+              action = {
+                type: 'CONFIRM_ORDER',
+                product: foundProduct,
+                quantity: actionData.quantity || 1,
+                orderNote: actionData.orderNote // Not zaten verilmişse ekle
+              };
+            }
+          } else if (actionData.type === 'ASK_NOTE' && actionData.productTitle) {
+            // Not sorma - ürünü bul ve ASK_NOTE olarak döndür
+            const foundProduct = findProduct(actionData.productTitle);
+            if (foundProduct) {
+              action = {
+                type: 'ASK_NOTE',
+                product: foundProduct,
+                quantity: actionData.quantity || 1,
+                noteOptions: actionData.noteOptions || []
+              };
+            }
+          } else if (actionData.type === 'ASK_PORTION') {
+            const foundProduct = findProduct(actionData.productTitle);
+            if (foundProduct) {
+              action = {
+                type: 'ASK_PORTION',
+                product: foundProduct,
+                quantity: actionData.quantity || 1
+              };
+            }
+          } else if (actionData.type === 'PRODUCT_NOT_FOUND') {
+            action = actionData;
+          } else if (actionData.type === 'VIEW_CART') {
+            action = { type: 'VIEW_CART' };
+          } else if (actionData.type === 'CLEAR_CART') {
+            action = { type: 'CLEAR_CART' };
+          } else if (actionData.type === 'SUBMIT_ORDER') {
+            action = { type: 'SUBMIT_ORDER' };
+          } else if (actionData.type === 'MULTI_CONFIRM' && actionData.products) {
+            // Çoklu ürün onayı - tüm ürünleri bul
+            const products = actionData.products.map((p: any) => {
+              const foundProduct = findProduct(p.productTitle);
+              if (foundProduct) {
+                return {
+                  product: foundProduct,
+                  quantity: p.quantity || 1,
+                  orderNote: p.orderNote
+                };
+              }
+              return null;
+            }).filter(Boolean);
+
+            if (products.length > 0) {
+              action = {
+                type: 'MULTI_CONFIRM',
+                products: products
+              };
+            }
+          }
+        } catch (parseError) {
+          console.error('Action parse error:', parseError);
+        }
+
+        // Action tag'ini response'dan kaldır
+        aiResponse = aiResponse.replace(/\|\|\|ACTION\|\|\|[\s\S]*?\|\|\|END_ACTION\|\|\|/g, '').trim();
+      }
 
       // Analytics log (fire and forget)
       try {
@@ -257,6 +513,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         response: aiResponse,
+        action,
         remainingMessages: 30, // Default for Gemini fallback
         source: 'gemini',
       });
