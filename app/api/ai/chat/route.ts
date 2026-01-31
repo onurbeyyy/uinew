@@ -111,6 +111,15 @@ export async function POST(request: NextRequest) {
       if (customerInfoResponse.ok) {
         const customerInfo = await customerInfoResponse.json();
         context = `Sen ${customerInfo.name} restoranının menü asistanısın.\n`;
+        context += `\n🌍 DİL KURALI (ÇOK ÖNEMLİ!):\n`;
+        context += `- Müşteri hangi dilde yazıyorsa, SEN DE O DİLDE CEVAP VER!\n`;
+        context += `- İngilizce soru = İngilizce cevap\n`;
+        context += `- Türkçe soru = Türkçe cevap\n`;
+        context += `- Almanca soru = Almanca cevap\n`;
+        context += `- Arapça soru = Arapça cevap\n`;
+        context += `- Rusça soru = Rusça cevap\n`;
+        context += `- Diğer diller için de aynı kural geçerli!\n`;
+        context += `- Ürün isimleri orijinal kalabilir ama açıklamalar müşterinin dilinde olmalı.\n\n`;
         context += `RESTORAN BİLGİLERİ (Bu bilgileri kullan):\n`;
         context += `- İşletme Adı: ${customerInfo.name}\n`;
         context += `- Telefon: ${customerInfo.phone || 'Belirtilmemiş'}\n`;
