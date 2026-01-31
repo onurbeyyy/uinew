@@ -67,30 +67,49 @@ export async function POST(request: NextRequest) {
 
     // 2. Backend başarısız olursa Gemini'yi kullan
     try {
-      // Prepare menu data string for Gemini
+      // Prepare menu data string for Gemini (hem TR hem EN)
       let menuDataStr = '';
       if (menuData) {
         try {
           const menuObj = typeof menuData === 'string' ? JSON.parse(menuData) : menuData;
           if (menuObj && menuObj.categories) {
             menuObj.categories.forEach((cat: any) => {
+              // Kategori ismi (TR / EN)
+              const catTitle = cat.title || '';
+              const catTitleEn = cat.titleEn || cat.titleEnglish || '';
+              const catDisplay = catTitleEn ? `${catTitle} (EN: ${catTitleEn})` : catTitle;
+
               // Check if this is the format from the page (with subCategories)
               if (cat.subCategories && cat.subCategories[0]?.products) {
-                menuDataStr += `\n${cat.title}:\n`;
+                menuDataStr += `\n${catDisplay}:\n`;
                 cat.subCategories[0].products.forEach((p: any) => {
-                  menuDataStr += `  - ${p.title}`;
-                  if (p.price > 0) menuDataStr += ` (${p.price}₺)`;
-                  if (p.detail) menuDataStr += ` - ${p.detail}`;
+                  const titleTr = p.title || p.Title || '';
+                  const titleEn = p.titleEn || p.TitleEn || '';
+                  const detail = p.detail || p.description || '';
+                  const detailEn = p.detailEn || p.descriptionEn || '';
+
+                  menuDataStr += `  - ${titleTr}`;
+                  if (titleEn) menuDataStr += ` (EN: ${titleEn})`;
+                  if (p.price > 0) menuDataStr += ` - ${p.price}₺`;
+                  if (detail) menuDataStr += ` | ${detail}`;
+                  if (detailEn) menuDataStr += ` (EN: ${detailEn})`;
                   menuDataStr += '\n';
                 });
               }
               // Or the format from our own loading (direct products)
               else if (cat.products && cat.products.length > 0) {
-                menuDataStr += `\n${cat.title}:\n`;
+                menuDataStr += `\n${catDisplay}:\n`;
                 cat.products.forEach((p: any) => {
-                  menuDataStr += `  - ${p.title}`;
-                  if (p.price > 0) menuDataStr += ` (${p.price}₺)`;
-                  if (p.detail) menuDataStr += ` - ${p.detail}`;
+                  const titleTr = p.title || p.Title || '';
+                  const titleEn = p.titleEn || p.TitleEn || '';
+                  const detail = p.detail || p.description || '';
+                  const detailEn = p.detailEn || p.descriptionEn || '';
+
+                  menuDataStr += `  - ${titleTr}`;
+                  if (titleEn) menuDataStr += ` (EN: ${titleEn})`;
+                  if (p.price > 0) menuDataStr += ` - ${p.price}₺`;
+                  if (detail) menuDataStr += ` | ${detail}`;
+                  if (detailEn) menuDataStr += ` (EN: ${detailEn})`;
                   menuDataStr += '\n';
                 });
               }
@@ -114,7 +133,9 @@ export async function POST(request: NextRequest) {
         context = `Sen ${customerInfo.name || 'Restoran'} restoranının menü asistanısın.\n`;
         context += `\n🌍 DİL KURALI (ÇOK ÖNEMLİ!):\n`;
         context += `- Müşteri hangi dilde yazıyorsa, SEN DE O DİLDE CEVAP VER!\n`;
-        context += `- İngilizce soru = İngilizce cevap\n`;
+        context += `- ÜRÜN İSİMLERİ VE KATEGORİLER DE O DİLDE OLMALI!\n`;
+        context += `- Menüde (EN: ...) şeklinde İngilizce karşılıklar verilmiş, bunları kullan!\n`;
+        context += `- İngilizce soru = İngilizce cevap + İngilizce ürün isimleri\n`;
         context += `- Türkçe soru = Türkçe cevap\n`;
         context += `- Almanca soru = Almanca cevap\n`;
         context += `- Arapça soru = Arapça cevap\n`;
