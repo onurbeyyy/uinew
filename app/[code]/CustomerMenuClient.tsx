@@ -18,6 +18,7 @@ import GameModal from '@/components/modals/GameModal';
 import CartSidebar from '@/components/cart/CartSidebar';
 import ProfileSidebar from '@/components/profile/ProfileSidebar';
 import AIChatSidebar from '@/components/ai/AIChatSidebar';
+import FloatingAIButton from '@/components/ai/FloatingAIButton';
 import SuggestionModal from '@/components/modals/SuggestionModal';
 import EmailVerifiedPopup from '@/components/notifications/EmailVerifiedPopup';
 import WaiterCallRateLimitModal from '@/components/modals/WaiterCallRateLimitModal';
@@ -548,7 +549,7 @@ export default function CustomerMenuClient({
           }}
           onSuggestionClick={() => setIsSuggestionModalOpen(true)}
           onTableOrdersClick={() => setIsTableOrdersModalOpen(true)}
-          showAIChat={customerData?.customer.showAIChat ?? true}
+          showAIChat={false}
           showCart={isTableMode && canUseBasket && !basketDisabledMessage}
           showWaiterCall={canCallWaiter && !basketDisabledMessage}
           showTableOrders={canCallWaiter && !basketDisabledMessage}
@@ -573,6 +574,18 @@ export default function CustomerMenuClient({
       )}
 
       <ProfileSidebar isOpen={isProfileOpen} onClose={closeProfile} customerCode={code} />
+
+      {/* Floating AI Button */}
+      {customerData?.customer.showAIChat && (
+        <FloatingAIButton
+          onClick={() => {
+            setIsCartOpen(false);
+            closeProfile();
+            setIsAIChatOpen(prev => !prev);
+          }}
+          isOpen={isAIChatOpen}
+        />
+      )}
 
       <AIChatSidebar
         isOpen={isAIChatOpen}
