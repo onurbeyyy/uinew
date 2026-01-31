@@ -341,6 +341,7 @@ export interface AIOrderProduct {
 export interface AIOrderAction {
   type: AIOrderActionType;
   product?: AIOrderProduct;
+  products?: { product: AIOrderProduct; quantity: number; orderNote?: string }[]; // MULTI_CONFIRM için
   quantity?: number;
   portionName?: string;
   orderNote?: string;
