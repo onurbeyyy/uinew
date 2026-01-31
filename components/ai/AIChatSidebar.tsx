@@ -53,8 +53,44 @@ export default function AIChatSidebar({ isOpen, onClose, customerCode, menuData,
   }[]>([]);
 
   const [inputMessage, setInputMessage] = useState('');
+  const [viewportHeight, setViewportHeight] = useState('100vh');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Klavye açılınca viewport yüksekliğini ayarla (WhatsApp tarzı)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const updateHeight = () => {
+      // visualViewport varsa kullan (modern tarayıcılar)
+      if (window.visualViewport) {
+        setViewportHeight(`${window.visualViewport.height}px`);
+      } else {
+        setViewportHeight(`${window.innerHeight}px`);
+      }
+    };
+
+    // İlk yükleme
+    updateHeight();
+
+    // visualViewport resize event
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateHeight);
+      window.visualViewport.addEventListener('scroll', updateHeight);
+    }
+
+    // Fallback için window resize
+    window.addEventListener('resize', updateHeight);
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updateHeight);
+        window.visualViewport.removeEventListener('scroll', updateHeight);
+      }
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [isOpen]);
 
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
@@ -457,13 +493,14 @@ export default function AIChatSidebar({ isOpen, onClose, customerCode, menuData,
 
       {/* Sidebar */}
       <div
+        ref={sidebarRef}
         className={`ai-chat-sidebar ${isOpen ? 'sidebar-open' : ''}`}
         style={{
           position: 'fixed',
           top: 0,
           left: isOpen ? 0 : '-100%',
           width: '100%',
-          height: '100vh',
+          height: viewportHeight,
           background: 'rgba(0, 0, 0, 0.15)',
           backdropFilter: 'blur(25px)',
           WebkitBackdropFilter: 'blur(25px)',
@@ -471,6 +508,7 @@ export default function AIChatSidebar({ isOpen, onClose, customerCode, menuData,
           zIndex: 99991,
           display: 'flex',
           flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
         {/* Header */}
@@ -856,7 +894,7 @@ export default function AIChatSidebar({ isOpen, onClose, customerCode, menuData,
         <div
           style={{
             padding: '15px',
-            paddingBottom: '90px',
+            paddingBottom: 'max(15px, env(safe-area-inset-bottom))',
             background: 'transparent',
             borderTop: '1px solid rgba(255, 255, 255, 0.15)',
             flexShrink: 0,
