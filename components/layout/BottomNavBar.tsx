@@ -363,17 +363,6 @@ export default function BottomNavBar({
             onClick={onAddressClick}
             gradient="linear-gradient(135deg, #ff6b00 0%, #ff9500 100%)"
           />
-        ) : !showWaiterCall && showAIChat ? (
-          <NavButton
-            icon={
-              <svg style={{ width: '18px', height: '18px', fill: 'white' }} viewBox="0 0 24 24">
-                <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
-              </svg>
-            }
-            label={t('aiAssistant')}
-            onClick={onAIClick}
-            gradient="linear-gradient(135deg, #3498db 0%, #2980b9 100%)"
-          />
         ) : null}
 
         {/* 5. Sepet / İletişim / Öneri */}
